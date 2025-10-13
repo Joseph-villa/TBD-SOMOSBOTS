@@ -267,3 +267,571 @@ ALTER TABLE "Reportes_Impacto" ADD FOREIGN KEY ("publicacion_id") REFERENCES "Pu
 ALTER TABLE "Acelerador_Credito" ADD FOREIGN KEY ("billetera_id") REFERENCES "Billetera" ("id_billetera");
 
 ALTER TABLE "Acelerador_Credito" ADD FOREIGN KEY ("campana_id") REFERENCES "Campana_Ecologica" ("id_campana");
+
+-- 1️⃣ Función del trigger
+CREATE OR REPLACE FUNCTION fn_bitacora_creacion_usuario()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Creación de usuario',
+    NOW(),
+    CONCAT('El usuario ', NEW.nombre, ' fue registrado con el rol ', NEW.rol_id),
+    NEW.id_usuario
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2️⃣ Trigger que llama a la función
+CREATE TRIGGER tr_bitacora_creacion_usuario
+AFTER INSERT ON Usuario
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_creacion_usuario();
+
+CREATE OR REPLACE FUNCTION fn_bitacora_modificacion_usuario()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Actualización de usuario',
+    NOW(),
+    CONCAT('El usuario ', OLD.nombre, ' fue modificado. Estado anterior: ', OLD.estado, ', nuevo estado: ', NEW.estado),
+    NEW.id_usuario
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_bitacora_modificacion_usuario
+AFTER UPDATE ON Usuario
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_modificacion_usuario();
+
+
+CREATE OR REPLACE FUNCTION fn_bitacora_eliminacion_usuario()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Eliminación de usuario',
+    NOW(),
+    CONCAT('El usuario ', OLD.nombre, ' fue eliminado del sistema.'),
+    OLD.id_usuario
+  );
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_bitacora_eliminacion_usuario
+AFTER DELETE ON Usuario
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_eliminacion_usuario();
+
+CREATE OR REPLACE FUNCTION fn_incentivo_publicacion()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Sumar créditos al usuario que publicó
+  UPDATE Billetera
+  SET credito_actual = credito_actual + 5,
+      credito_total = credito_total + 5,
+      ultima_actualizacion = NOW()
+  WHERE usuario_id = NEW.usuario_id;
+
+  -- Registrar en bitácora
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Incentivo por publicación',
+    NOW(),
+    CONCAT('El usuario publicó "', NEW.titulo, '" y recibió +5 créditos verdes.'),
+    NEW.usuario_id
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_incentivo_publicacion
+AFTER INSERT ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_incentivo_publicacion();
+
+CREATE OR REPLACE FUNCTION fn_bitacora_modificacion_publicacion()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Actualización de publicación',
+    NOW(),
+    CONCAT('La publicación "', OLD.titulo, '" cambió de estado de ', OLD.estado, ' a ', NEW.estado),
+    NEW.usuario_id
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_bitacora_modificacion_publicacion
+AFTER UPDATE ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_modificacion_publicacion();
+
+CREATE OR REPLACE FUNCTION fn_registrar_impacto()
+RETURNS TRIGGER AS $$
+DECLARE
+  co2_estimado DECIMAL := 0.5;  -- ejemplo: 0.5 kg de CO₂ por publicación
+BEGIN
+  INSERT INTO Reportes_Impacto (id_usuario, co2, publicacion_id, fecha_registro)
+  VALUES (NEW.usuario_id, co2_estimado, NEW.id_publicacion, NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_registrar_impacto
+AFTER INSERT ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_registrar_impacto();
+
+-- Función
+CREATE OR REPLACE FUNCTION fn_bitacora_crear_campana()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Creación de campaña ecológica',
+    NOW(),
+    CONCAT('El administrador creó la campaña "', NEW.nombre, '" de tipo ', NEW.tipo),
+    NEW.id_campana
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER tr_bitacora_crear_campana
+AFTER INSERT ON Campana_Ecologica
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_crear_campana();
+
+CREATE OR REPLACE FUNCTION fn_bitacora_crear_paquete()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Creación de paquete de recarga',
+    NOW(),
+    CONCAT('Se creó el paquete "', NEW.nombre_paquete, '" con ', NEW.puntos, ' puntos.'),
+    1  -- ID del administrador, puedes reemplazarlo dinámicamente si usas sesiones
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_bitacora_crear_paquete
+AFTER INSERT ON Paquete_Recarga
+FOR EACH ROW
+EXECUTE FUNCTION fn_bitacora_crear_paquete();
+
+
+CREATE OR REPLACE FUNCTION fn_publicacion_crear()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Sumar incentivo de 5 créditos al usuario
+  UPDATE Billetera
+  SET credito_actual = credito_actual + 5,
+      credito_total = credito_total + 5,
+      ultima_actualizacion = NOW()
+  WHERE usuario_id = NEW.usuario_id;
+
+  -- Registrar acción en bitácora
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Nueva publicación creada',
+    NOW(),
+    CONCAT('El usuario publicó "', NEW.titulo, '" por ', NEW.precio, ' créditos.'),
+    NEW.usuario_id
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_publicacion_crear
+AFTER INSERT ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_publicacion_crear();
+
+CREATE OR REPLACE FUNCTION fn_publicacion_editar()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Edición de publicación',
+    NOW(),
+    CONCAT('La publicación "', OLD.titulo, '" fue modificada. Nuevo título: "', NEW.titulo, '".'),
+    NEW.usuario_id
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_publicacion_editar
+AFTER UPDATE ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_publicacion_editar();
+
+CREATE OR REPLACE FUNCTION fn_publicacion_eliminar()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Restar incentivo (opcional)
+  UPDATE Billetera
+  SET credito_actual = credito_actual - 5,
+      ultima_actualizacion = NOW()
+  WHERE usuario_id = OLD.usuario_id;
+
+  -- Registrar en bitácora
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Eliminación de publicación',
+    NOW(),
+    CONCAT('El usuario eliminó la publicación "', OLD.titulo, '".'),
+    OLD.usuario_id
+  );
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_publicacion_eliminar
+AFTER DELETE ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_publicacion_eliminar();
+
+
+CREATE OR REPLACE FUNCTION fn_compra_paquete()
+RETURNS TRIGGER AS $$
+DECLARE
+  puntos_agregar INT;
+BEGIN
+  -- Buscar cantidad de puntos del paquete comprado
+  SELECT puntos INTO puntos_agregar
+  FROM Paquete_Recarga
+  WHERE id_paquete = NEW.paquete_recarga_id;
+
+  -- Sumar puntos a la billetera del usuario
+  UPDATE Billetera_Puntos
+  SET total = total + puntos_agregar,
+      en_posesion = en_posesion + puntos_agregar,
+      ultima_actualizacion = NOW()
+  WHERE id_billetera_puntos = NEW.billetera_puntos_id;
+
+  -- Registrar movimiento
+  INSERT INTO Movimiento_Credito (tipo_movimiento, monto, origen, fecha_mov, descripcion, billetera_id)
+  VALUES (
+    'Compra de puntos',
+    puntos_agregar,
+    'Compra_Paquete',
+    NOW(),
+    CONCAT('Compra del paquete con ', puntos_agregar, ' puntos.'),
+    (SELECT id_billetera FROM Billetera WHERE usuario_id = (
+        SELECT usuario_id FROM Billetera_Puntos WHERE id_billetera_puntos = NEW.billetera_puntos_id
+    ))
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_compra_paquete
+AFTER INSERT ON Compra_Paquete
+FOR EACH ROW
+EXECUTE FUNCTION fn_compra_paquete();
+
+CREATE OR REPLACE FUNCTION fn_completar_mision()
+RETURNS TRIGGER AS $$
+DECLARE
+  camp_id INT;
+  camp_nombre VARCHAR;
+  bono DECIMAL := 10;
+BEGIN
+  -- Buscar si hay una campaña activa del mismo tipo de categoría
+  SELECT c.id_campana, c.nombre
+  INTO camp_id, camp_nombre
+  FROM Campana_Ecologica c
+  JOIN Categoria cat ON cat.id_categoria = NEW.categoria_id
+  WHERE c.estado = TRUE
+  AND c.fecha_inicio <= NOW()
+  AND c.fecha_fin >= NOW()
+  AND (
+      (c.tipo = 'Reciclaje' AND cat.nombre ILIKE '%recicl%')
+      OR (c.tipo = 'Donacion' AND cat.nombre ILIKE '%donac%')
+      OR (c.tipo = 'Reparacion' AND cat.nombre ILIKE '%reparac%')
+  )
+  LIMIT 1;
+
+  -- Si existe campaña activa, dar recompensa
+  IF camp_id IS NOT NULL THEN
+    UPDATE Billetera
+    SET credito_actual = credito_actual + bono,
+        credito_total = credito_total + bono,
+        ultima_actualizacion = NOW()
+    WHERE usuario_id = NEW.usuario_id;
+
+    -- Registrar en bitácora
+    INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+    VALUES (
+      'Misión completada',
+      NOW(),
+      CONCAT('El usuario cumplió la misión de la campaña "', camp_nombre, '" y recibió +', bono, ' créditos.'),
+      NEW.usuario_id
+    );
+
+    -- Registrar participación en Acelerador_Credito
+    INSERT INTO Acelerador_Credito (nombre, tipo, multiplicador, estado, billetera_id, campana_id)
+    VALUES (
+      'Recompensa misión completada',
+      'Bonificación',
+      1.0,
+      TRUE,
+      (SELECT id_billetera FROM Billetera WHERE usuario_id = NEW.usuario_id),
+      camp_id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_completar_mision
+AFTER INSERT ON Publicacion
+FOR EACH ROW
+EXECUTE FUNCTION fn_completar_mision();
+
+CREATE OR REPLACE FUNCTION fn_agregar_favorito()
+RETURNS TRIGGER AS $$
+DECLARE
+  ya_existe INT;
+BEGIN
+  -- Verificar si el favorito ya existe
+  SELECT COUNT(*) INTO ya_existe
+  FROM Favorito
+  WHERE usuario_id = NEW.usuario_id AND publicacion_id = NEW.publicacion_id;
+
+  IF ya_existe > 1 THEN
+    RAISE NOTICE 'El favorito ya existía, no se duplicará.';
+    RETURN NULL;
+  END IF;
+
+  -- Registrar en bitácora
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Agregado a favoritos',
+    NOW(),
+    CONCAT('El usuario marcó la publicación ID ', NEW.publicacion_id, ' como favorita.'),
+    NEW.usuario_id
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_agregar_favorito
+AFTER INSERT ON Favorito
+FOR EACH ROW
+EXECUTE FUNCTION fn_agregar_favorito();
+
+CREATE OR REPLACE FUNCTION fn_eliminar_favorito()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Eliminó favorito',
+    NOW(),
+    CONCAT('El usuario quitó la publicación ID ', OLD.publicacion_id, ' de sus favoritos.'),
+    OLD.usuario_id
+  );
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_eliminar_favorito
+AFTER DELETE ON Favorito
+FOR EACH ROW
+EXECUTE FUNCTION fn_eliminar_favorito();
+
+CREATE OR REPLACE FUNCTION fn_crear_custodia_creditos()
+RETURNS TRIGGER AS $$
+DECLARE
+  comprador_billetera INT;
+  vendedor_billetera INT;
+  monto MONEY;
+BEGIN
+  -- Obtener monto y billeteras de las partes
+  monto := NEW.creditos_verdes;
+
+  SELECT id_billetera INTO comprador_billetera
+  FROM Billetera WHERE usuario_id = NEW.usuario_id;
+
+  SELECT id_billetera INTO vendedor_billetera
+  FROM Billetera
+  WHERE usuario_id = (SELECT usuario_id FROM Publicacion WHERE id_publicacion = NEW.publicacion_id);
+
+  -- Descontar créditos del comprador
+  UPDATE Billetera
+  SET credito_actual = credito_actual - monto,
+      credito_retenido = credito_retenido + monto,
+      ultima_actualizacion = NOW()
+  WHERE id_billetera = comprador_billetera;
+
+  -- Registrar en custodia
+  INSERT INTO Custodia_Creditos (
+    monto, estado, comprador_id, oferente_id,
+    billetera_comprador, billetera_vendedor, intercambio_id
+  ) VALUES (
+    monto, 'en_proceso', NEW.usuario_id,
+    (SELECT usuario_id FROM Publicacion WHERE id_publicacion = NEW.publicacion_id),
+    comprador_billetera, vendedor_billetera, NEW.id_intercambio
+  );
+
+  -- Registrar en bitácora
+  INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+  VALUES (
+    'Transacción iniciada',
+    NOW(),
+    CONCAT('El usuario inició un intercambio por ', monto, ' créditos.'),
+    NEW.usuario_id
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_crear_custodia_creditos
+AFTER INSERT ON Intercambio
+FOR EACH ROW
+EXECUTE FUNCTION fn_crear_custodia_creditos();
+
+CREATE OR REPLACE FUNCTION fn_liberar_custodia_creditos()
+RETURNS TRIGGER AS $$
+DECLARE
+  monto MONEY;
+  comprador_billetera INT;
+  vendedor_billetera INT;
+BEGIN
+  -- Obtener datos
+  monto := OLD.monto;
+  comprador_billetera := OLD.billetera_comprador;
+  vendedor_billetera := OLD.billetera_vendedor;
+
+  -- Solo si se marca como completado
+  IF NEW.estado = 'completado' THEN
+    -- Liberar créditos al vendedor
+    UPDATE Billetera
+    SET credito_actual = credito_actual + monto,
+        ultima_actualizacion = NOW()
+    WHERE id_billetera = vendedor_billetera;
+
+    -- Restar retenido al comprador
+    UPDATE Billetera
+    SET credito_retenido = credito_retenido - monto,
+        ultima_actualizacion = NOW()
+    WHERE id_billetera = comprador_billetera;
+
+    -- Registrar en bitácora
+    INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+    VALUES (
+      'Transacción completada',
+      NOW(),
+      CONCAT('La custodia de ', monto, ' créditos fue liberada al vendedor.'),
+      OLD.comprador_id
+    );
+  END IF;
+
+  -- Si se marca como cancelado, se devuelven créditos al comprador
+  IF NEW.estado = 'cancelado' THEN
+    UPDATE Billetera
+    SET credito_actual = credito_actual + monto,
+        credito_retenido = credito_retenido - monto,
+        ultima_actualizacion = NOW()
+    WHERE id_billetera = comprador_billetera;
+
+    INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+    VALUES (
+      'Transacción cancelada',
+      NOW(),
+      CONCAT('Custodia cancelada. Se devolvieron ', monto, ' créditos al comprador.'),
+      OLD.comprador_id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_liberar_custodia_creditos
+AFTER UPDATE ON Custodia_Creditos
+FOR EACH ROW
+EXECUTE FUNCTION fn_liberar_custodia_creditos();
+
+CREATE OR REPLACE FUNCTION fn_mision_dinamica()
+RETURNS TRIGGER AS $$
+DECLARE
+  camp_id INT;
+  camp_nombre VARCHAR;
+  bono DECIMAL := 10;
+BEGIN
+  /*
+    Se activa cuando se inserta una acción en la Bitácora_Usuario.
+    Analiza el tipo de acción (accion_realizada) y busca campañas activas
+    relacionadas con esa acción.
+  */
+
+  SELECT id_campana, nombre
+  INTO camp_id, camp_nombre
+  FROM Campana_Ecologica
+  WHERE estado = TRUE
+    AND fecha_inicio <= NOW()
+    AND fecha_fin >= NOW()
+    AND (
+      (tipo = 'Reciclaje' AND NEW.accion_realizada ILIKE '%publicación%')
+      OR (tipo = 'Donacion' AND NEW.accion_realizada ILIKE '%favorito%')
+      OR (tipo = 'Reparacion' AND NEW.accion_realizada ILIKE '%intercambio%')
+    )
+  LIMIT 1;
+
+  IF camp_id IS NOT NULL THEN
+    -- Otorgar créditos verdes
+    UPDATE Billetera
+    SET credito_actual = credito_actual + bono,
+        credito_total = credito_total + bono,
+        ultima_actualizacion = NOW()
+    WHERE usuario_id = NEW.usuario_id;
+
+    -- Registrar en Acelerador_Credito
+    INSERT INTO Acelerador_Credito (nombre, tipo, multiplicador, estado, billetera_id, campana_id)
+    VALUES (
+      'Misión dinámica completada',
+      'Bonificación',
+      1.0,
+      TRUE,
+      (SELECT id_billetera FROM Billetera WHERE usuario_id = NEW.usuario_id),
+      camp_id
+    );
+
+    -- Registrar mensaje adicional
+    INSERT INTO Bitacora_Usuario (accion_realizada, fecha_accion, detalle, usuario_id)
+    VALUES (
+      'Misión completada (dinámica)',
+      NOW(),
+      CONCAT('El usuario completó la misión "', camp_nombre, '" y recibió +', bono, ' créditos.'),
+      NEW.usuario_id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_mision_dinamica
+AFTER INSERT ON Bitacora_Usuario
+FOR EACH ROW
+EXECUTE FUNCTION fn_mision_dinamica();
