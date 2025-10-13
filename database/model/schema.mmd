@@ -1,0 +1,184 @@
+%% Auto-generado con dbml_to_mermaid_custom.py
+erDiagram
+  ROL {
+    int id_rol
+    text nombre_rol
+    text descripcion
+  }
+
+  USUARIO {
+    int id_usuario
+    text correo
+    text nombre
+    text contrasena
+    estado_usr estado
+  }
+
+  BITACORA_USUARIO {
+    int id_bitacora
+    text accion_realizada
+    timestamp fecha_accion
+    text detalle
+  }
+
+  BILLETERA {
+    int id_billetera
+    money credito_total
+    money credito_actual
+    money credito_retenido
+    timestamp ultima_actualizacion
+  }
+
+  MOVIMIENTO_CREDITO {
+    int id_mov_credito
+    text tipo_movimiento
+    money monto
+    text origen
+    timestamp fecha_mov
+    text descripcion
+  }
+
+  BILLETERA_PUNTOS {
+    int id_billetera_Puntos
+    int total
+    int en_posesion
+    timestamp ultima_actualizacion
+  }
+
+  PUBLICACION {
+    int id_publicacion
+    text titulo
+    money precio
+    text campo
+    int existencias
+    decimal peso_unidad
+    text foto
+    text descripcion
+    estado_pbcn estado
+    timestamp fecha_publicacion
+  }
+
+  FAVORITO {
+    timestamp fecha_marcado
+  }
+
+  CATEGORIA {
+    int id_categoria
+    text nombre
+    text descripcion
+  }
+
+  PAQUETE_RECARGA {
+    int id_paquete
+    text nombre_paquete
+    int puntos
+    money costo
+    timestamp fecha_actualizado
+  }
+
+  COMPRA_PAQUETE {
+    int id_compra
+    tipo_pago metodo_pago
+    timestamp fecha_compra
+  }
+
+  CANJEO_PUNTOS {
+    int cantidad
+    timestamp fecha_canje
+  }
+
+  INTERCAMBIO {
+    int id_intercambio
+    money creditos_verdes
+    int cantidad
+    int estado
+    timestamp fecha_creacion
+    timestamp fecha_cierre
+  }
+
+  MENSAJE {
+    int id_mensaje
+    text contenido
+    timestamp fecha_envio
+  }
+
+  CUSTODIA_CREDITOS {
+    int id_custodia_creditos
+    money monto
+    int estado
+    timestamp fecha_retenido
+    timestamp fecha_liberacion
+    int comprador_id
+    int oferente_id
+    int billetera_vendedor
+    int billetera_comprador
+  }
+
+  EQUIVALENCIA_ECOLOGICA {
+    int id_equivalencia
+    text descripcion
+    unidades unidad_medida
+    timestamp fecha_inicio
+  }
+
+  FACTOR_EQUIVALENCIA {
+    int id_factor_eq
+    decimal co2xkg
+    decimal energiaxkwh
+    decimal aguaxlitro
+  }
+
+  REPORTES_IMPACTO {
+    int id_reporte
+    int id_usuario
+    decimal co2
+    decimal energia_ahorrada
+    decimal agua_preservada
+    timestamp fecha_registro
+  }
+
+  ACELERADOR_CREDITO {
+    int id_acelerador
+    text nombre
+    text tipo
+    decimal multiplicador
+    boolean estado
+    timestamp fecha_inicio
+    timestamp fecha_fin
+  }
+
+  CAMPANA_ECOLOGICA {
+    int id_campana
+    text nombre
+    text descripcion
+    tipo_campana tipo
+    boolean estado
+    timestamp fecha_inicio
+    timestamp fecha_fin
+  }
+
+
+  ROL ||--o{ USUARIO : ""
+  USUARIO ||--o{ BITACORA_USUARIO : ""
+  USUARIO ||--|| BILLETERA : ""
+  BILLETERA ||--o{ MOVIMIENTO_CREDITO : ""
+  USUARIO ||--|| BILLETERA_PUNTOS : ""
+  USUARIO ||--o{ PUBLICACION : ""
+  CATEGORIA ||--o{ PUBLICACION : ""
+  USUARIO ||--o{ FAVORITO : ""
+  PUBLICACION ||--o{ FAVORITO : ""
+  BILLETERA_PUNTOS ||--o{ COMPRA_PAQUETE : ""
+  PAQUETE_RECARGA ||--o{ COMPRA_PAQUETE : ""
+  BILLETERA ||--o{ CANJEO_PUNTOS : ""
+  BILLETERA_PUNTOS ||--o{ CANJEO_PUNTOS : ""
+  USUARIO ||--o{ INTERCAMBIO : ""
+  PUBLICACION ||--o{ INTERCAMBIO : ""
+  USUARIO ||--o{ MENSAJE : ""
+  INTERCAMBIO ||--o{ MENSAJE : ""
+  BILLETERA ||--|| CUSTODIA_CREDITOS : ""
+  INTERCAMBIO ||--|| CUSTODIA_CREDITOS : ""
+  CATEGORIA ||--o{ EQUIVALENCIA_ECOLOGICA : ""
+  EQUIVALENCIA_ECOLOGICA ||--o{ FACTOR_EQUIVALENCIA : ""
+  PUBLICACION ||--o{ REPORTES_IMPACTO : ""
+  BILLETERA ||--o{ ACELERADOR_CREDITO : ""
+  CAMPANA_ECOLOGICA ||--o{ ACELERADOR_CREDITO : ""

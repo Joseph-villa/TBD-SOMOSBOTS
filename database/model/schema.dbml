@@ -1,0 +1,219 @@
+Project creditos_verdes {
+  database_type: 'PostgreSQL'
+}
+
+Table Rol {
+  id_rol int [pk, not null, increment]
+  nombre_rol varchar [not null]
+  descripcion text
+}
+
+Enum estado_usr {
+  activo
+  suspendido
+  eliminado
+}
+
+Table Usuario {
+  id_usuario int [pk, not null, increment]
+  correo varchar [not null, unique]
+  nombre varchar  [not null]
+  contrasena varchar [not null]
+  estado estado_usr [not null]
+  rol_id int [not null, ref: > Rol.id_rol]
+}
+
+Table Bitacora_Usuario {
+  id_bitacora int [pk, not null, increment]
+  accion_realizada varchar [not null]
+  fecha_accion timestamp [not null]
+  detalle text [not null]
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+}
+
+Table Billetera {
+  id_billetera int [pk, not null, increment]
+  credito_total money [not null, default: 0.0]
+  credito_actual money [not null, default: 0.0]
+  credito_retenido money [not null, default: 0.0]
+  ultima_actualizacion timestamp [default: `NOW()`]
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+}
+
+Table Movimiento_Credito {
+  id_mov_credito int [pk, not null, increment]
+  tipo_movimiento varchar [not null]
+  monto money [not null]
+  origen varchar [not null]
+  fecha_mov timestamp [not null]
+  descripcion text [not null]
+  billetera_id int [not null, ref: > Billetera.id_billetera]
+}
+
+Table Billetera_Puntos {
+  id_billetera_Puntos int [pk, not null, increment]
+  total int [not null]
+  en_posesion int [not null]
+  ultima_actualizacion timestamp [default: `NOW()`]
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+}
+
+Enum estado_pbcn {
+  Activo
+  Cancelado
+  Completado
+}
+
+Table Publicacion {
+  id_publicacion int [pk, not null, increment]
+  titulo varchar [not null]
+  precio money [not null]
+  campo text [not null]
+  existencias int [not null]
+  peso_unidad decimal [not null]
+  foto text
+  descripcion text 
+  estado estado_pbcn
+  fecha_publicacion timestamp [default: `NOW()`]
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+  categoria_id int [not null, ref: > Categoria.id_categoria]
+}
+
+Table Favorito {
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+  publicacion_id int [not null, ref: > Publicacion.id_publicacion]
+  fecha_marcado timestamp [default: `NOW()`]
+}
+
+Table Categoria {
+  id_categoria int [pk, not null, increment]
+  nombre varchar [not null]
+  descripcion text 
+}
+
+Table Paquete_Recarga {
+  id_paquete int [pk, not null, increment]
+  nombre_paquete varchar [not null]
+  puntos int [not null]
+  costo money [not null]
+  fecha_actualizado timestamp [default: `NOW()`]
+}
+
+Enum tipo_pago {
+  tarjeta [note: "debito o credito"]
+  cupon [note: "codigo generado "]
+}
+
+Table Compra_Paquete {
+  id_compra int [pk, not null, increment]
+  metodo_pago tipo_pago [not null]
+  fecha_compra timestamp [default: `NOW()`]
+  billetera_puntos_id int [not null, ref: > Billetera_Puntos.id_billetera_Puntos]
+  paquete_recarga_id int [not null, ref: > Paquete_Recarga.id_paquete]
+}
+
+Table Canjeo_Puntos {
+  billetera_id int [not null, ref: > Billetera.id_billetera]
+  billetera_puntos_id int [not null, ref: > Billetera_Puntos.id_billetera_Puntos]
+  cantidad int [not null]
+  fecha_canje timestamp [default: `NOW()`]
+}
+
+Enum estado_intc {
+  en_proceso
+  cancelado
+  completado
+}
+
+Table Intercambio {
+  id_intercambio int [pk, not null, increment]
+  creditos_verdes money [not null]
+  cantidad int [not null]
+  estado estado_intc [not null]
+  fecha_creacion timestamp [default: `NOW()`]
+  fecha_cierre timestamp [default: `NOW() + INTERVAL '30 Days'`]
+  usuario_id int [not null, ref: > Usuario.id_usuario]
+  publicacion_id int [not null, ref: > Publicacion.id_publicacion]
+}
+
+Table Mensaje {
+  id_mensaje int [pk, not null, increment]
+  contenido text [not null]
+  fecha_envio timestamp [default: `NOW()`]
+  emisor_id int [not null, ref: > Usuario.id_usuario]
+  receptor_id int [not null, ref: > Usuario.id_usuario]
+  intercambio_id int [null, ref: > Intercambio.id_intercambio]
+}
+
+Table Custodia_Creditos {
+  id_custodia_creditos int [pk, not null, increment]
+  monto money [not null]
+  estado estado_intc [not null]
+  fecha_retenido timestamp [default: `NOW()`]
+  fecha_liberacion timestamp [default: `NOW() + INTERVAL '30 Days'`]
+  comprador_id int [not null]
+  oferente_id int [not null]  
+  billetera_vendedor int [not null]
+  billetera_comprador int [not null, ref: > Billetera.id_billetera]
+  intercambio_id int [not null, ref: > Intercambio.id_intercambio]
+}
+
+Enum unidades {
+  kilogramos
+  litros
+  electricidad
+}
+
+Table Equivalencia_Ecologica {
+  id_equivalencia int [pk, not null, increment]
+  descripcion text
+  unidad_medida unidades [not null]
+  fecha_inicio timestamp [default: `NOW()`]
+  categoria_id int [not null, ref: > Categoria.id_categoria]
+}
+
+Table Factor_Equivalencia {
+  id_factor_eq int [pk, not null, increment]
+  co2xkg decimal [not null]
+  energiaxkwh decimal [not null]
+  aguaxlitro decimal [not null]
+  equivalencia_id int [not null, ref: > Equivalencia_Ecologica.id_equivalencia]
+}
+
+Table Reportes_Impacto {
+  id_reporte int [pk, not null, increment]
+  id_usuario int [not null]
+  co2 decimal [not null, default: 0.0]
+  energia_ahorrada decimal [not null, default: 0.0]
+  agua_preservada decimal [not null, default: 0.0]
+  fecha_registro timestamp [default: `NOW()`]
+  publicacion_id int [not null, ref: > Publicacion.id_publicacion]
+}
+
+Table Acelerador_Credito {
+  id_acelerador int [pk, not null, increment]
+  nombre varchar [not null]
+  tipo varchar [not null]
+  multiplicador decimal [not null]
+  estado boolean [not null]
+  fecha_inicio timestamp [default: `NOW()`]
+  fecha_fin timestamp
+  billetera_id int [not null, ref: > Billetera.id_billetera]
+  campana_id int [not null, ref: > Campana_Ecologica.id_campana]
+}
+
+Enum tipo_campana {
+  Reciclaje
+  Donacion
+  Reparacion
+}
+
+Table Campana_Ecologica {
+  id_campana int [pk, not null, increment]
+  nombre varchar [not null]
+  descripcion text
+  tipo tipo_campana [not null]
+  estado boolean
+  fecha_inicio timestamp [default: `NOW()`]
+  fecha_fin timestamp [not null]
+}
