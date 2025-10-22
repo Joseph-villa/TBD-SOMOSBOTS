@@ -157,6 +157,95 @@ erDiagram
     timestamp fecha_fin
   }
 
+  BITACORA_ACCESOS {
+    int id_bitacora_acceso
+    text correo_intento
+    timestamp fecha_intento
+    text tipo_acceso
+    text direccion_ip
+    text user_agent
+    int usuario_id
+  }
+
+  BITACORA_MODIFICACIONES {
+    int id_bitacora_modificaciones
+    text tabla_afectada
+    int usuario_modificador
+    timestamp fecha_modificacion
+    text tipo_operacion
+    jsonb valores_anteriores
+    jsonb valores_nuevos
+    text detalle
+    int registro_id
+  }
+
+  AUDITORIA_CAMBIOS {
+    int id_auditoria
+    text tabla_afectada
+    int operacion
+    jsonb valores_anteriores
+    jsonb valores_nuevos
+    timestamp fecha_cambio
+    text ip_address
+    int id_registro
+    int usuario_id
+  }
+
+  NOTIFICACIONES {
+    int id_notificacion
+    text titulo
+    text mensaje
+    text tipo
+    boolean leida
+    timestamp fecha_creacion
+    timestamp fecha_leida
+    text accion_url
+    int usuario_id
+  }
+
+  BITACORA_INTERCAMBIOS {
+    int id_bitaroca_intercambios
+    money creditos_movidos
+    timestamp fecha_intercambio
+    text estado_anterior
+    text estado_nuevo
+    text detalle
+    int intercambio_id
+    int comprador_id
+    int vendedor_id
+    int publicacion_id
+  }
+
+  LOGS_SISTEMA {
+    int id_log
+    text nivel
+    text modulo
+    text mensaje
+    jsonb detalles
+    timestamp fecha_creacion
+    text ip_origen
+    int usuario_id
+  }
+
+  METRICAS_SISTEMA {
+    int id_metrica
+    text tipo_metrica
+    numeric valor
+    timestamp fecha_medicion
+    jsonb detalles
+  }
+
+  TAREAS_PROGRAMADAS {
+    int id_tarea
+    text nombre
+    text descripcion
+    text procedimiento
+    int intervalo_ejecucion
+    timestamp ultima_ejecucion
+    timestamp activa
+    jsonb configuracion
+  }
+
 
   ROL ||--o{ USUARIO : ""
   USUARIO ||--o{ BITACORA_USUARIO : ""
