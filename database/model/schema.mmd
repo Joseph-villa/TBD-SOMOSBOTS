@@ -6,19 +6,43 @@ erDiagram
     text descripcion
   }
 
+  CATEGORIA {
+    int id_categoria
+    text nombre
+    text descripcion
+  }
+
+  PAQUETE_RECARGA {
+    int id_paquete
+    text nombre_paquete
+    int puntos
+    money costo
+    timestamp fecha_actualizado
+  }
+
+  CAMPANA_ECOLOGICA {
+    int id_campana
+    text nombre
+    text descripcion
+    tipo_campana tipo
+    boolean estado
+    timestamp fecha_inicio
+    timestamp fecha_fin
+  }
+
+  MISION {
+    int id_mision
+    int cantidad_objetivo
+    text detalle_objetivo
+  }
+
   USUARIO {
     int id_usuario
     text correo
     text nombre
     text contrasena
     estado_usr estado
-  }
-
-  BITACORA_USUARIO {
-    int id_bitacora
-    text accion_realizada
-    timestamp fecha_accion
-    text detalle
+    timestamp fecha_registro
   }
 
   BILLETERA {
@@ -27,15 +51,6 @@ erDiagram
     money credito_actual
     money credito_retenido
     timestamp ultima_actualizacion
-  }
-
-  MOVIMIENTO_CREDITO {
-    int id_mov_credito
-    text tipo_movimiento
-    money monto
-    text origen
-    timestamp fecha_mov
-    text descripcion
   }
 
   BILLETERA_PUNTOS {
@@ -58,35 +73,6 @@ erDiagram
     timestamp fecha_publicacion
   }
 
-  FAVORITO {
-    timestamp fecha_marcado
-  }
-
-  CATEGORIA {
-    int id_categoria
-    text nombre
-    text descripcion
-  }
-
-  PAQUETE_RECARGA {
-    int id_paquete
-    text nombre_paquete
-    int puntos
-    money costo
-    timestamp fecha_actualizado
-  }
-
-  COMPRA_PAQUETE {
-    int id_compra
-    tipo_pago metodo_pago
-    timestamp fecha_compra
-  }
-
-  CANJEO_PUNTOS {
-    int cantidad
-    timestamp fecha_canje
-  }
-
   INTERCAMBIO {
     int id_intercambio
     money creditos_verdes
@@ -96,10 +82,17 @@ erDiagram
     timestamp fecha_cierre
   }
 
-  MENSAJE {
-    int id_mensaje
-    text contenido
-    timestamp fecha_envio
+  FAVORITO {
+    timestamp fecha_marcado
+  }
+
+  MOVIMIENTO_CREDITO {
+    int id_mov_credito
+    text tipo_movimiento
+    money monto
+    text origen
+    timestamp fecha_mov
+    text descripcion
   }
 
   CUSTODIA_CREDITOS {
@@ -114,27 +107,19 @@ erDiagram
     int billetera_comprador
   }
 
-  EQUIVALENCIA_ECOLOGICA {
-    int id_equivalencia
-    text descripcion
-    unidades unidad_medida
-    timestamp fecha_inicio
+  CANJEO_PUNTOS {
+    int cantidad
+    timestamp fecha_canje
   }
 
-  FACTOR_EQUIVALENCIA {
-    int id_factor_eq
-    decimal co2xkg
-    decimal energiaxkwh
-    decimal aguaxlitro
+  COMPRA_PAQUETE {
+    int id_compra
+    tipo_pago metodo_pago
+    timestamp fecha_compra
   }
 
-  REPORTES_IMPACTO {
-    int id_reporte
-    int id_usuario
-    decimal co2
-    decimal energia_ahorrada
-    decimal agua_preservada
-    timestamp fecha_registro
+  PROGRESO_MISION {
+    int cantidad_cumplida
   }
 
   ACELERADOR_CREDITO {
@@ -147,48 +132,10 @@ erDiagram
     timestamp fecha_fin
   }
 
-  CAMPANA_ECOLOGICA {
-    int id_campana
-    text nombre
-    text descripcion
-    tipo_campana tipo
-    boolean estado
-    timestamp fecha_inicio
-    timestamp fecha_fin
-  }
-
-  BITACORA_ACCESOS {
-    int id_bitacora_acceso
-    text correo_intento
-    timestamp fecha_intento
-    text tipo_acceso
-    text direccion_ip
-    text user_agent
-    int usuario_id
-  }
-
-  BITACORA_MODIFICACIONES {
-    int id_bitacora_modificaciones
-    text tabla_afectada
-    int usuario_modificador
-    timestamp fecha_modificacion
-    text tipo_operacion
-    jsonb valores_anteriores
-    jsonb valores_nuevos
-    text detalle
-    int registro_id
-  }
-
-  AUDITORIA_CAMBIOS {
-    int id_auditoria
-    text tabla_afectada
-    int operacion
-    jsonb valores_anteriores
-    jsonb valores_nuevos
-    timestamp fecha_cambio
-    text ip_address
-    int id_registro
-    int usuario_id
+  MENSAJE {
+    int id_mensaje
+    text contenido
+    timestamp fecha_envio
   }
 
   NOTIFICACIONES {
@@ -200,7 +147,69 @@ erDiagram
     timestamp fecha_creacion
     timestamp fecha_leida
     text accion_url
-    int usuario_id
+  }
+
+  EQUIVALENCIA_ECOLOGICA {
+    int id_equivalencia
+    text descripcion
+    unidades unidad_medida
+    timestamp fecha_inicio
+  }
+
+  REPORTES_IMPACTO {
+    int id_reporte
+    int id_usuario
+    decimal co2
+    decimal energia_ahorrada
+    decimal agua_preservada
+    timestamp fecha_registro
+  }
+
+  FACTOR_EQUIVALENCIA {
+    int id_factor_eq
+    decimal co2xkg
+    decimal energiaxkwh
+    decimal aguaxlitro
+  }
+
+  BITACORA_ACCESOS {
+    int id_bitacora_acceso
+    text correo_intento
+    timestamp fecha_intento
+    text tipo_acceso
+    text direccion_ip
+    text user_agent
+  }
+
+  BITACORA_MODIFICACIONES {
+    int id_bitacora_modificaciones
+    text tabla_afectada
+    timestamp fecha_modificacion
+    text tipo_operacion
+    text detalle
+    int usuario_modificador
+  }
+
+  DETALLE_MODIFICACIONES {
+    int id_detalle
+    text campo
+    text valor_anterior
+    text valor_nuevo
+  }
+
+  AUDITORIA_CAMBIOS {
+    int id_auditoria
+    text tabla_afectada
+    int operacion
+    timestamp fecha_cambio
+    text ip_address
+  }
+
+  DETALLE_AUDITORIA {
+    int id_auditoria
+    text campo
+    text valor_anterior
+    text valor_nuevo
   }
 
   BITACORA_INTERCAMBIOS {
@@ -224,7 +233,6 @@ erDiagram
     jsonb detalles
     timestamp fecha_creacion
     text ip_origen
-    int usuario_id
   }
 
   METRICAS_SISTEMA {
@@ -248,26 +256,38 @@ erDiagram
 
 
   ROL ||--o{ USUARIO : ""
-  USUARIO ||--o{ BITACORA_USUARIO : ""
   USUARIO ||--|| BILLETERA : ""
-  BILLETERA ||--o{ MOVIMIENTO_CREDITO : ""
   USUARIO ||--|| BILLETERA_PUNTOS : ""
   USUARIO ||--o{ PUBLICACION : ""
   CATEGORIA ||--o{ PUBLICACION : ""
-  USUARIO ||--o{ FAVORITO : ""
-  PUBLICACION ||--o{ FAVORITO : ""
-  BILLETERA_PUNTOS ||--o{ COMPRA_PAQUETE : ""
-  PAQUETE_RECARGA ||--o{ COMPRA_PAQUETE : ""
-  BILLETERA ||--o{ CANJEO_PUNTOS : ""
-  BILLETERA_PUNTOS ||--o{ CANJEO_PUNTOS : ""
   USUARIO ||--o{ INTERCAMBIO : ""
   PUBLICACION ||--o{ INTERCAMBIO : ""
-  USUARIO ||--o{ MENSAJE : ""
-  INTERCAMBIO ||--o{ MENSAJE : ""
+  USUARIO ||--o{ FAVORITO : ""
+  PUBLICACION ||--o{ FAVORITO : ""
+  BILLETERA ||--o{ MOVIMIENTO_CREDITO : ""
+  USUARIO ||--o{ CUSTODIA_CREDITOS : ""
   BILLETERA ||--|| CUSTODIA_CREDITOS : ""
   INTERCAMBIO ||--|| CUSTODIA_CREDITOS : ""
-  CATEGORIA ||--o{ EQUIVALENCIA_ECOLOGICA : ""
-  EQUIVALENCIA_ECOLOGICA ||--o{ FACTOR_EQUIVALENCIA : ""
-  PUBLICACION ||--o{ REPORTES_IMPACTO : ""
+  BILLETERA ||--o{ CANJEO_PUNTOS : ""
+  BILLETERA_PUNTOS ||--o{ CANJEO_PUNTOS : ""
+  BILLETERA_PUNTOS ||--o{ COMPRA_PAQUETE : ""
+  PAQUETE_RECARGA ||--o{ COMPRA_PAQUETE : ""
+  MISION ||--o{ PROGRESO_MISION : ""
+  USUARIO ||--o{ PROGRESO_MISION : ""
   BILLETERA ||--o{ ACELERADOR_CREDITO : ""
   CAMPANA_ECOLOGICA ||--o{ ACELERADOR_CREDITO : ""
+  USUARIO ||--o{ MENSAJE : ""
+  INTERCAMBIO ||--o{ MENSAJE : ""
+  USUARIO ||--o{ NOTIFICACIONES : ""
+  CATEGORIA ||--o{ EQUIVALENCIA_ECOLOGICA : ""
+  PUBLICACION ||--o{ REPORTES_IMPACTO : ""
+  EQUIVALENCIA_ECOLOGICA ||--o{ FACTOR_EQUIVALENCIA : ""
+  USUARIO ||--o{ BITACORA_ACCESOS : ""
+  USUARIO ||--o{ BITACORA_MODIFICACIONES : ""
+  BITACORA_MODIFICACIONES ||--o{ DETALLE_MODIFICACIONES : ""
+  USUARIO ||--o{ AUDITORIA_CAMBIOS : ""
+  AUDITORIA_CAMBIOS ||--o{ DETALLE_AUDITORIA : ""
+  INTERCAMBIO ||--o{ BITACORA_INTERCAMBIOS : ""
+  USUARIO ||--o{ BITACORA_INTERCAMBIOS : ""
+  PUBLICACION ||--o{ BITACORA_INTERCAMBIOS : ""
+  USUARIO ||--o{ LOGS_SISTEMA : ""
