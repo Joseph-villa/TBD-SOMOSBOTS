@@ -71,6 +71,7 @@ Table Mision {
   id_mision int [pk, not null, increment]
   cantidad_objetivo int [not null]
   detalle_objetivo text [not null]
+  fecha_limite timestamp [not null]
 }
 
 Table Usuario {
@@ -174,6 +175,7 @@ Table Progreso_Mision {
   mision_id int [ref:> Mision.id_mision, not null]
   usuario_id int [ref:> Usuario.id_usuario, not null]
   cantidad_cumplida int [default:  `0`]
+  fecha_completado timestamp [null]
 }
 
 Table Acelerador_Credito {
