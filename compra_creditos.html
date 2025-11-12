@@ -6,6 +6,215 @@
     <title>Consigue Créditos Verdes</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos para el modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+            color: #2e7d32;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .summary-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .confidential-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .confidential-checkbox input {
+            width: auto;
+        }
+
+        .account-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .account-title {
+            font-weight: bold;
+        }
+
+        .total-credits {
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .divider-line {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 10px 0;
+        }
+
+        .form-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .payment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .policy-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-top: 15px;
+        }
+
+        .policy-text a {
+            color: #2e7d32;
+            display: inline;
+            text-align: left;
+        }
+
+        .user-payment-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .user-payment-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .user-payment-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal-recharge-button {
+            width: 100%;
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .modal-recharge-button:hover {
+            background-color: #1b5e20;
+        }
+
+        .modal-recharge-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* Estilos para la tabla de transacciones */
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .transactions-table th,
+        .transactions-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .transactions-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .transactions-table tr:hover {
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
     <!-- Franja verde superior -->
@@ -62,7 +271,6 @@
                             <span id="user-balance">0</span>
                         </div>
                     </div>
-                    <a href="#" class="exchange-link">Cambiar por Créditos ></a>
                 </div>
 
                 <div class="divider"></div>
@@ -250,11 +458,49 @@
 
     <!-- Incluir Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="db.js"></script>
     <script>
         // Variables globales
         let currentUserData = null;
         let currentWallet = null;
+
+        // Funciones de ejemplo para la base de datos (deberás reemplazarlas con las funciones reales)
+        async function checkSession() {
+            // Simulación de sesión de usuario
+            return { user: { id: 'user123' } };
+        }
+
+        async function getUserData(authId) {
+            // Simulación de datos de usuario
+            return {
+                id_usuario: 'user123',
+                nombre: 'Usuario Ejemplo'
+            };
+        }
+
+        async function getUserWallet(usuarioId) {
+            // Simulación de datos de billetera
+            return {
+                credito_actual: 150
+            };
+        }
+
+        async function getUserTransactions(usuarioId) {
+            // Simulación de transacciones
+            return [
+                { fecha_mov: '2023-10-15', monto: 100 },
+                { fecha_mov: '2023-10-10', monto: 50 }
+            ];
+        }
+
+        async function processRecharge(usuarioId, amount, price) {
+            // Simulación de procesamiento de recarga
+            return { success: true, newBalance: parseInt(currentWallet.credito_actual) + parseInt(amount) };
+        }
+
+        async function logoutUser() {
+            // Simulación de cierre de sesión
+            alert('Cerrando sesión...');
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
