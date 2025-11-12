@@ -81,3 +81,544 @@ a {
 a:hover {
     text-decoration: underline;
 }
+/* Estilos generales */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenedor de la sección de inicio de sesión y registro */
+.login-section, .register-section {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e9f5e1;
+}
+
+/* Contenedor del logo */
+.logo-container {
+    text-align: center;
+    margin-right: 50px;
+}
+
+.logo-container img {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.logo-container p {
+    font-size: 18px;
+    color: #34a853;
+}
+
+/* Contenedor del formulario */
+.form-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Estilos del formulario */
+form input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #34a853;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1d8e42;
+}
+
+/* Enlaces */
+a {
+    color: #1d8e42;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Estilos para la franja verde */
+.franja-verde {
+    background-color: #2e7d32;
+    width: 100%;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Estilos para el logo */
+.logo {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.logo-imagen {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+/* Estilos para la barra de búsqueda */
+.barra-busqueda {
+    flex-grow: 1;
+    max-width: 500px;
+    margin: 0 20px;
+}
+
+.barra-busqueda input {
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 20px;
+    outline: none;
+    font-size: 14px;
+}
+
+/* Estilos para las opciones de navegación */
+.opciones {
+    display: flex;
+    align-items: center;
+}
+
+.opcion {
+    margin-left: 20px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.opcion:hover {
+    transform: translateY(-2px);
+}
+
+.opcion i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.opcion span {
+    font-size: 12px;
+}
+
+.foto-perfil {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #1565c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+/* Estilos para el contenido principal */
+.container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #2e7d32;
+}
+
+.card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.user-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.username {
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.balance-info {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+.balance-icon {
+    color: #2e7d32;
+    margin-right: 5px;
+}
+
+.exchange-link {
+    color: #2e7d32;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 15px 0;
+}
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.menu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.menu-text {
+    font-weight: 500;
+}
+
+.menu-arrow {
+    font-size: 20px;
+    color: #666;
+}
+
+.invite-section {
+    display: flex;
+    justify-content: space-between;
+    background-color: #e8f5e9;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.invite-text {
+    font-weight: 500;
+}
+
+.invite-code {
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+.promo-banner {
+    background-color: #fff3e0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.packages-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.credit-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.credit-option {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.credit-option:hover {
+    border-color: #2e7d32;
+}
+
+.credit-option.selected {
+    border-color: #2e7d32;
+    background-color: #e8f5e9;
+}
+
+.credit-amount {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.credit-price {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.credit-price span {
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+.bonus-badge {
+    background-color: #ff9800;
+    color: white;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-top: 5px;
+}
+
+.custom-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.custom-text {
+    font-weight: bold;
+}
+
+.custom-note {
+    font-size: 12px;
+    color: #666;
+}
+
+.coupon-section {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.coupon-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.coupon-description {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.coupon-code {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.code-info {
+    color: #666;
+}
+
+.change-code {
+    color: #2e7d32;
+    cursor: pointer;
+}
+
+.payment-section {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.payment-title {
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.payment-method {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.payment-icon {
+    width: 40px;
+    height: 40px;
+    background-color: #2e7d32;
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-weight: bold;
+}
+
+.payment-details {
+    flex-grow: 1;
+}
+
+.payment-name {
+    font-weight: bold;
+}
+
+.payment-info {
+    font-size: 14px;
+    color: #666;
+}
+
+.payment-check {
+    color: #2e7d32;
+    font-size: 20px;
+}
+
+.total-section {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.total-label {
+    font-weight: bold;
+}
+
+.total-amount {
+    font-weight: bold;
+    color: #2e7d32;
+    font-size: 18px;
+}
+
+.recharge-button {
+    width: 100%;
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.recharge-button:hover {
+    background-color: #1b5e20;
+}
+
+/* Vista de historial */
+.history-section {
+    display: none;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.back-arrow {
+    font-size: 24px;
+    margin-right: 8px;
+}
+
+.history-title {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.history-description {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.terms-link {
+    color: #2e7d32;
+    text-decoration: none;
+}
+
+.footer {
+    text-align: center;
+    padding: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Estilos para el menú desplegable de opciones */
+.menu-desplegable {
+    position: absolute;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 10px;
+    display: none;
+    z-index: 100;
+}
+
+.menu-desplegable.mostrar {
+    display: block;
+}
+
+.menu-desplegable ul {
+    list-style: none;
+}
+
+.menu-desplegable li {
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.menu-desplegable li:hover {
+    background-color: #f5f5f5;
+}
