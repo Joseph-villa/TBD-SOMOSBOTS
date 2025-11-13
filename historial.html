@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Compras/Ventas</title>
+    <link rel="stylesheet" href="styles/estilos.css">
+    <style>
+        /* Estilos básicos para diferenciar el total, puedes mover esto a estilos.css */
+        .credito.positivo { color: #28a745; font-weight: bold; } /* Verde */
+        .credito.negativo { color: #dc3545; font-weight: bold; } /* Rojo */
+        .tabla-historial { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .tabla-historial th, .tabla-historial td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
+        .tabla-historial th { background-color: #f8f8f8; }
+        /* Estilo para el botón de volver */
+        .back-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: #007bff; /* Un color de enlace estándar */
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="historial-body">
+
+    <div class="historial-container">
+        <button id="backBtn" class="back-btn">← Volver</button> 
+        
+        <h2>💰 Historial de Compras/Ventas</h2>
+
+        <table class="tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Total (Créditos)</th>
+                </tr>
+            </thead>
+            <tbody id="historialBody"> 
+                <tr>
+                    <td colspan="3">Cargando historial...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+<script type="module">
+    import { supabase } from './config/supabaseClient.js';
+
+    // 🔑 ID DE DEMOSTRACIÓN
+    const DEMO_USER_ID = 1; 
+
+    // Función para formatear la fecha
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        return new Date(dateString).toLocaleDateString('es-ES', options);
+    };
+
+    /**
+     * Carga el historial de transacciones
+     */
+    async function loadHistorial() {
+        const historialBody = document.getElementById('historialBody');
+        // ... (resto de la función loadHistorial sin cambios) ...
+        
+        // --- CÓDIGO RESTANTE DE loadHistorial AQUÍ ---
+        historialBody.innerHTML = '<tr><td colspan="3">Cargando historial...</td></tr>';
+        
+        if (!DEMO_USER_ID) {
+            historialBody.innerHTML = '<tr><td colspan="3">Error: Debes iniciar sesión para ver tu historial.</td></tr>';
+            return;
+        }
+
+        try {
+            const { data: transacciones, error: fetchError } = await supabase
+                .from('historial') 
+                .select('fecha, tipo, total') 
+                .eq('usuario_id', DEMO_USER_ID) 
+                .order('fecha', { ascending: false }); 
+
+            if (fetchError) throw fetchError;
+
+            historialBody.innerHTML = ''; 
+
+            if (transacciones.length === 0) {
+                historialBody.innerHTML = '<tr><td colspan="3">Aún no hay transacciones registradas para este usuario.</td></tr>';
+                return;
+            }
+
+            transacciones.forEach(transaccion => {
+                const total = parseFloat(transaccion.total);
+                const esPositivo = total >= 0;
+                
+                const fila = `
+                    <tr>
+                        <td>${formatDate(transaccion.fecha)}</td>
+                        <td>${transaccion.tipo}</td>
+                        <td class="credito ${esPositivo ? 'positivo' : 'negativo'}">
+                            💰 ${esPositivo ? '+' : ''}${total.toFixed(0)}
+                        </td>
+                    </tr>
+                `;
+                historialBody.insertAdjacentHTML('beforeend', fila);
+            });
+
+        } catch (err) {
+            console.error('Error al cargar transacciones:', err);
+            historialBody.innerHTML = `<tr><td colspan="3">Error al cargar el historial: ${err.message}</td></tr>`;
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        // ⭐ CLAVE: Obtener el botón y añadir el listener
+        const backBtn = document.getElementById('backBtn');
+        
+        backBtn.addEventListener('click', () => {
+            // Vuelve a la página anterior en el historial del navegador
+            history.back(); 
+        });
+
+        loadHistorial();
+    });
+
+</script>
+</body>
+</html>

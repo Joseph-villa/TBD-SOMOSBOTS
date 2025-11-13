@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacer una Publicación</title>
+    <link rel="stylesheet" href="styles/estilos.css"> 
+    <style>
+        .hidden { display:none; }
+        .field-row { margin-top:8px; }
+        .small-input { width:100%; box-sizing:border-box; }
+    </style>
+</head>
+<body class="publicar-body">
+
+    <div class="publicar-container">
+        <button id="backBtn" class="back-btn" style="margin-bottom:12px;">← Volver</button>
+        <h2>📤 Hacer una Publicación</h2>
+
+        <form class="form-publicar" id="formPublicar">
+            <label for="titulo">Título del bien o servicio</label>
+            <input type="text" id="titulo" placeholder="Ej. Laptop Lenovo, Corte de cabello..." required class="small-input">
+
+            <label for="descripcion" class="field-row">Descripción</label>
+            <textarea id="descripcion" placeholder="Agrega una descripción breve..." class="small-input"></textarea>
+
+            <label for="precio" class="field-row">Precio (en créditos)</label>
+            <input type="number" id="precio" placeholder="Ej. 100" min="0" value="100" class="small-input">
+
+            <div class="field-row">
+                <label for="categoria">Categoría</label>
+                <select id="categoria" class="small-input"> 
+                    <option value="">Cargando categorías...</option>
+                </select>
+            </div>
+
+            <div id="categoriaOtrosWrap" class="field-row hidden">
+                <label for="categoriaOtros">Especificar categoría</label>
+                <input type="text" id="categoriaOtros" class="small-input" placeholder="Escribe la categoría">
+            </div>
+
+            <label for="imagen" class="field-row">Subir imagen</label>
+            <input type="file" id="imagen" accept="image/*">
+            <img id="preview" src="" alt="Vista previa" style="display:none; margin-top:10px; max-width:100%; border-radius:8px;">
+
+
+            <div style="margin-top:12px;">
+                <button type="submit" class="btn-publicar">Publicar</button>
+            </div>
+
+            <div id="lista-publicaciones"></div>
+
+        </form>
+    </div>
+
+<script type="module">
+
+import { supabase } from './config/supabaseClient.js';
+
+// --- FUNCIÓN PARA CARGAR CATEGORÍAS (Usando solo el nombre) ---
+async function fetchCategories() {
+    const select = document.getElementById('categoria');
+    select.innerHTML = '<option value="">Cargando categorías...</option>'; // Mostrar mensaje de carga
+
+    try {
+        // ⭐ CLAVE: Leer solo la columna 'nombre'
+        const { data, error } = await supabase
+            .from('categoria')
+            .select('nombre') 
+            .order('nombre', { ascending: true }); 
+
+        if (error) throw error;
+
+        // Limpiar el select y añadir la opción por defecto
+        select.innerHTML = '';
+        select.appendChild(new Option('Selecciona una categoría', ''));
+        
+        // Llenar las opciones con los datos
+        data.forEach(cat => {
+            // Usamos el NOMBRE para el texto visible y para el valor (value)
+            const option = new Option(cat.nombre, cat.nombre); 
+            select.appendChild(option);
+        });
+
+        // Añadir la opción 'Otros' al final
+        select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
+
+        // Configurar el listener de cambio
+        setupCategoryChangeListener(); 
+
+    } catch (err) {
+        console.error('Error al cargar las categorías:', err);
+        select.innerHTML = '<option value="">Error al cargar</option>';
+    }
+}
+
+// --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' (Sin cambios, pero necesaria) ---
+function setupCategoryChangeListener() {
+    const categoriaSelect = document.getElementById('categoria');
+    const categoriaOtrosWrap = document.getElementById('categoriaOtrosWrap');
+    const categoriaOtrosInput = document.getElementById('categoriaOtros');
+
+    categoriaSelect.addEventListener('change', () => {
+        if (categoriaSelect.value === 'OTROS') {
+            categoriaOtrosWrap.classList.remove('hidden');
+            categoriaOtrosInput.setAttribute('required', 'required'); 
+        } else {
+            categoriaOtrosWrap.classList.add('hidden');
+            categoriaOtrosInput.removeAttribute('required');
+            categoriaOtrosInput.value = ''; 
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('formPublicar');
+    const backBtn = document.getElementById('backBtn');
+    
+    // Vista previa de la imagen seleccionada
+const imagenInput = document.getElementById('imagen');
+const preview = document.getElementById('preview');
+
+imagenInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+  }
+});
+
+
+    // 🚀 Llamar a la función de carga al iniciar
+    fetchCategories();
+
+    backBtn.addEventListener('click', () => {
+        if (history.length > 1) history.back(); else window.location.href = 'perfil.html';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const title = document.getElementById('titulo').value.trim();
+        const description = document.getElementById('descripcion').value.trim();
+        const price = document.getElementById('precio').value;
+        const priceValue = price ? parseFloat(price) : null; 
+        const imageFile = document.getElementById('imagen').files[0]; // Obtener el archivo de imagen
+        // 🛠️  Obtener los valores de categoría
+        const categoriaSelectValue = document.getElementById('categoria').value;
+        const categoriaOtros = document.getElementById('categoriaOtros').value.trim();
+
+        // Determinar el valor final de la categoría
+        let finalCategoryName = null;
+
+        if (categoriaSelectValue === 'OTROS') {
+            if (!categoriaOtros) {
+                alert('Debe especificar la nueva categoría.');
+                return;
+            }
+            // Si elige 'Otros', usamos el texto escrito
+            finalCategoryName = categoriaOtros; 
+        } else if (categoriaSelectValue) {
+            // Si elige una categoría existente, usamos su nombre (que es su value)
+            finalCategoryName = categoriaSelectValue; 
+        }
+        
+        if (!title) { 
+            alert('El título es obligatorio.'); 
+            return; 
+        }
+        // 2. Subir Imagen a Supabase Storage (CLAVE)
+        let imageUrl = null;
+        let storageError = null;
+        
+        if (imageFile) {
+            // Crear un path único, por ejemplo: 'publicaciones/1678886400000_imagen.png'
+            const filePath = `publicaciones/${Date.now()}_${imageFile.name}`; 
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('imagenes') // Reemplaza 'imagenes' con el nombre de tu bucket de Supabase
+                .upload(filePath, imageFile, {
+                    cacheControl: '3600',
+                    upsert: false 
+                });
+            
+            storageError = uploadError;
+
+            if (!uploadError) {
+                // Obtener la URL pública para guardarla en la base de datos
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('imagenes')
+                    .getPublicUrl(filePath); // Usar el mismo path que en la subida
+
+                imageUrl = publicUrlData.publicUrl;
+            } else {
+                console.error("Error al subir imagen:", uploadError);
+                alert(`❌ ERROR DE IMAGEN: No se pudo subir la imagen. Revise su bucket 'imagenes' y las políticas de RLS. ${uploadError.message}`);
+                return;
+            }
+        }
+        // Nota: Asumo que la columna en Publicacion es 'nombre_categoria'
+        try {
+            const { data: inserted, error: insertErr } = await supabase
+                .from('Publicacion') 
+                .insert([{
+                    titulo: title,
+                    descripcion: description, 
+                    precio: priceValue,       
+                    nombre_categoria: finalCategoryName, // ⭐ CLAVE: Campo para guardar el texto de la categoría
+                    imagen_url: imageUrl // ⭐ CLAVE: Guardar la URL pública en la BD
+                }])
+                .select()
+                .single();
+
+            if (insertErr) throw insertErr;
+
+            alert('✅ ¡Publicación creada exitosamente!');
+            form.reset();
+            preview.src = '';
+            preview.style.display = 'none';
+            window.location.href = 'perfil.html';
+
+        } catch (err) {
+            console.error('Error al guardar la publicación en Supabase:', err);
+            alert(`❌ ERROR DE INSERCIÓN: ${err.message}.`);
+        }
+    });
+});
+
+const form = document.getElementById('publicacion-form');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const texto = document.getElementById('texto').value;
+  const file = document.getElementById('imagen').files[0];
+
+  let imageUrl = '';
+
+  // Si hay una imagen seleccionada, subirla a Supabase Storage
+  if (file) {
+    const { data, error } = await supabase.storage
+      .from('imagenes') // 👈 tu bucket en Supabase (debe existir)
+      .upload(`publicaciones/${Date.now()}_${file.name}`, file);
+
+    if (!error) {
+      // obtener URL pública
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('imagenes')
+        .getPublicUrl(data.path);
+      imageUrl = publicUrlData.publicUrl;
+    }
+  }
+
+  // Aquí guardas texto e imagen en tu tabla de publicaciones
+  await supabase.from('publicaciones').insert({
+    texto,
+    imagen_url: imageUrl,
+    created_at: new Date(),
+  });
+
+  // Mostrar la publicación en pantalla (perfil)
+  const lista = document.getElementById('lista-publicaciones');
+  const nueva = document.createElement('div');
+  nueva.classList.add('publicacion');
+  nueva.innerHTML = `
+    <p>${texto}</p>
+    ${imageUrl ? `<img src="${imageUrl}" alt="Imagen publicación">` : ''}
+  `;
+  lista.prepend(nueva);
+
+  // Limpiar formulario
+  form.reset();
+  preview.src = '';
+  preview.style.display = 'none';
+});
+
+
+</script>
+</body>
+</html>

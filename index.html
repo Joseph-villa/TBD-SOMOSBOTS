@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de Reciclaje - Principal</title>
+  <link rel="stylesheet" href="styles/estilos.css">
+
+  <!-- Added: small CSS to hide/show profile links -->
+  <style>
+    /* Oculta los enlaces de perfil por defecto */
+    .profile-links { display: none; }
+    /* Cuando el body tiene esta clase se muestran */
+    .profile-open .profile-links { display: block; }
+    /* Estilo mínimo para el área clicable (usuario) */
+    .user-area {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      /* Reset de estilos de botón para mantener apariencia de DIV */
+      background: transparent;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+    }
+    .user-area:focus { outline: 2px solid #6ca; outline-offset: 2px; }
+
+    /* Layout: colocar sidebar a la derecha usando flexbox */
+    .layout { display: flex; align-items: flex-start; gap: 1rem; }
+    .content { order: 1; flex: 1; min-width: 0; }
+    .sidebar { order: 2; width: 240px; }
+
+    /* Ajustes visuales rápidos para la lista de perfil */
+    .sidebar .profile-links { margin: 0 0 1rem 0; padding: 0; list-style: none; }
+    .sidebar .profile-links li { margin: 0.25rem 0; }
+
+    /* Responsive: en pantallas pequeñas apilar verticalmente */
+    @media (max-width: 800px) {
+      .layout { flex-direction: column; }
+      .sidebar { order: 0; width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo-area">
+      <img src="https://i.imgur.com/zQ0kV9R.png" alt="Logo Plataforma" class="logo-img">
+      <h1>Plataforma de Reciclaje</h1>
+    </div>
+
+    <div class="search-area">
+      <input type="text" placeholder="Buscar producto..." class="search-bar">
+    </div>
+
+    <!-- Reemplazado: usar <button> en lugar de <div> para que aria-expanded esté permitido -->
+    <button class="user-area" id="profileToggle" type="button" aria-haspopup="true" aria-expanded="false" title="Abrir perfil">
+      <span class="co2">Reducción CO₂ 🌱</span>
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
+    </button>
+  </header>
+
+  <main class="layout">
+    <!-- MENÚ LATERAL -->
+    <aside class="sidebar">
+      <!-- Added id and class to control visibility -->
+      <ul id="profileLinks" class="profile-links">
+        <li><a href="perfil.html">👤 Ver perfil</a></li>
+        <li><a href="#">⚙️ Ajustes</a></li>
+        <li><a href="logout.html">🚪 Cerrar sesión</a></li>
+      </ul>
+
+      <hr>
+
+      <h3>Categorías</h3>
+      <ul class="categories">
+        <li>Artículos para el hogar</li>
+        <li>Electrónica</li>
+        <li>Materiales reciclables</li>
+        <li>Juguetes y juegos</li>
+      </ul>
+    </aside>
+
+    <!-- SECCIÓN DE PRODUCTOS -->
+    <section class="content">
+      <div class="product-grid">
+        <div class="product-card">
+          <img src="https://i.imgur.com/4FvD5mS.jpg" alt="Producto">
+          <div class="credits"><span>300</span> ♻️</div>
+        </div>
+
+        <div class="product-card">
+          <img src="https://i.imgur.com/YlWwKxz.jpg" alt="Producto">
+          <div class="credits"><span>300</span> ♻️</div>
+        </div>
+
+        <div class="product-card">
+          <img src="https://i.imgur.com/Gv3Q5KT.jpg" alt="Producto">
+          <div class="credits"><span>300</span> ♻️</div>
+        </div>
+
+        <div class="product-card">
+          <img src="https://i.imgur.com/fA1of0s.jpg" alt="Producto">
+          <div class="credits"><span>300</span> ♻️</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Added: script to toggle profile links and close when clicking outside or pressing Esc -->
+  <script>
+    (function () {
+      const toggle = document.getElementById('profileToggle');
+      const body = document.body;
+
+      function openProfile() {
+        body.classList.add('profile-open');
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+      function closeProfile() {
+        body.classList.remove('profile-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+      function toggleProfile() {
+        if (body.classList.contains('profile-open')) closeProfile();
+        else openProfile();
+      }
+
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleProfile();
+      });
+
+      // keyboard support: Enter or Space opens/closes; Esc closes
+      toggle.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleProfile();
+        } else if (e.key === 'Escape') {
+          closeProfile();
+          toggle.blur();
+        }
+      });
+
+      // close when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!toggle.contains(e.target)) closeProfile();
+      });
+
+      // close on Esc anywhere
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeProfile();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,5 +1,17 @@
 {
+  "name": "tbd-somosbots",
+  "version": "1.0.0",
+  "description": "Proyecto de taller de base de datos 2-2025",
+  "main": "scripts/main.js",
+  "type": "module",
+
+  "scripts": {
+    "start": "node scripts/main.js"
+  },
   "dependencies": {
-    "pg": "^8.16.3"
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "@supabase/supabase-js": "^2.45.0",
+    "body-parser": "^2.2.0"
   }
 }
