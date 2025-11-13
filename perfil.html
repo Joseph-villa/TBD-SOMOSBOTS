@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver Perfil</title>
+  <link rel="stylesheet" href="styles/estilos.css">
+
+  <style>
+    /* Pequeños estilos locales */
+    .hidden { display: none !important; }
+.perfil-header {
+  display: flex;
+  flex-direction: column; /* coloca todo en columna */
+  align-items: center; /* centra el contenido horizontalmente */
+  text-align: center;
+  gap: 1rem;
+}
+    .perfil-info { display:flex; align-items:center; gap:1rem; }
+    .perfil-foto { width:72px; height:72px; border-radius:50%; object-fit:cover; }
+    .pub-card { position:relative; border:1px solid #e6e6e6; padding:0.25rem; border-radius:6px; background:#fff; }
+    .pub-credit { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,0.7); color:#fff; padding:3px 6px; border-radius:6px; font-size:12px; }
+    .menu-dots { position:absolute; top:6px; right:6px; cursor:pointer; }
+    .menu-opciones { display:none; position:absolute; top:26px; right:6px; background:#fff; border:1px solid #ddd; list-style:none; padding:6px; border-radius:6px; }
+    .menu-opciones.show { display:block; }
+    .back-btn { display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; margin-bottom:1rem; padding:.25rem .5rem; border:1px solid #ddd; border-radius:6px; background:#fff; }
+    .perfil-actions { display:flex; gap:.5rem; align-items:center; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-top:12px; }
+    .form-inline { border:1px solid #eee; padding:8px; border-radius:6px; margin-top:8px; }
+  
+    .btn-recargar {
+  margin-top: 5px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-recargar:hover {
+  background-color: #45a049;
+}
+
+
+.publicacion img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+  </style>
+
+
+</head>
+<body class="perfil-body">
+  <section class="perfil-container">
+    <!-- Flecha para volver -->
+    <button class="back-btn" id="backBtn" title="Volver">← Volver</button>
+
+    <!-- Encabezado del perfil -->
+    <div class="perfil-header">
+      <div class="perfil-info">
+        <img src="https://i.imgur.com/s1X6L2F.png" class="perfil-foto" alt="foto">
+        <div class="perfil-detalle">
+          <h2 id="profileName">ricardo00</h2>
+          <p class="publicaciones" id="pubCounts">0 Publicaciones · 0 Vendidos</p>
+        </div>
+      </div>
+
+     <div class="perfil-saldo">
+  <p><strong>Saldo</strong></p>
+  <div class="saldo-badge" id="saldoBadge">0 ♻️</div>
+  <button id="recargarBtn" class="btn-recargar">💰 Recargar saldo</button>
+  <a href="historial.html" class="historial-link">Ver Historial de Compras/Ventas</a>
+</div>
+
+    <!-- Acciones: Realizar publicación (redirige a publicar.html). Se quitaron Inicio, Ajustes y Cerrar sesión -->
+    <div style="margin-top:12px; display:flex; justify-content:space-between; gap:1rem; align-items:center;">
+      <div>
+        <button class="btn-publicar" id="openFormBtn">➕ Realizar Publicación</button>
+      </div>
+
+      <div class="perfil-actions">
+        <!-- botones de Ajustes e Cerrar sesión eliminados por petición -->
+      </div>
+    </div>
+
+    <!-- (Se eliminó el formulario embebido; la acción de publicar se realiza en publicar.html) -->
+
+    <!-- Publicaciones -->
+    <div class="perfil-publicaciones">
+      <h3>Publicaciones</h3>
+    </div>
+
+    <!-- Galería de publicaciones (renderizado por JS) -->
+    <div class="grid publicaciones-grid" id="userPostsGrid">
+      <!-- JS insertará las tarjetas aquí -->
+    </div>
+  </section>
+
+<script type="module">
+    import { supabase } from './config/supabaseClient.js';
+
+    // --- Elementos del DOM ---
+    const backBtn = document.getElementById('backBtn');
+    const openFormBtn = document.getElementById('openFormBtn');
+    const userPostsGrid = document.getElementById('userPostsGrid');
+    const pubCounts = document.getElementById('pubCounts');
+    const profileName = document.getElementById('profileName');
+    const saldoBadge = document.getElementById('saldoBadge');
+
+    // --- Funciones de Utilidad ---
+
+    // Renderizar las tarjetas de publicación
+    function renderPostsGrid(posts) {
+        userPostsGrid.innerHTML = '';
+        if (posts.length === 0) {
+            userPostsGrid.innerHTML = '<div>No hay publicaciones para mostrar.</div>';
+        } else {
+            posts.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'pub-card';
+                // Usamos el ID de la publicación para identificarla
+                card.dataset.id = p.id_publicacion; 
+                card.innerHTML = `
+                ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.titulo || 'Publicación'}" />` : ''}
+                   
+                <span class="menu-dots" data-id="${p.id_publicacion}">...</span>
+                    <ul class="menu-opciones" id="menu-${p.id_publicacion}">
+                        <li data-action="edit" data-id="${p.id_publicacion}">✏️ Editar</li>
+                        <li data-action="delete" data-id="${p.id_publicacion}">🗑️ Eliminar</li>
+                    </ul>
+
+                <div style="padding: 8px;">
+                        <div class="pub-credit" style="position: static; margin-bottom: 8px; background: #eee; color: #333; display: inline-block;">
+                            ${p.precio || 0} ♻️
+                        </div>
+
+                        <strong style="display: block;">${p.titulo || 'Sin título'}</strong>
+                        
+                        <p style="font-size: 0.8rem; color: #666; margin-top: 4px;">Descripción: ${p.descripcion || 'Sin descripción'}</p>
+                    </div>
+                `;
+                userPostsGrid.appendChild(card);
+            });
+        }
+        // Las cuentas se muestran como 0 (simplificado)
+        pubCounts.textContent = `${posts.length} Publicaciones · 0 Vendidos`;
+    }
+
+    // Cargar TODAS las publicaciones de la tabla 'Publicacion'
+    async function fetchAllPosts() {
+        userPostsGrid.innerHTML = '<div>Cargando publicaciones...</div>';
+        try {
+            // ⭐ CLAVE: Solo seleccionamos las columnas existentes
+            const { data: posts, error } = await supabase
+                .from('Publicacion') 
+                .select('id_publicacion, titulo, descripcion, precio, imagen_url') // ❌ Eliminada 'imagen_url'
+                .order('id_publicacion', { ascending: false });
+
+            if (error) throw error;
+            
+            renderPostsGrid(posts || []);
+
+        } catch (err) {
+            console.error('Error al cargar publicaciones:', err);
+            // Mensaje de error general
+            userPostsGrid.innerHTML = '<div>Error al cargar las publicaciones. (Verifica RLS)</div>';
+        }
+    }
+
+   // Cargar saldo desde localStorage
+function fetchSaldo() {
+  let saldo = localStorage.getItem('saldo');
+  if (!saldo) {
+    saldo = 0;
+    localStorage.setItem('saldo', saldo);
+  }
+  saldoBadge.textContent = `${saldo} ♻️`;
+}
+
+
+// ... (después de fetchAllPosts y antes de los Event Listeners)
+
+    async function handleDeletePost(postId) {
+        if (!confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
+            return;
+        }
+
+        try {
+            // ⭐ CLAVE: Eliminar de la tabla Publicacion por ID
+            const { error } = await supabase
+                .from('Publicacion')
+                .delete()
+                .eq('id_publicacion', postId); 
+
+            if (error) throw error;
+
+            alert('Publicación eliminada con éxito.');
+            // Recargar las publicaciones después de eliminar
+            fetchAllPosts(); 
+
+        } catch (err) {
+            console.error('Error al eliminar publicación:', err);
+            alert('Error al eliminar la publicación. Revise la consola y las políticas RLS.');
+        }
+    }
+
+
+    // --- Event Listeners ---
+    
+    // Al presionar "Realizar Publicación"
+    openFormBtn.addEventListener('click', function () {
+        window.location.href = 'publicar.html';
+    });
+
+    // Flecha volver
+    backBtn.addEventListener('click', function () {
+        if (history.length > 1) history.back(); else window.location.href = 'index.html';
+    });
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        profileName.textContent = 'ricardo00';
+        fetchSaldo();
+        fetchAllPosts(); // Llamamos a la función de carga simplificada
+    });
+const recargarBtn = document.getElementById('recargarBtn');
+
+// Al presionar el botón, ir a la página de compra
+recargarBtn.addEventListener('click', function () {
+  window.location.href = 'compra.html';
+});
+
+userPostsGrid.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        // 1. Mostrar/Ocultar el menú al hacer clic en los puntos
+        if (target.classList.contains('menu-dots')) {
+            const postId = target.dataset.id;
+            const menu = document.getElementById(`menu-${postId}`);
+            
+            // Ocultar todos los menús primero, excepto el actual
+            document.querySelectorAll('.menu-opciones.show').forEach(m => {
+                if (m.id !== `menu-${postId}`) {
+                    m.classList.remove('show');
+                }
+            });
+
+            menu.classList.toggle('show');
+        }
+
+        // 2. Ejecutar la acción (Editar o Eliminar)
+        if (target.tagName === 'LI' && target.closest('.menu-opciones')) {
+            const action = target.dataset.action;
+            const postId = target.dataset.id;
+
+            // Ocultar el menú después de seleccionar una opción
+            target.closest('.menu-opciones').classList.remove('show');
+
+            if (action === 'delete') {
+                handleDeletePost(postId);
+            } else if (action === 'edit') {
+                // Redirigir a una página de edición, pasando el ID
+                window.location.href = `editar.html?id=${postId}`;
+            }
+        }
+    });
+    
+</script>
+</body>
+</html>

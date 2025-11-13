@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Publicación</title>
+    <link rel="stylesheet" href="styles/estilos.css">
+</head>
+<body class="publicar-body">
+    <div class="publicar-container">
+        <h2>✏️ Editar Publicación</h2>
+        <p id="loadingMessage">Cargando datos de la publicación...</p>
+        
+        <form id="editForm" class="form-publicar hidden">
+            <input type="hidden" id="postId" name="postId">
+
+            <label for="titulo">Título</label>
+            <input type="text" id="titulo" name="titulo" required>
+
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" name="descripcion" required></textarea>
+
+            <label for="precio">Precio (♻️ Créditos)</label>
+            <input type="number" id="precio" name="precio" required min="1">
+            
+            <label for="imagen">Cambiar Imagen (opcional)</label>
+            <input type="file" id="imagen" name="imagen" accept="image/*">
+            
+            <div id="currentImageContainer" style="margin-bottom: 20px;">
+                <p>Imagen actual:</p>
+                <img id="currentImage" src="" alt="Imagen actual" style="max-width: 200px; height: auto; border-radius: 8px;">
+            </div>
+
+            <button type="submit" class="btn-publicar">Guardar Cambios</button>
+            <button type="button" id="cancelBtn" style="margin-top: 10px; background-color: #f44336;" class="btn-publicar">Cancelar</button>
+        </form>
+    </div>
+
+<script type="module">
+    import { supabase } from './config/supabaseClient.js';
+
+    const editForm = document.getElementById('editForm');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const currentImage = document.getElementById('currentImage');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    let currentPostId = null;
+    let currentImageUrl = null;
+
+    // --- Funciones de Utilidad ---
+
+    // 1. Obtener el ID de la URL
+    function getPostIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('id');
+    }
+
+    // 2. Cargar datos de la publicación
+    async function fetchPostData(postId) {
+        try {
+            const { data: post, error } = await supabase
+                .from('Publicacion')
+                .select('*')
+                .eq('id_publicacion', postId)
+                .single();
+
+            if (error) throw error;
+            if (!post) throw new Error('Publicación no encontrada.');
+
+            // Llenar el formulario con los datos
+            document.getElementById('postId').value = post.id_publicacion;
+            document.getElementById('titulo').value = post.titulo;
+            document.getElementById('descripcion').value = post.descripcion;
+            document.getElementById('precio').value = post.precio;
+            
+            currentPostId = post.id_publicacion;
+            currentImageUrl = post.imagen_url;
+
+            // Mostrar imagen actual
+            if (currentImageUrl) {
+                currentImage.src = currentImageUrl;
+            } else {
+                 document.getElementById('currentImageContainer').innerHTML = '<p>No hay imagen actual.</p>';
+            }
+
+            // Mostrar el formulario
+            loadingMessage.classList.add('hidden');
+            editForm.classList.remove('hidden');
+
+        } catch (err) {
+            console.error('Error al cargar datos:', err);
+            loadingMessage.textContent = 'Error: No se pudo cargar la publicación. ' + err.message;
+        }
+    }
+
+    // 3. Función de subida de imagen (reutilizada de publicar.html)
+    async function uploadImage(imageFile, postId) {
+        const filePath = `publicaciones/${postId}_${imageFile.name}`;
+        
+        // 1. Subir el archivo
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('imagenes')
+            .upload(filePath, imageFile, {
+                cacheControl: '3600',
+                upsert: true // Importante: sobrescribe la imagen existente si el path es el mismo
+            });
+        
+        if (uploadError) {
+            console.error('Error de subida de imagen:', uploadError);
+            throw new Error('❌ ERROR DE IMAGEN: No se pudo subir la imagen.');
+        }
+
+        // 2. Obtener la URL pública
+        const { data: publicUrlData } = supabase
+            .storage
+            .from('imagenes')
+            .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+    }
+
+
+    // 4. Manejar el envío del formulario
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const newTitle = document.getElementById('titulo').value;
+        const newDescription = document.getElementById('descripcion').value;
+        const newPrice = parseFloat(document.getElementById('precio').value);
+        const imageFile = document.getElementById('imagen').files[0];
+        const id = document.getElementById('postId').value;
+        
+        let newImageUrl = currentImageUrl; // Usar la URL actual por defecto
+        
+        try {
+            if (imageFile) {
+                loadingMessage.textContent = 'Subiendo nueva imagen...';
+                loadingMessage.classList.remove('hidden');
+                
+                // Si hay una nueva imagen, subirla y obtener la nueva URL
+                newImageUrl = await uploadImage(imageFile, id);
+            }
+
+            loadingMessage.textContent = 'Guardando cambios en la publicación...';
+            loadingMessage.classList.remove('hidden');
+            editForm.classList.add('hidden');
+
+            // 5. Actualizar la base de datos (UPDATE)
+            const updatePayload = {
+                titulo: newTitle,
+                descripcion: newDescription,
+                precio: newPrice,
+                imagen_url: newImageUrl // Se usa la nueva URL o la existente
+            };
+            
+            const { error: updateError } = await supabase
+                .from('Publicacion')
+                .update(updatePayload)
+                .eq('id_publicacion', id); // Actualiza solo la fila con ese ID
+
+            if (updateError) throw updateError;
+
+            alert('✅ Publicación actualizada con éxito.');
+            window.location.href = 'perfil.html'; // Volver al perfil
+
+        } catch (err) {
+            loadingMessage.textContent = 'Error al guardar cambios: ' + err.message;
+            editForm.classList.remove('hidden');
+            console.error('Error de actualización:', err);
+        }
+    });
+
+    // --- Inicialización ---
+
+    // Manejar el botón de cancelar
+    cancelBtn.addEventListener('click', () => {
+        window.location.href = 'perfil.html';
+    });
+
+    // Cargar la publicación al iniciar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        const postId = getPostIdFromUrl();
+        if (postId) {
+            fetchPostData(postId);
+        } else {
+            loadingMessage.textContent = 'Error: ID de publicación no encontrado en la URL.';
+        }
+    });
+
+</script>
+</body>
+</html>

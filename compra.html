@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consigue Créditos Verdes</title>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    /* Estilos generales */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Franja verde superior */
+    .franja-verde {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo-imagen {
+      border-radius: 15%;
+    }
+
+    .barra-busqueda {
+      flex-grow: 1;
+      max-width: 500px;
+      margin: 0 20px;
+    }
+
+    .barra-busqueda input {
+      width: 100%;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 20px;
+      outline: none;
+    }
+
+    .opciones {
+      display: flex;
+      align-items: center;
+    }
+
+    .opcion {
+      position: relative;
+      margin-left: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .opcion:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .opcion i {
+      margin-right: 5px;
+    }
+
+    .foto-perfil {
+      width: 30px;
+      height: 30px;
+      background-color: #fff;
+      color: #4CAF50;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    .menu-desplegable {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background-color: white;
+      color: #333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+      min-width: 180px;
+      display: none;
+      z-index: 101;
+    }
+
+    .menu-desplegable.mostrar {
+      display: block;
+    }
+
+    .menu-desplegable ul {
+      list-style: none;
+      padding: 10px 0;
+    }
+
+    .menu-desplegable li {
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+
+    .menu-desplegable li:hover {
+      background-color: #f5f5f5;
+    }
+
+    /* Contenido principal */
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+    }
+
+    .user-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+    }
+
+    .username {
+      font-weight: 600;
+      font-size: 18px;
+      margin-right: 15px;
+    }
+
+    .balance-info {
+      display: flex;
+      align-items: center;
+      background-color: #f0f8f0;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .balance-icon {
+      color: #4CAF50;
+      margin-right: 5px;
+    }
+
+    .exchange-link {
+      color: #4CAF50;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .divider {
+      height: 1px;
+      background-color: #eee;
+      margin: 15px 0;
+    }
+
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border-radius: 5px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    .menu-item:hover {
+      background-color: #f5f5f5;
+    }
+
+    .menu-arrow {
+      font-size: 20px;
+      color: #888;
+    }
+
+    .packages-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 30px 0 15px;
+      color: #333;
+    }
+
+    .credit-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    @media (min-width: 768px) {
+      .credit-options {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .credit-option {
+      background-color: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .credit-option:hover {
+      border-color: #4CAF50;
+    }
+
+    .credit-option.selected {
+      border-color: #4CAF50;
+      background-color: #f0f8f0;
+    }
+
+    .credit-amount {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .credit-price {
+      font-size: 16px;
+      color: #666;
+      position: relative;
+    }
+
+    .bonus-badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background-color: #ff9800;
+      color: white;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .payment-section {
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+    }
+
+    .payment-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .payment-method {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .payment-icon {
+      background-color: #1a1f71;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-right: 15px;
+    }
+
+    .payment-details {
+      flex-grow: 1;
+    }
+
+    .payment-name {
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .payment-info {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .payment-check {
+      color: #4CAF50;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .total-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .total-label {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .total-amount {
+      font-size: 20px;
+      font-weight: 600;
+      color: #4CAF50;
+    }
+
+    .recharge-button {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .recharge-button:hover {
+      background-color: #45a049;
+    }
+
+    .recharge-button:active {
+      transform: scale(0.98);
+    }
+
+    /* Vista de historial */
+    .history-section {
+      display: none;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      color: #4CAF50;
+      font-weight: 500;
+    }
+
+    .back-arrow {
+      font-size: 24px;
+      margin-right: 5px;
+    }
+
+    .history-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .history-description {
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .terms-link {
+      color: #4CAF50;
+      text-decoration: none;
+    }
+
+    /* Tabla de transacciones */
+    .transactions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .transactions-table th {
+      background-color: #f5f5f5;
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .transactions-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .transactions-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .transactions-table tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    .footer {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-top: 30px;
+      padding: 20px 0;
+    }
+
+    /* Modal de pago */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+      display: none;
+    }
+
+    .modal-content {
+      background-color: white;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .summary-section {
+      margin-bottom: 20px;
+    }
+
+    .confidential-checkbox {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .confidential-checkbox input {
+      margin-right: 10px;
+      margin-top: 3px;
+    }
+
+    .account-section {
+      margin-bottom: 20px;
+    }
+
+    .account-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .total-credits {
+      font-size: 18px;
+      font-weight: 600;
+      color: #4CAF50;
+    }
+
+    .divider-line {
+      height: 1px;
+      background-color: #eee;
+      margin: 15px 0;
+    }
+
+    .payment-form {
+      margin-top: 20px;
+    }
+
+    .form-title {
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 15px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .policy-text {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+      margin: 20px 0;
+    }
+
+    .policy-text a {
+      color: #4CAF50;
+      text-decoration: none;
+    }
+
+    .user-payment-info {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .user-payment-detail {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .modal-footer {
+      padding: 20px;
+      border-top: 1px solid #eee;
+      text-align: center;
+    }
+
+    .modal-recharge-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .modal-recharge-button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Franja verde superior -->
+  <div class="franja-verde">
+    <!-- Logo a la izquierda -->
+    <div class="logo">
+      <img src="images/logo.png" alt="Logo CréditosVerdes" class="logo-imagen"
+        style="width: 100px; height: 50px; border-radius: 15%">
+    </div>
+
+    <!-- Barra de búsqueda en el centro -->
+    <div class="barra-busqueda">
+      <input type="text" placeholder="Buscar...">
+    </div>
+
+    <!-- Opciones a la derecha -->
+    <div class="opciones">
+      <div class="opcion" id="opcion-co2">
+        <i class="fas fa-leaf"></i>
+        <span>CO2</span>
+        <div class="menu-desplegable" id="menu-co2">
+          <ul>
+            <li>Control de Emisiones</li>
+            <li>Reportes CO2</li>
+            <li>Configuración</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="opcion" id="opcion-idioma">
+        <i class="fas fa-globe"></i>
+        <span>Idioma</span>
+        <div class="menu-desplegable" id="menu-idioma">
+          <ul>
+            <li>Español</li>
+            <li>English</li>
+            <li>Français</li>
+            <li>Deutsch</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="opcion" id="opcion-notificaciones">
+        <i class="fas fa-bell"></i>
+        <span>Notificaciones</span>
+        <div class="menu-desplegable" id="menu-notificaciones">
+          <ul>
+            <li>Nueva actualización disponible</li>
+            <li>Reporte mensual listo</li>
+            <li>Reunión programada</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="opcion" id="opcion-perfil">
+        <div class="foto-perfil">G</div>
+        <span>Perfil</span>
+        <div class="menu-desplegable" id="menu-perfil">
+          <ul>
+            <li>Mi Perfil</li>
+            <li>Configuración</li>
+            <li>Cerrar Sesión</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="container">
+    <!-- Vista principal -->
+    <div id="main-view">
+      <h1 class="page-title">Consigue Créditos Verdes</h1>
+
+      <div class="card">
+        <div class="user-section">
+          <div class="user-info">
+            <div class="username">
+              <span class="balance-icon"><i class="fas fa-leaf"></i></span>
+              <span> créditos verdes</span>
+            </div>
+          </div>
+          <a href="#" class="exchange-link" id="ver-historial">Ver historial</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="menu-item">
+          <span>Recargar Créditos</span>
+          <span class="menu-arrow">›</span>
+        </div>
+      </div>
+
+      <h2 class="packages-title">Selecciona un paquete de créditos</h2>
+
+      <div class="credit-options" id="credit-options">
+        <div class="credit-option" data-credits="100" data-price="10">
+          <div class="credit-amount">100 créditos</div>
+          <div class="credit-price">Bs10</div>
+        </div>
+        <div class="credit-option" data-credits="250" data-price="22">
+          <div class="credit-amount">250 créditos</div>
+          <div class="credit-price">Bs22 <span class="bonus-badge">+10%</span></div>
+        </div>
+        <div class="credit-option" data-credits="500" data-price="40">
+          <div class="credit-amount">500 créditos</div>
+          <div class="credit-price">Bs40 <span class="bonus-badge">+15%</span></div>
+        </div>
+        <div class="credit-option" data-credits="1000" data-price="75">
+          <div class="credit-amount">1000 créditos</div>
+          <div class="credit-price">Bs75 <span class="bonus-badge">+20%</span></div>
+        </div>
+        <div class="credit-option" data-credits="2000" data-price="130">
+          <div class="credit-amount">2000 créditos</div>
+          <div class="credit-price">Bs130 <span class="bonus-badge">+30%</span></div>
+        </div>
+        <div class="credit-option" data-credits="5000" data-price="300">
+          <div class="credit-amount">5000 créditos</div>
+          <div class="credit-price">Bs300 <span class="bonus-badge">+40%</span></div>
+        </div>
+      </div>
+
+      <div class="payment-section">
+        <h3 class="payment-title">Método de pago</h3>
+
+        <div class="payment-method">
+          <div class="payment-icon">VISA</div>
+          <div class="payment-details">
+            <div class="payment-name">Tarjeta terminada en 4821</div>
+            <div class="payment-info">Expira 12/27</div>
+          </div>
+          <div class="payment-check">✔</div>
+        </div>
+
+        <div class="total-section">
+          <div class="total-label">Total</div>
+          <div class="total-amount" id="total-amount">Bs0</div>
+        </div>
+      </div>
+
+      <button class="recharge-button" id="recharge-button">Recargar Créditos</button>
+    </div>
+
+    <!-- Vista de historial -->
+    <div id="history-view" class="history-section">
+      <div class="back-button" id="volver-atras">
+        <span class="back-arrow">←</span>
+        <span>Volver</span>
+      </div>
+
+      <h2 class="history-title">Historial de Créditos</h2>
+      <p class="history-description">
+        Aquí puedes ver tus transacciones de compra y uso de Créditos Verdes.
+        Los créditos pueden usarse para compensar emisiones de CO₂ y participar en programas ambientales.
+        <a href="#" class="terms-link">Ver términos y condiciones</a>
+      </p>
+
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Cantidad</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>10/11/2025</td>
+            <td>Compra de 500 créditos</td>
+            <td>+500</td>
+            <td>Completado</td>
+          </tr>
+          <tr>
+            <td>05/11/2025</td>
+            <td>Canje por reducción CO₂</td>
+            <td>-100</td>
+            <td>Procesado</td>
+          </tr>
+          <tr>
+            <td>01/11/2025</td>
+            <td>Compra de 250 créditos</td>
+            <td>+250</td>
+            <td>Completado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      © 2025 Créditos Verdes · Todos los derechos reservados
+    </div>
+  </div>
+
+  <!-- Modal de confirmación -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Confirmar Recarga</div>
+        <button class="close-button" id="close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="summary-section">
+          <p>Estás a punto de adquirir:</p>
+          <p><strong id="summary-credits">0 créditos</strong> por un total de <strong id="summary-total">$0</strong>.</p>
+        </div>
+
+        <div class="confidential-checkbox">
+          <input type="checkbox" id="accept-policy">
+          <label for="accept-policy">Confirmo que la información es correcta y acepto la política de privacidad.</label>
+        </div>
+
+        <div class="account-section">
+          <div class="account-title">Saldo actual después de la compra:</div>
+          <div class="total-credits" id="new-balance">200 créditos</div>
+        </div>
+
+        <div class="divider-line"></div>
+
+        <div class="payment-form">
+          <div class="form-title">Datos de la tarjeta</div>
+
+          <div class="form-group">
+            <label class="form-label" for="card-number">Número de tarjeta</label>
+            <input type="text" id="card-number" class="form-input" placeholder="**** **** **** 4821">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="exp-date">Expira</label>
+              <input type="text" id="exp-date" class="form-input" placeholder="MM/AA">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cvv">CVV</label>
+              <input type="password" id="cvv" class="form-input" placeholder="***">
+            </div>
+          </div>
+        </div>
+
+        <div class="policy-text">
+          Esta transacción está protegida. Al confirmar, aceptas nuestros <a href="#">términos de uso</a>.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-recharge-button" id="confirm-recharge">Confirmar Recarga</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Menús desplegables
+    const opciones = document.querySelectorAll('.opcion');
+    opciones.forEach(op => {
+      op.addEventListener('click', () => {
+        const menu = op.querySelector('.menu-desplegable');
+        document.querySelectorAll('.menu-desplegable').forEach(m => {
+          if (m !== menu) m.classList.remove('mostrar');
+        });
+        menu.classList.toggle('mostrar');
+      });
+    });
+
+    // Selección de paquetes
+    const options = document.querySelectorAll('.credit-option');
+    let selectedCredits = 0;
+    let selectedPrice = 0;
+    const totalAmount = document.getElementById('total-amount');
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        options.forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        selectedCredits = opt.dataset.credits;
+        selectedPrice = opt.dataset.price;
+        totalAmount.textContent = `$${selectedPrice}`;
+      });
+    });
+
+    // Modal de recarga
+    const modal = document.getElementById('modal-overlay');
+    const rechargeBtn = document.getElementById('recharge-button');
+    const closeModal = document.getElementById('close-modal');
+    const confirmRecharge = document.getElementById('confirm-recharge');
+    const summaryCredits = document.getElementById('summary-credits');
+    const summaryTotal = document.getElementById('summary-total');
+    const newBalance = document.getElementById('new-balance');
+    const acceptPolicy = document.getElementById('accept-policy');
+
+    rechargeBtn.addEventListener('click', () => {
+      if (selectedCredits > 0) {
+        summaryCredits.textContent = `${selectedCredits} créditos`;
+        summaryTotal.textContent = `$${selectedPrice}`;
+        const currentBalance = 200;
+        newBalance.textContent = `${currentBalance + parseInt(selectedCredits)} créditos`;
+        modal.style.display = 'flex';
+      } else {
+        alert('Por favor, selecciona un paquete de créditos.');
+      }
+    });
+
+    closeModal.addEventListener('click', () => modal.style.display = 'none');
+
+    confirmRecharge.addEventListener('click', () => {
+      if (!acceptPolicy.checked) {
+        alert('Debes aceptar la política antes de continuar.');
+        return;
+      }
+      alert(`Recarga completada exitosamente de ${selectedCredits} créditos.`);
+      modal.style.display = 'none';
+      totalAmount.textContent = 'bs0';
+      options.forEach(o => o.classList.remove('selected'));
+    });
+
+    // Vista de historial
+    const verHistorial = document.getElementById('ver-historial');
+    const volverAtras = document.getElementById('volver-atras');
+    const mainView = document.getElementById('main-view');
+    const historyView = document.getElementById('history-view');
+
+    verHistorial.addEventListener('click', (e) => {
+      e.preventDefault();
+      mainView.style.display = 'none';
+      historyView.style.display = 'block';
+    });
+
+    volverAtras.addEventListener('click', () => {
+      historyView.style.display = 'none';
+      mainView.style.display = 'block';
+    });
+  </script>
+
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const options = document.querySelectorAll(".credit-option");
+  let selectedCredits = 0;
+  let selectedPrice = 0;
+
+  options.forEach(opt => {
+    opt.addEventListener("click", () => {
+      options.forEach(o => o.classList.remove("selected"));
+      opt.classList.add("selected");
+      selectedCredits = parseInt(opt.dataset.credits);
+      selectedPrice = parseFloat(opt.dataset.price);
+    });
+  });
+
+  // Botón para pagar o recargar
+  const pagarBtn = document.createElement("button");
+  pagarBtn.textContent = "Pagar y Recargar";
+  pagarBtn.className = "recharge-button";
+  document.querySelector(".container").appendChild(pagarBtn);
+
+  pagarBtn.addEventListener("click", () => {
+    if (!selectedCredits) {
+      alert("Selecciona un paquete antes de continuar");
+      return;
+    }
+
+    // Obtener saldo actual
+    let saldo = parseInt(localStorage.getItem("saldo") || 0);
+    saldo += selectedCredits;
+    localStorage.setItem("saldo", saldo);
+
+    alert(`Has recargado ${selectedCredits} créditos verdes 🎉`);
+    window.location.href = "perfil.html"; // Redirige al perfil
+  });
+});
+</script>
+
+</body>
+</html>
