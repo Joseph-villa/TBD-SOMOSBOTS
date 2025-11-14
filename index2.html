@@ -3,32 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio de Sesión</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Plataforma de Reciclaje - Principal</title>
+    <link rel="stylesheet" href="styles/estilos.css">
+
+    <style>
+        /* [ESTILOS DE PERFIL/MENU] */
+        .profile-links { display: none; }
+        .profile-open .profile-links { display: block; }
+        .user-area { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: none; padding: 0; font: inherit; color: inherit; }
+        .user-area:focus { outline: 2px solid #6ca; outline-offset: 2px; }
+        .sidebar .profile-links { margin: 0 0 1rem 0; padding: 0; list-style: none; }
+        .sidebar .profile-links li { margin: 0.25rem 0; }
+        
+        /* [ESTILOS PARA EL GRID DE PRODUCTOS] */
+        .layout { display: flex; align-items: flex-start; gap: 1rem; }
+        .content { order: 1; flex: 1; min-width: 0; padding-left: 20px; } /* Ajuste de padding para simular centrado */
+        .sidebar { order: 2; width: 240px; } 
+
+        /* El grid principal que se asemeja a la imagen */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* 3 o 4 columnas en desktop */
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        /* Estilo para cada tarjeta de producto (card) */
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .credits {
+            background-color: #4CAF50; /* Crédito Verde */
+            color: white;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* Estilos del menú de categorías (sidebar) */
+        .categories { list-style: none; padding: 0; }
+        .categories li { padding: 8px 0; border-bottom: 1px solid #eee; cursor: pointer; }
+        .categories li:hover { background-color: #f0f0f0; }
+
+        /* Estilo para el botón de intercambio (para destacarlo) */
+        #btn-comprar {
+            background-color: #FF5722; /* Naranja para Acción */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .layout { flex-direction: column; }
+            .content { order: 0; padding-left: 0; }
+            .sidebar { order: 1; width: 100%; }
+        }
+    </style>
 </head>
 <body>
-<script src="db.js"></script>
-
-    <!-- Sección de inicio de sesión -->
-    <section class="login-section">
-        <!-- Logo de la plataforma -->
-        <div class="logo-container">
-            <img src="images/logo.png" alt="Logo Plataforma de Trueque Digital">
-            <p>con Créditos Verdes</p>
+    <header class="topbar">
+        <div class="logo-area">
+            <img src="https://i.imgur.com/zQ0kV9R.png" alt="Logo Plataforma" class="logo-img">
+            <h1>Plataforma de Trueque Digital</h1>
         </div>
 
-        <!-- Formulario de inicio de sesión -->
-        <div class="form-container">
-            <h2>Iniciar sesión</h2>
-            <form action="#">
-                <input type="text" name="usuario" placeholder="Usuario" required><br>
-                <input type="password" name="contrasena" placeholder="Contraseña" required><br>
-                <button type="submit">Ingresar</button><br>
-                <a href="#">¿Olvidaste tu contraseña?</a><br>
-                <a href="register.html">¿No tienes cuenta? Regístrate</a>
-            </form>
+        <div class="search-area">
+            <input type="search" class="search-bar" placeholder="Buscar producto..." aria-label="Buscar producto">
         </div>
-    </section>
+
+        <div class="right-area">
+            <div class="credits-bubble" title="Créditos disponibles">
+                <span class="coin">♻️</span>
+                <span id="topCredits">300</span>
+            </div>
+
+            <!-- Cambiado: el enlace apunta a perfil.html y tiene id="profileToggle" -->
+            <a href="/perfil.html" class="user-area" id="profileToggle" title="Ver perfil">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
+            </a>
+        </div>
+    </header>
+
+    <main class="layout">
+        <aside class="sidebar">
+            <ul id="profileLinks" class="profile-links">
+                <li id="user-saldo">Cargando Saldo: 0.00 ♻️</li>
+                <hr>
+                <li><a href="/perfil.html">👤 Ver perfil</a></li>
+                <li><a href="#">⚙️ Ajustes</a></li>
+                <li><a href="#" id="btn-logout">🚪 Cerrar sesión</a></li> 
+            </ul>
+
+            <hr>
+
+            <h3>Categorías</h3>
+            <ul class="categories">
+                <li>Artículos gratuitos</li>
+                <li>Artículos para el hogar</li>
+                <li>Clasificados</li>
+                <li>Electrónica</li>
+                <li>Entretenimiento</li>
+                <li>Familia</li>
+                <li>Indumentaria</li>
+                <li>Instrumentos musicales</li>
+                <li>Jardín y aire libre</li>
+                <li>Juguetes y juegos</li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <h2>Intercambios Destacados</h2>
+            <div class="product-grid">
+
+                <div class="product-card" data-publicacion-id="1">
+                    <img src="https://i.imgur.com/vH1cR8f.jpeg" alt="Botellas PET">
+                    <div class="credits"><span>50</span> ♻️</div>
+                    <p>Botellas PET (ID: 1)</p>
+                    <button id="btn-comprar" class="btn-intercambiar">Comprar</button>
+                </div>
+                
+                <div class="product-card"><img src="https://i.imgur.com/0FvD5mS.jpg" alt="Producto"><div class="credits"><span>300</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/YlWwKxz.jpg" alt="Producto"><div class="credits"><span>2000</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/Gv3Q5KT.jpg" alt="Producto"><div class="credits"><span>400</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/fA1of0s.jpg" alt="Producto"><div class="credits"><span>100</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/w1E2x3X.jpg" alt="Producto"><div class="credits"><span>1500</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/H0sRj0l.jpg" alt="Producto"><div class="credits"><span>560</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/S8Wp7nQ.jpg" alt="Producto"><div class="credits"><span>580</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/Kz4L3wW.jpg" alt="Producto"><div class="credits"><span>4000</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/F6x5GjZ.jpg" alt="Producto"><div class="credits"><span>2100</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/Z7t2jYn.jpg" alt="Producto"><div class="credits"><span>2000</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/Y0q9C0W.jpg" alt="Producto"><div class="credits"><span>4500</span> ♻️</div></div>
+                <div class="product-card"><img src="https://i.imgur.com/D8fW1lX.jpg" alt="Producto"><div class="credits"><span>1200</span> ♻️</div></div>
+                </div>
+        </section>
+    </main>
+
+    <script>
+        // Lógica segura: no bloquea la navegación por defecto del enlace
+        (function () {
+            const toggle = document.getElementById('profileToggle');
+            const profileLinks = document.getElementById('profileLinks');
+
+            if (!toggle) return;
+
+            // Si quieres abrir el menú en vez de navegar, mantén Alt al hacer click.
+            // Normal click -> navegación a perfil.html (no se previene).
+            toggle.addEventListener('click', function (e) {
+                if (profileLinks && e.altKey) {
+                    // abrir/cerrar menú sólo si se mantiene Alt (ejemplo opcional)
+                    e.preventDefault();
+                    profileLinks.style.display = profileLinks.style.display === 'block' ? 'none' : 'block';
+                }
+                // sin Alt: no hacemos preventDefault() → el navegador navegará a perfil.html
+            });
+
+            // cerrar menú si se clickea fuera (si está abierto)
+            document.addEventListener('click', function (e) {
+                if (profileLinks && profileLinks.style.display === 'block' && !profileLinks.contains(e.target) && e.target !== toggle) {
+                    profileLinks.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && profileLinks) profileLinks.style.display = 'none';
+            });
+        })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="db.js"></script> 
+    <script type="module" src="scripts/main.js"></script>
 
 </body>
 </html>

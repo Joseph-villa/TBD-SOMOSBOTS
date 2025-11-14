@@ -102,8 +102,8 @@
   </section>
 
 <script type="module">
-    import { supabase } from './config/supabaseClient.js';
-
+// CÓDIGO CORREGIDO: Asume que db.js está en la carpeta raíz (un nivel arriba de perfil.html)
+import { supabase } from '../db.js';
     // --- Elementos del DOM ---
     const backBtn = document.getElementById('backBtn');
     const openFormBtn = document.getElementById('openFormBtn');

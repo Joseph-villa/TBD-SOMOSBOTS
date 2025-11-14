@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Usuario</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+    
+    <link rel="stylesheet" href="styles/estilos.css"> 
+    
+    </head>
 <body>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-<script src="db.js"></script>
-
-    <section class="register-section">
+    <section class="login-section"> 
         <div class="logo-container">
             <img src="images/logo.png" alt="Logo Plataforma de Trueque Digital">
             <p>con Créditos Verdes</p>
@@ -21,16 +18,20 @@
         <div class="form-container">
             <h2>Datos del usuario</h2>
             <form id="register-form">
-    <input type="text" id="nombre" placeholder="Nombre Completo" required><br>
-    <input type="date" id="fecha_nacimiento" placeholder="Fecha de nacimiento" required><br>
-    <input type="email" id="correo_electronico" placeholder="Correo electrónico" required><br>
-    <input type="password" id="contrasena" placeholder="Contraseña" required><br>
-    <button type="submit">Registrarse</button><br>
-    <a href="index.html">¿Ya tienes cuenta? Inicia sesión</a>
-</form>
-
+                <input type="text" id="nombre" placeholder="Nombre Completo" required><br>
+                <input type="date" id="fecha_nacimiento" placeholder="Fecha de nacimiento" required><br>
+                <input type="email" id="correo_electronico" placeholder="Correo electrónico" required><br>
+                <input type="password" id="contrasena" placeholder="Contraseña" required><br>
+                
+                <button type="submit">Registrarse</button><br>
+                
+                <a href="index.html">¿Ya tienes cuenta? Inicia sesión</a>
+            </form>
         </div>
     </section>
 
+    <script type="module" src="config/db.js"></script> 
+
+    <script type="module" src="scripts/register.js"></script>
 </body>
 </html>
