@@ -6,9 +6,109 @@
     <title>Hacer una Publicación</title>
     <link rel="stylesheet" href="styles/estilos.css"> 
     <style>
-        .hidden { display:none; }
-        .field-row { margin-top:8px; }
-        .small-input { width:100%; box-sizing:border-box; }
+        .hidden { display: none; }
+        .field-row { margin-top: 8px; }
+        .small-input { width: 100%; box-sizing: border-box; }
+
+        /* Estilo para el botón "Volver" */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            background-color: #2F9A34; /* Verde principal */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s ease, box-shadow 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #036d19; /* Verde más oscuro */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-btn:active {
+            background-color: #025a14; /* Verde aún más oscuro */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Estilo general para el contenedor */
+        .publicar-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 24px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2F9A34;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea, select {
+            padding: 12px;
+            border: 1px solid #e6e6e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #2F9A34;
+            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-publicar {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: #2F9A34;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-publicar:hover {
+            background-color: #036d19;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-publicar:active {
+            background-color: #025a14;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        img#preview {
+            display: none;
+            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body class="publicar-body">
@@ -55,21 +155,27 @@
 
 <script type="module">
 
-import { supabase } from './config/supabaseClient.js';
+// Ya NO necesitamos importar supabase aquí para la carga de categorías.
+// La importación de supabase se mantiene solo para la función de SUBMIT,
+// para manejar la subida de imagen a Storage y la inserción final.
+import { supabase } from './config/db.js';
 
-// --- FUNCIÓN PARA CARGAR CATEGORÍAS (Usando solo el nombre) ---
+let selectedCategoryName = '';
+
+// --- FUNCIÓN CORREGIDA: Llama al Servidor Express ---
 async function fetchCategories() {
     const select = document.getElementById('categoria');
-    select.innerHTML = '<option value="">Cargando categorías...</option>'; // Mostrar mensaje de carga
+    select.innerHTML = '<option value="">Cargando categorías...</option>'; 
 
     try {
-        // ⭐ CLAVE: Leer solo la columna 'nombre'
-        const { data, error } = await supabase
-            .from('categoria')
-            .select('nombre') 
-            .order('nombre', { ascending: true }); 
-
-        if (error) throw error;
+        // 🚨 CLAVE: Llama a la ruta API de tu servidor Express
+        const response = await fetch('http://localhost:3000/api/categoria');
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
 
         // Limpiar el select y añadir la opción por defecto
         select.innerHTML = '';
@@ -77,24 +183,23 @@ async function fetchCategories() {
         
         // Llenar las opciones con los datos
         data.forEach(cat => {
-            // Usamos el NOMBRE para el texto visible y para el valor (value)
-            const option = new Option(cat.nombre, cat.nombre); 
+            // Usamos la ID como valor, ya que tu endpoint de inserción Express espera `categoria_id`
+            const option = new Option(cat.nombre, cat.id_categoria); 
             select.appendChild(option);
         });
 
-        // Añadir la opción 'Otros' al final
+        // Añadir la opción 'Otros'
         select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
 
-        // Configurar el listener de cambio
         setupCategoryChangeListener(); 
 
     } catch (err) {
-        console.error('Error al cargar las categorías:', err);
-        select.innerHTML = '<option value="">Error al cargar</option>';
+        console.error('❌ Error al cargar categorías desde el servidor (Express):', err);
+        select.innerHTML = '<option value="">Error al cargar categorías</option>'; 
     }
 }
 
-// --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' (Sin cambios, pero necesaria) ---
+// --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' ---
 function setupCategoryChangeListener() {
     const categoriaSelect = document.getElementById('categoria');
     const categoriaOtrosWrap = document.getElementById('categoriaOtrosWrap');
@@ -104,10 +209,10 @@ function setupCategoryChangeListener() {
         if (categoriaSelect.value === 'OTROS') {
             categoriaOtrosWrap.classList.remove('hidden');
             categoriaOtrosInput.setAttribute('required', 'required'); 
-        } else {
-            categoriaOtrosWrap.classList.add('hidden');
-            categoriaOtrosInput.removeAttribute('required');
-            categoriaOtrosInput.value = ''; 
+        } else if (categoriaSelect.value) {
+            // Guardar el texto visible de la opción seleccionada
+selectedCategoryName = categoriaSelect.options[categoriaSelect.selectedIndex].text;        } else {
+            selectedCategoryName = '';
         }
     });
 }
@@ -115,33 +220,47 @@ function setupCategoryChangeListener() {
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('formPublicar');
     const backBtn = document.getElementById('backBtn');
-    
-    // Vista previa de la imagen seleccionada
-const imagenInput = document.getElementById('imagen');
-const preview = document.getElementById('preview');
+    const imagenInput = document.getElementById('imagen');
+    const preview = document.getElementById('preview');
 
-imagenInput.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  } else {
-    preview.src = '';
-    preview.style.display = 'none';
-  }
-});
+    // Lógica para el botón 'Volver'
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = 'perfil.html';
+            }
+        });
+    }
+
+    // Lógica para la vista previa de la imagen
+    imagenInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+    });
 
 
-    // 🚀 Llamar a la función de carga al iniciar
+    // 🚀 Iniciar la carga de categorías
     fetchCategories();
 
-    backBtn.addEventListener('click', () => {
-        if (history.length > 1) history.back(); else window.location.href = 'perfil.html';
-    });
+    // ----------------------------------------------------------------------
+    // ⚠️ ADVERTENCIA: La lógica de `form.addEventListener('submit')` es compleja
+    // porque intenta subir a Storage (Supabase) y luego insertar en la BD (Express API).
+    // Si usas Express, DEBERÍAS manejar la subida de imagen también en Express
+    // (usando Multer o similar) y luego desde ahí llamar a Supabase.
+    // MANTENEMOS la lógica actual solo para que funcione la inserción con los campos correctos.
+    // ----------------------------------------------------------------------
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -150,76 +269,86 @@ imagenInput.addEventListener('change', (event) => {
         const description = document.getElementById('descripcion').value.trim();
         const price = document.getElementById('precio').value;
         const priceValue = price ? parseFloat(price) : null; 
-        const imageFile = document.getElementById('imagen').files[0]; // Obtener el archivo de imagen
-        // 🛠️  Obtener los valores de categoría
+        const imageFile = document.getElementById('imagen').files[0]; 
+        
         const categoriaSelectValue = document.getElementById('categoria').value;
         const categoriaOtros = document.getElementById('categoriaOtros').value.trim();
 
-        // Determinar el valor final de la categoría
-        let finalCategoryName = null;
+let finalCategoryValueForDB = selectedCategoryName;
 
+        // 1. Manejo de la categoría
         if (categoriaSelectValue === 'OTROS') {
             if (!categoriaOtros) {
                 alert('Debe especificar la nueva categoría.');
                 return;
             }
-            // Si elige 'Otros', usamos el texto escrito
-            finalCategoryName = categoriaOtros; 
-        } else if (categoriaSelectValue) {
-            // Si elige una categoría existente, usamos su nombre (que es su value)
-            finalCategoryName = categoriaSelectValue; 
-        }
+            // 🚨 ADVERTENCIA: Si usas el endpoint Express, el valor de la ID
+            // debe ser un ID válido. Necesitarías insertar la categoría primero 
+            // en Supabase para obtener una ID antes de la publicación.
+            alert('Advertencia: La opción "Otros" no es compatible con el endpoint API de Express actual. Por favor, selecciona una categoría existente.');
+            return;
+        } 
         
-        if (!title) { 
-            alert('El título es obligatorio.'); 
+        if (!title || !finalCategoryValueForDB) { 
+            alert('El título y la categoría son obligatorios.'); 
             return; 
         }
-        // 2. Subir Imagen a Supabase Storage (CLAVE)
-        let imageUrl = null;
-        let storageError = null;
         
-        if (imageFile) {
-            // Crear un path único, por ejemplo: 'publicaciones/1678886400000_imagen.png'
-            const filePath = `publicaciones/${Date.now()}_${imageFile.name}`; 
+        // 2. Subir Imagen a Supabase Storage (Se mantiene aquí, no es lo ideal)
+        let imageUrl = null;
+        
+        if (imageFile) {
+            const filePath = `publicaciones/${Date.now()}_${imageFile.name}`; 
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('imagenes') // Reemplaza 'imagenes' con el nombre de tu bucket de Supabase
-                .upload(filePath, imageFile, {
-                    cacheControl: '3600',
-                    upsert: false 
-                });
+            // Esta parte utiliza el cliente Supabase directamente en el frontend,
+            // lo que requiere que 'supabaseClient.js' esté correctamente configurado.
+            const { error: uploadError } = await supabase.storage
+                .from('imagenes') 
+                .upload(filePath, imageFile, {
+                    cacheControl: '3600',
+                    upsert: false 
+                });
             
-            storageError = uploadError;
+            if (!uploadError) {
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('imagenes')
+                    .getPublicUrl(filePath); 
 
-            if (!uploadError) {
-                // Obtener la URL pública para guardarla en la base de datos
-                const { data: publicUrlData } = supabase
-                    .storage
-                    .from('imagenes')
-                    .getPublicUrl(filePath); // Usar el mismo path que en la subida
-
-                imageUrl = publicUrlData.publicUrl;
-            } else {
+                imageUrl = publicUrlData.publicUrl;
+            } else {
                 console.error("Error al subir imagen:", uploadError);
-                alert(`❌ ERROR DE IMAGEN: No se pudo subir la imagen. Revise su bucket 'imagenes' y las políticas de RLS. ${uploadError.message}`);
+                alert(`❌ ERROR DE IMAGEN: No se pudo subir la imagen. ${uploadError.message}`);
                 return;
             }
-        }
-        // Nota: Asumo que la columna en Publicacion es 'nombre_categoria'
+        }
+        
+        // 3. Insertar la Publicación usando la API de Express
         try {
-            const { data: inserted, error: insertErr } = await supabase
-                .from('Publicacion') 
-                .insert([{
+const userId = localStorage.getItem('auth_id'); // 🚨 USAR 'auth_id'            if (!userId) {
+                if (!userId) {
+        alert('Debe iniciar sesión para publicar.');
+        return;
+    }
+            const apiResponse = await fetch('http://localhost:3000/api/publicar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     titulo: title,
-                    descripcion: description, 
-                    precio: priceValue,       
-                    nombre_categoria: finalCategoryName, // ⭐ CLAVE: Campo para guardar el texto de la categoría
-                    imagen_url: imageUrl // ⭐ CLAVE: Guardar la URL pública en la BD
-                }])
-                .select()
-                .single();
+                    descripcion: description,
+                    precio: priceValue,       
+categoria_nombre: finalCategoryValueForDB, // Nuevo campo en el body    
+ usuario_id: userId,                // ID del usuario
+                    foto: imageUrl // URL de la imagen
+                })
+            });
+            
+            const result = await apiResponse.json();
 
-            if (insertErr) throw insertErr;
+            if (!apiResponse.ok) {
+                console.error('Error del servidor al insertar:', result.error);
+                throw new Error(result.error || 'Error desconocido al publicar.');
+            }
 
             alert('✅ ¡Publicación creada exitosamente!');
             form.reset();
@@ -228,60 +357,14 @@ imagenInput.addEventListener('change', (event) => {
             window.location.href = 'perfil.html';
 
         } catch (err) {
-            console.error('Error al guardar la publicación en Supabase:', err);
-            alert(`❌ ERROR DE INSERCIÓN: ${err.message}.`);
+            console.error('Error al enviar la publicación:', err);
+            alert(`❌ ERROR DE PUBLICACIÓN: ${err.message}.`);
         }
     });
+
+    // ❌ ELIMINAMOS el listener duplicado que estaba al final del archivo.
+
 });
-
-const form = document.getElementById('publicacion-form');
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const texto = document.getElementById('texto').value;
-  const file = document.getElementById('imagen').files[0];
-
-  let imageUrl = '';
-
-  // Si hay una imagen seleccionada, subirla a Supabase Storage
-  if (file) {
-    const { data, error } = await supabase.storage
-      .from('imagenes') // 👈 tu bucket en Supabase (debe existir)
-      .upload(`publicaciones/${Date.now()}_${file.name}`, file);
-
-    if (!error) {
-      // obtener URL pública
-      const { data: publicUrlData } = supabase
-        .storage
-        .from('imagenes')
-        .getPublicUrl(data.path);
-      imageUrl = publicUrlData.publicUrl;
-    }
-  }
-
-  // Aquí guardas texto e imagen en tu tabla de publicaciones
-  await supabase.from('publicaciones').insert({
-    texto,
-    imagen_url: imageUrl,
-    created_at: new Date(),
-  });
-
-  // Mostrar la publicación en pantalla (perfil)
-  const lista = document.getElementById('lista-publicaciones');
-  const nueva = document.createElement('div');
-  nueva.classList.add('publicacion');
-  nueva.innerHTML = `
-    <p>${texto}</p>
-    ${imageUrl ? `<img src="${imageUrl}" alt="Imagen publicación">` : ''}
-  `;
-  lista.prepend(nueva);
-
-  // Limpiar formulario
-  form.reset();
-  preview.src = '';
-  preview.style.display = 'none';
-});
-
 
 </script>
 </body>

@@ -5,49 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Publicación</title>
     <link rel="stylesheet" href="styles/estilos.css">
+    <style>
+        .publicar-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 24px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2F9A34;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            display: block;
+            margin-top: 16px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e6e6e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-top: 8px;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #2F9A34;
+            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.2);
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-publicar, .btn-delete, .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-publicar {
+            background-color: #2F9A34;
+            color: white;
+        }
+
+        .btn-publicar:hover {
+            background-color: #036d19;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-delete {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #d32f2f;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-cancel {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background-color: #e0e0e0;
+        }
+
+        .hidden { display: none; }
+
+        #currentImageContainer {
+            margin: 16px 0;
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        #currentImage {
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        #loadingMessage {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .form-publicar {
+            display: block;
+        }
+    </style>
 </head>
 <body class="publicar-body">
     <div class="publicar-container">
+        <button class="back-btn" id="backBtn" title="Volver">← Volver</button>
+        
         <h2>✏️ Editar Publicación</h2>
         <p id="loadingMessage">Cargando datos de la publicación...</p>
         
         <form id="editForm" class="form-publicar hidden">
             <input type="hidden" id="postId" name="postId">
 
-            <label for="titulo">Título</label>
+            <label for="titulo">Título *</label>
             <input type="text" id="titulo" name="titulo" required>
 
-            <label for="descripcion">Descripción</label>
+            <label for="descripcion">Descripción *</label>
             <textarea id="descripcion" name="descripcion" required></textarea>
 
-            <label for="precio">Precio (♻️ Créditos)</label>
+            <label for="precio">Precio (♻️ Créditos) *</label>
             <input type="number" id="precio" name="precio" required min="1">
             
             <label for="imagen">Cambiar Imagen (opcional)</label>
             <input type="file" id="imagen" name="imagen" accept="image/*">
             
-            <div id="currentImageContainer" style="margin-bottom: 20px;">
-                <p>Imagen actual:</p>
-                <img id="currentImage" src="" alt="Imagen actual" style="max-width: 200px; height: auto; border-radius: 8px;">
+            <div id="currentImageContainer">
+                <p><strong>Imagen actual:</strong></p>
+                <img id="currentImage" src="" alt="Imagen actual" style="max-width: 100%; height: auto;">
             </div>
 
-            <button type="submit" class="btn-publicar">Guardar Cambios</button>
-            <button type="button" id="cancelBtn" style="margin-top: 10px; background-color: #f44336;" class="btn-publicar">Cancelar</button>
+            <div class="btn-group">
+                <button type="submit" class="btn-publicar">💾 Guardar Cambios</button>
+                <button type="button" id="deleteBtn" class="btn-delete">🗑️ Eliminar</button>
+                <button type="button" id="cancelBtn" class="btn-cancel">✕ Cancelar</button>
+            </div>
         </form>
     </div>
 
 <script type="module">
-    import { supabase } from './config/supabaseClient.js';
+    import { supabase } from './config/db.js'; // ✅ CORREGIDO
 
     const editForm = document.getElementById('editForm');
     const loadingMessage = document.getElementById('loadingMessage');
     const currentImage = document.getElementById('currentImage');
     const cancelBtn = document.getElementById('cancelBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const backBtn = document.getElementById('backBtn');
 
     let currentPostId = null;
     let currentImageUrl = null;
-
-    // --- Funciones de Utilidad ---
 
     // 1. Obtener el ID de la URL
     function getPostIdFromUrl() {
@@ -80,7 +203,7 @@
             if (currentImageUrl) {
                 currentImage.src = currentImageUrl;
             } else {
-                 document.getElementById('currentImageContainer').innerHTML = '<p>No hay imagen actual.</p>';
+                document.getElementById('currentImageContainer').innerHTML = '<p>No hay imagen actual.</p>';
             }
 
             // Mostrar el formulario
@@ -89,28 +212,26 @@
 
         } catch (err) {
             console.error('Error al cargar datos:', err);
-            loadingMessage.textContent = 'Error: No se pudo cargar la publicación. ' + err.message;
+            loadingMessage.textContent = '❌ Error: No se pudo cargar la publicación. ' + err.message;
         }
     }
 
-    // 3. Función de subida de imagen (reutilizada de publicar.html)
+    // 3. Función de subida de imagen
     async function uploadImage(imageFile, postId) {
-        const filePath = `publicaciones/${postId}_${imageFile.name}`;
+        const filePath = `publicaciones/${postId}_${Date.now()}_${imageFile.name}`;
         
-        // 1. Subir el archivo
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('imagenes')
             .upload(filePath, imageFile, {
                 cacheControl: '3600',
-                upsert: true // Importante: sobrescribe la imagen existente si el path es el mismo
+                upsert: false
             });
         
         if (uploadError) {
             console.error('Error de subida de imagen:', uploadError);
-            throw new Error('❌ ERROR DE IMAGEN: No se pudo subir la imagen.');
+            throw new Error('❌ No se pudo subir la imagen.');
         }
 
-        // 2. Obtener la URL pública
         const { data: publicUrlData } = supabase
             .storage
             .from('imagenes')
@@ -119,71 +240,103 @@
         return publicUrlData.publicUrl;
     }
 
-
-    // 4. Manejar el envío del formulario
+    // 4. Manejar el envío del formulario (EDITAR)
     editForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const newTitle = document.getElementById('titulo').value;
-        const newDescription = document.getElementById('descripcion').value;
+        const newTitle = document.getElementById('titulo').value.trim();
+        const newDescription = document.getElementById('descripcion').value.trim();
         const newPrice = parseFloat(document.getElementById('precio').value);
         const imageFile = document.getElementById('imagen').files[0];
         const id = document.getElementById('postId').value;
         
-        let newImageUrl = currentImageUrl; // Usar la URL actual por defecto
+        if (!newTitle || !newDescription) {
+            alert('Por favor completa todos los campos.');
+            return;
+        }
+
+        let newImageUrl = currentImageUrl;
         
         try {
-            if (imageFile) {
-                loadingMessage.textContent = 'Subiendo nueva imagen...';
-                loadingMessage.classList.remove('hidden');
-                
-                // Si hay una nueva imagen, subirla y obtener la nueva URL
-                newImageUrl = await uploadImage(imageFile, id);
-            }
-
-            loadingMessage.textContent = 'Guardando cambios en la publicación...';
+            loadingMessage.textContent = 'Guardando cambios...';
             loadingMessage.classList.remove('hidden');
             editForm.classList.add('hidden');
 
-            // 5. Actualizar la base de datos (UPDATE)
-            const updatePayload = {
-                titulo: newTitle,
-                descripcion: newDescription,
-                precio: newPrice,
-                imagen_url: newImageUrl // Se usa la nueva URL o la existente
-            };
-            
+            if (imageFile) {
+                loadingMessage.textContent = 'Subiendo nueva imagen...';
+                newImageUrl = await uploadImage(imageFile, id);
+            }
+
+            loadingMessage.textContent = 'Actualizando publicación...';
+
             const { error: updateError } = await supabase
                 .from('Publicacion')
-                .update(updatePayload)
-                .eq('id_publicacion', id); // Actualiza solo la fila con ese ID
+                .update({
+                    titulo: newTitle,
+                    descripcion: newDescription,
+                    precio: newPrice,
+                    imagen_url: newImageUrl
+                })
+                .eq('id_publicacion', id);
 
             if (updateError) throw updateError;
 
             alert('✅ Publicación actualizada con éxito.');
-            window.location.href = 'perfil.html'; // Volver al perfil
+            window.location.href = 'perfil.html';
 
         } catch (err) {
-            loadingMessage.textContent = 'Error al guardar cambios: ' + err.message;
+            loadingMessage.textContent = '❌ Error: ' + err.message;
             editForm.classList.remove('hidden');
-            console.error('Error de actualización:', err);
+            console.error('Error:', err);
         }
     });
 
-    // --- Inicialización ---
+    // 5. 🚨 NUEVO: Manejar el botón de ELIMINAR
+    deleteBtn.addEventListener('click', async () => {
+        if (!confirm('⚠️ ¿Estás seguro de que quieres ELIMINAR esta publicación? Esta acción es irreversible.')) {
+            return;
+        }
 
-    // Manejar el botón de cancelar
+        const id = document.getElementById('postId').value;
+
+        try {
+            loadingMessage.textContent = 'Eliminando publicación...';
+            loadingMessage.classList.remove('hidden');
+            editForm.classList.add('hidden');
+
+            const { error: deleteError } = await supabase
+                .from('Publicacion')
+                .delete()
+                .eq('id_publicacion', id);
+
+            if (deleteError) throw deleteError;
+
+            alert('✅ Publicación eliminada con éxito.');
+            window.location.href = 'perfil.html';
+
+        } catch (err) {
+            loadingMessage.textContent = '❌ Error al eliminar: ' + err.message;
+            editForm.classList.remove('hidden');
+            console.error('Error:', err);
+        }
+    });
+
+    // 6. Botones de cancelar y volver
     cancelBtn.addEventListener('click', () => {
         window.location.href = 'perfil.html';
     });
 
-    // Cargar la publicación al iniciar la página
+    backBtn.addEventListener('click', () => {
+        window.location.href = 'perfil.html';
+    });
+
+    // 7. Cargar la publicación al iniciar
     document.addEventListener('DOMContentLoaded', () => {
         const postId = getPostIdFromUrl();
         if (postId) {
             fetchPostData(postId);
         } else {
-            loadingMessage.textContent = 'Error: ID de publicación no encontrado en la URL.';
+            loadingMessage.textContent = '❌ Error: ID de publicación no encontrado en la URL.';
         }
     });
 

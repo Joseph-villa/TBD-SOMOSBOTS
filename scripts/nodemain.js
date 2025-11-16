@@ -4,7 +4,7 @@ import express from 'express';
 
 import cors from 'cors';
 
-import { supabase } from './supabaseClient.js';
+import { supabase } from './db.js';
 
 
 
@@ -18,32 +18,20 @@ app.use(express.json());
 
 // Endpoint para obtener las categorías desde Supabase
 
-app.get('/categorias', async (req, res) => {
-
-  try {
-
-    const { data, error } = await supabase
-
-      .from('Categorias')
-
-      .select('id_categoria, nombre')
-
-      .order('nombre', { ascending: true });
-
-
-
-    if (error) throw error;
-
+// scripts/main.js - Ruta /api/categoria
+app.get("/api/categoria", async (req, res) => {
+    // Es posible que el ID se llame 'id' o 'cat_id' en tu tabla de Supabase. 
+    // Usa los nombres de columna exactos de tu tabla 'categoria'.
+    const { data, error } = await supabase.from("categoria").select("id, nombre"); // ⚠️ Verifica si es 'id' o 'id_categoria'
+    
+    if (error) {
+        console.error("❌ ERROR DE SUPABASE al obtener categorías:", error.message);
+        return res.status(500).json({ error: error.message });
+    }
+    
+    // ✅ Agrega un log aquí para ver la data que se envía al frontend
+    console.log("✅ Categorías enviadas:", data); 
     res.json(data);
-
-  } catch (err) {
-
-    console.error('Error al obtener categorías:', err.message);
-
-    res.status(500).json({ error: 'Error al obtener categorías' });
-
-  }
-
 });
 
 
