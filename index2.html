@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,34 +9,78 @@
 
     <style>
         /* [ESTILOS DE PERFIL/MENU] */
-        .profile-links { display: none; }
-        .profile-open .profile-links { display: block; }
-        .user-area { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: none; padding: 0; font: inherit; color: inherit; }
-        .user-area:focus { outline: 2px solid #6ca; outline-offset: 2px; }
-        .sidebar .profile-links { margin: 0 0 1rem 0; padding: 0; list-style: none; }
-        .sidebar .profile-links li { margin: 0.25rem 0; }
-        
-        /* [ESTILOS PARA EL GRID DE PRODUCTOS] */
-        .layout { display: flex; align-items: flex-start; gap: 1rem; }
-        .content { order: 1; flex: 1; min-width: 0; padding-left: 20px; } /* Ajuste de padding para simular centrado */
-        .sidebar { order: 2; width: 240px; } 
+        .profile-links {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
 
-        /* El grid principal que se asemeja a la imagen */
+        .user-area {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            font: inherit;
+            color: inherit;
+            position: relative;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .user-area:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* [ESTILOS PARA EL GRID DE PRODUCTOS] */
+        .layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .content {
+            order: 1;
+            flex: 1;
+            min-width: 0;
+            padding-left: 20px;
+        }
+
+        .sidebar {
+            order: 2;
+            width: 240px;
+        }
+
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* 3 o 4 columnas en desktop */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 20px;
             padding: 20px 0;
         }
 
-        /* Estilo para cada tarjeta de producto (card) */
         .product-card {
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
             text-align: center;
             position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .product-card img {
@@ -43,40 +88,118 @@
             height: 150px;
             object-fit: cover;
         }
-        
+
         .credits {
-            background-color: #4CAF50; /* Crédito Verde */
+            background-color: #4CAF50;
             color: white;
             padding: 5px 10px;
             font-weight: bold;
             font-size: 1.1em;
         }
 
-        /* Estilos del menú de categorías (sidebar) */
-        .categories { list-style: none; padding: 0; }
-        .categories li { padding: 8px 0; border-bottom: 1px solid #eee; cursor: pointer; }
-        .categories li:hover { background-color: #f0f0f0; }
+        .categories {
+            list-style: none;
+            padding: 0;
+        }
 
-        /* Estilo para el botón de intercambio (para destacarlo) */
-        #btn-comprar {
-            background-color: #FF5722; /* Naranja para Acción */
+        .categories li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .categories li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .categories li.active {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-intercambiar {
+            background-color: #FF5722;
             color: white;
             border: none;
             padding: 10px 15px;
-            margin-bottom: 10px;
+            margin: 10px;
             cursor: pointer;
             font-weight: bold;
             border-radius: 4px;
+            width: calc(100% - 20px);
+            transition: background-color 0.2s;
         }
 
-        /* Responsive */
+        .btn-intercambiar:hover {
+            background-color: #e64a19;
+        }
+
+        .btn-intercambiar:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .no-products {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .credits-bubble {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+        }
+
         @media (max-width: 800px) {
-            .layout { flex-direction: column; }
-            .content { order: 0; padding-left: 0; }
-            .sidebar { order: 1; width: 100%; }
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                order: 0;
+                padding-left: 0;
+            }
+
+            .sidebar {
+                order: 1;
+                width: 100%;
+            }
+        }
+
+        /* Estilos para los enlaces del menú */
+        .profile-links a {
+            display: block;
+            padding: 8px 12px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .profile-links a:hover {
+            background-color: #f5f5f5;
+        }
+
+        .logout-link {
+            color: #f44336 !important;
         }
     </style>
 </head>
+
 <body>
     <header class="topbar">
         <div class="logo-area">
@@ -91,105 +214,489 @@
         <div class="right-area">
             <div class="credits-bubble" title="Créditos disponibles">
                 <span class="coin">♻️</span>
-                <span id="topCredits">300</span>
+                <span id="topCredits">0</span>
             </div>
 
-            <!-- Cambiado: el enlace apunta a perfil.html y tiene id="profileToggle" -->
-            <a href="/perfil.html" class="user-area" id="profileToggle" title="Ver perfil">
+            <div class="user-area" id="profileToggle">
                 <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
-            </a>
+                <span id="userName">Usuario</span>
+                <div id="profileLinks" class="profile-links">
+                    <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <strong id="menuUserName">Usuario</strong>
+                        <div style="font-size: 0.8rem; color: #666;" id="menuUserEmail">usuario@ejemplo.com</div>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 10px 0;">
+                        <li><a href="perfil.html">👤 Ver perfil</a></li>
+                        <li><a href="publicar.html">📤 Crear publicación</a></li>
+
+                        <!-- AGREGAR ESTA LÍNEA NUEVA -->
+                        <li><a href="mis-compras.html">🛒 Mis Compras</a></li>
+
+                        <li><a href="historial.html">💰 Ver historial</a></li>
+                        <li><a href="#" id="logoutLink" class="logout-link">🚪 Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         </div>
     </header>
 
     <main class="layout">
         <aside class="sidebar">
-            <ul id="profileLinks" class="profile-links">
-                <li id="user-saldo">Cargando Saldo: 0.00 ♻️</li>
-                <hr>
-                <li><a href="/perfil.html">👤 Ver perfil</a></li>
-                <li><a href="#">⚙️ Ajustes</a></li>
-                <li><a href="#" id="btn-logout">🚪 Cerrar sesión</a></li> 
-            </ul>
-
-            <hr>
-
             <h3>Categorías</h3>
-            <ul class="categories">
-                <li>Artículos gratuitos</li>
-                <li>Artículos para el hogar</li>
-                <li>Clasificados</li>
-                <li>Electrónica</li>
-                <li>Entretenimiento</li>
-                <li>Familia</li>
-                <li>Indumentaria</li>
-                <li>Instrumentos musicales</li>
-                <li>Jardín y aire libre</li>
-                <li>Juguetes y juegos</li>
+            <ul class="categories" id="categoriesList">
+                <li data-category="all" class="active">Todas las categorías</li>
+                <li data-category="Electrónica">Electrónica</li>
+                <li data-category="Hogar">Artículos para el hogar</li>
+                <li data-category="Ropa">Indumentaria</li>
+                <li data-category="Música">Instrumentos musicales</li>
+                <li data-category="Jardín">Jardín y aire libre</li>
+                <li data-category="Juguetes">Juguetes y juegos</li>
+                <li data-category="Libros">Libros</li>
+                <li data-category="Gratis">Artículos gratuitos</li>
+                <li data-category="Otros">Otros</li>
             </ul>
         </aside>
 
         <section class="content">
             <h2>Intercambios Destacados</h2>
-            <div class="product-grid">
-
-                <div class="product-card" data-publicacion-id="1">
-                    <img src="https://i.imgur.com/vH1cR8f.jpeg" alt="Botellas PET">
-                    <div class="credits"><span>50</span> ♻️</div>
-                    <p>Botellas PET (ID: 1)</p>
-                    <button id="btn-comprar" class="btn-intercambiar">Comprar</button>
-                </div>
-                
-                <div class="product-card"><img src="https://i.imgur.com/0FvD5mS.jpg" alt="Producto"><div class="credits"><span>300</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/YlWwKxz.jpg" alt="Producto"><div class="credits"><span>2000</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/Gv3Q5KT.jpg" alt="Producto"><div class="credits"><span>400</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/fA1of0s.jpg" alt="Producto"><div class="credits"><span>100</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/w1E2x3X.jpg" alt="Producto"><div class="credits"><span>1500</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/H0sRj0l.jpg" alt="Producto"><div class="credits"><span>560</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/S8Wp7nQ.jpg" alt="Producto"><div class="credits"><span>580</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/Kz4L3wW.jpg" alt="Producto"><div class="credits"><span>4000</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/F6x5GjZ.jpg" alt="Producto"><div class="credits"><span>2100</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/Z7t2jYn.jpg" alt="Producto"><div class="credits"><span>2000</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/Y0q9C0W.jpg" alt="Producto"><div class="credits"><span>4500</span> ♻️</div></div>
-                <div class="product-card"><img src="https://i.imgur.com/D8fW1lX.jpg" alt="Producto"><div class="credits"><span>1200</span> ♻️</div></div>
-                </div>
+            <div class="product-grid" id="productGrid">
+                <!-- Los productos se cargarán dinámicamente -->
+                <div>Cargando productos...</div>
+            </div>
         </section>
     </main>
 
-    <script>
-        // Lógica segura: no bloquea la navegación por defecto del enlace
-        (function () {
-            const toggle = document.getElementById('profileToggle');
-            const profileLinks = document.getElementById('profileLinks');
+    <script type="module">
+        import { supabase } from './config/db.js';
 
-            if (!toggle) return;
+        let currentUserId = null;
+        let allProducts = [];
+        let currentCategory = 'all';
 
-            // Si quieres abrir el menú en vez de navegar, mantén Alt al hacer click.
-            // Normal click -> navegación a perfil.html (no se previene).
-            toggle.addEventListener('click', function (e) {
-                if (profileLinks && e.altKey) {
-                    // abrir/cerrar menú sólo si se mantiene Alt (ejemplo opcional)
-                    e.preventDefault();
-                    profileLinks.style.display = profileLinks.style.display === 'block' ? 'none' : 'block';
+        // Función de inicialización
+        // Función de inicialización - VERSIÓN MEJORADA
+        // Función de inicialización - VERSIÓN MEJORADA
+        async function init() {
+            try {
+                console.log('=== INICIANDO APLICACIÓN ===');
+
+                // Verificar autenticación
+                const { data: { user }, error } = await supabase.auth.getUser();
+
+                if (error || !user) {
+                    console.log('Usuario no autenticado, redirigiendo al login');
+                    window.location.href = 'index.html';
+                    return;
                 }
-                // sin Alt: no hacemos preventDefault() → el navegador navegará a perfil.html
+
+                currentUserId = user.id;
+                console.log('Usuario autenticado ID:', currentUserId);
+                console.log('Tipo de ID:', typeof currentUserId);
+
+                await loadUserData();
+                await loadAllProducts(); // Esta es la función corregida
+                setupCategoryFilters();
+                setupProfileMenu();
+
+            } catch (error) {
+                console.error('Error en inicialización:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Configurar menú de perfil - VERSIÓN SIMPLIFICADA
+        function setupProfileMenu() {
+            console.log('Configurando menú de perfil...');
+
+            const profileToggle = document.getElementById('profileToggle');
+            const profileLinks = document.getElementById('profileLinks');
+            const logoutLink = document.getElementById('logoutLink');
+
+            // Toggle del menú
+            profileToggle.addEventListener('click', function (e) {
+                console.log('Click en profileToggle');
+                e.stopPropagation();
+                const isVisible = profileLinks.style.display === 'block';
+                profileLinks.style.display = isVisible ? 'none' : 'block';
             });
 
-            // cerrar menú si se clickea fuera (si está abierto)
+            // Cerrar menú al hacer click fuera
             document.addEventListener('click', function (e) {
-                if (profileLinks && profileLinks.style.display === 'block' && !profileLinks.contains(e.target) && e.target !== toggle) {
+                if (!profileToggle.contains(e.target)) {
                     profileLinks.style.display = 'none';
                 }
             });
 
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && profileLinks) profileLinks.style.display = 'none';
+            // Cerrar sesión
+            logoutLink.addEventListener('click', async function (e) {
+                e.preventDefault();
+                console.log('Click en cerrar sesión');
+                await handleLogout();
             });
-        })();
+
+            // Prevenir que los clicks en el menú lo cierren
+            profileLinks.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        // Cargar datos del usuario
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    const { data: usuario, error } = await supabase
+                        .from('usuario')
+                        .select('*')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (!error && usuario) {
+                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+                        document.getElementById('topCredits').textContent = usuario.saldo_creditos || 0;
+
+                        localStorage.setItem('user_id', user.id);
+                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                        localStorage.setItem('user_name', usuario.nombre_completo);
+                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al cargar datos del usuario:', error);
+            }
+        }
+
+        // Cargar todas las publicaciones
+        // Cargar solo publicaciones de OTROS usuarios
+        async function loadAllProducts() {
+            try {
+                console.log('🔄 Cargando publicaciones de OTROS usuarios...');
+
+                // Obtener usuario logueado
+                const { data: { user } } = await supabase.auth.getUser();
+                currentUserId = user.id;
+                console.log('👤 Usuario actual:', currentUserId);
+
+                // Cargar TODAS las publicaciones
+                const { data: todasPublicaciones, error } = await supabase
+                    .from('Publicacion')
+                    .select('*')
+                    .order('id_publicacion', { ascending: false });
+
+                if (error) {
+                    console.error('❌ Error:', error);
+                    throw error;
+                }
+
+                console.log('📦 Todas las publicaciones:', todasPublicaciones);
+
+                // FILTRAR: mostrar solo publicaciones de OTROS usuarios
+                const publicacionesFiltradas = todasPublicaciones.filter(p => {
+                    const esMiPublicacion = p.usuario_id === currentUserId;
+                    console.log(`🔍 Publicación "${p.titulo}": ${esMiPublicacion ? 'MI PUBLICACIÓN' : 'OTRO USUARIO'}`);
+                    return !esMiPublicacion; // ← Esto EXCLUYE tus publicaciones
+                });
+
+                console.log('✅ Publicaciones de otros usuarios:', publicacionesFiltradas);
+                console.log(`📊 Estadísticas: ${publicacionesFiltradas.length} de otros usuarios de ${todasPublicaciones.length} totales`);
+
+                // Mostrar solo publicaciones filtradas
+                allProducts = publicacionesFiltradas;
+                renderProducts(publicacionesFiltradas);
+
+            } catch (error) {
+                console.error('💥 Error:', error);
+                document.getElementById('productGrid').innerHTML = `
+            <div class="no-products">
+                <p>Error al cargar publicaciones: ${error.message}</p>
+                <button onclick="window.location.href='publicar.html'" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Crear Publicación
+                </button>
+            </div>
+        `;
+            }
+        }
+        // Renderizar productos -
+        // Renderizar productos - SOLO DE OTROS USUARIOS
+        function renderProducts(products) {
+            const productGrid = document.getElementById('productGrid');
+
+            if (!products || products.length === 0) {
+                productGrid.innerHTML = `
+            <div class="no-products">
+                <p>No hay publicaciones disponibles de otros usuarios en este momento</p>
+                <p>¡Sé el primero en crear una publicación!</p>
+                <button onclick="window.location.href='publicar.html'" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Crear Mi Primera Publicación
+                </button>
+            </div>
+        `;
+                return;
+            }
+
+            productGrid.innerHTML = '';
+
+            products.forEach(producto => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.dataset.productoId = producto.id_publicacion;
+
+                // Datos de la publicación
+                const titulo = producto.titulo || 'Sin título';
+                const descripcion = producto.descripcion || 'Sin descripción';
+                const precio = producto.precio || 0;
+                const categoria = producto.nombre_categoria || 'General';
+                const imagen = producto.imagen_url || null;
+
+                card.innerHTML = `
+            ${imagen ? `
+                <img src="${imagen}" alt="${titulo}" style="width: 100%; height: 150px; object-fit: cover;">
+            ` : `
+                <div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                    <span style="color: #999;">Sin imagen</span>
+                </div>
+            `}
+            
+            <div class="credits">${precio} ♻️</div>
+            <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
+            <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+               ${descripcion}
+            </p>
+            <p style="font-size: 0.7rem; color: #888; padding: 0 10px; margin: 0 0 5px 0;">
+                Categoría: ${categoria}
+            </p>
+            
+            <button class="btn-intercambiar">
+                Comprar
+            </button>
+        `;
+
+                productGrid.appendChild(card);
+            });
+
+            // Agregar event listeners para los botones de compra
+            document.querySelectorAll('.btn-intercambiar').forEach(btn => {
+                btn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    const card = this.closest('.product-card');
+                    const productoId = card.dataset.productoId;
+                    const producto = products.find(p => p.id_publicacion == productoId);
+
+                    if (producto) {
+                        await realizarCompra(producto);
+                    }
+                });
+            });
+        }
+        // Función de cierre de sesión
+        async function handleLogout() {
+            try {
+                console.log('Cerrando sesión...');
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+
+                localStorage.clear();
+                window.location.href = 'index.html?logout=true';
+
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión');
+            }
+        }
+
+        // Configurar filtros
+        function setupCategoryFilters() {
+            const categoryItems = document.querySelectorAll('#categoriesList li');
+
+            categoryItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    categoryItems.forEach(li => li.classList.remove('active'));
+                    item.classList.add('active');
+
+                    currentCategory = item.dataset.category;
+                    filterProductsByCategory(currentCategory);
+                });
+            });
+        }
+
+        function filterProductsByCategory(category) {
+            let filteredProducts = category === 'all' ? allProducts :
+                allProducts.filter(p => (p.nombre_categoria || '').toLowerCase().includes(category.toLowerCase()));
+            renderProducts(filteredProducts);
+        }
+
+        // Búsqueda
+        document.querySelector('.search-bar').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            if (!searchTerm) {
+                filterProductsByCategory(currentCategory);
+                return;
+            }
+
+            const filteredProducts = allProducts.filter(p =>
+                (p.titulo || '').toLowerCase().includes(searchTerm) ||
+                (p.descripcion || '').toLowerCase().includes(searchTerm) ||
+                (p.nombre_categoria || '').toLowerCase().includes(searchTerm)
+            );
+            renderProducts(filteredProducts);
+        });
+
+        // Funciones de compra
+        // En index2.html - MODIFICAR LA FUNCIÓN realizarCompra
+        async function realizarCompra(producto) {
+            try {
+                const saldoActual = parseInt(document.getElementById('topCredits').textContent);
+                const precio = producto.precio || 0;
+
+                if (producto.usuario_id === currentUserId) {
+                    alert('❌ No puedes comprar tu propia publicación');
+                    return;
+                }
+
+                if (saldoActual < precio) {
+                    alert(`❌ Saldo insuficiente. Necesitas ${precio} créditos pero tienes ${saldoActual}`);
+                    window.location.href = 'compra.html';
+                    return;
+                }
+
+                const titulo = producto.titulo || 'Producto';
+                if (!confirm(`¿Comprar "${titulo}" por ${precio} créditos?\n\nLos créditos quedarán en custodia hasta que confirmes la recepción del producto.`)) return;
+
+                // Crear intercambio con estado "en_proceso"
+                await crearIntercambio(producto, precio);
+
+            } catch (error) {
+                console.error('Error en la compra:', error);
+                alert('❌ Error al procesar la compra');
+            }
+        }
+
+        // Función para crear el intercambio y poner créditos en custodia
+        async function crearIntercambio(producto, precio) {
+            try {
+                console.log('🔄 Creando intercambio...');
+
+                // 1. Crear registro en Intercambio
+                const { data: intercambioData, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .insert([{
+                        creditos_verdes: precio,
+                        cantidad: 1,
+                        estado: 'en_proceso', // Estado inicial
+                        fecha_creacion: new Date(),
+                        fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+                        publicacion_id: producto.id_publicacion,
+                        usuario_id: currentUserId // El comprador
+                    }])
+                    .select();
+
+                if (intercambioError) throw intercambioError;
+
+                const intercambioId = intercambioData[0].id_intercambio;
+                console.log('✅ Intercambio creado:', intercambioId);
+
+                // 2. Poner créditos en custodia
+                const { error: custodiaError } = await supabase
+                    .from('Custodia_Creditos')
+                    .insert([{
+                        monto: precio,
+                        estado: 'retenido',
+                        fecha_retenido: new Date(),
+                        fecha_liberacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+                        billetera_vendedor: null, // Se asignará cuando se confirme
+                        billetera_comprador: await obtenerBilleteraId(currentUserId),
+                        intercambio_id: intercambioId,
+                        comprador_id: currentUserId,
+                        oferente_id: producto.usuario_id
+                    }]);
+
+                if (custodiaError) throw custodiaError;
+
+                // 3. Restar créditos del comprador
+                await actualizarSaldoComprador(currentUserId, precio);
+
+                // 4. Crear mensaje automático al vendedor
+                await crearMensajeAutomatico(intercambioId, producto);
+
+                alert(`✅ ¡Compra realizada!\n\nSe han retenido ${precio} créditos en custodia.\n\nContacta al vendedor para coordinar la entrega y confirma cuando recibas el producto.`);
+
+                // Recargar publicaciones
+                await loadAllProducts();
+
+            } catch (error) {
+                console.error('Error en crearIntercambio:', error);
+                throw error;
+            }
+        }
+
+        // Función auxiliar para obtener ID de billetera
+        async function obtenerBilleteraId(usuarioId) {
+            const { data, error } = await supabase
+                .from('Billetera')
+                .select('id_billetera')
+                .eq('usuario_id', usuarioId)
+                .single();
+
+            if (error) throw error;
+            return data.id_billetera;
+        }
+
+        // Función para actualizar saldo del comprador
+        async function actualizarSaldoComprador(usuarioId, monto) {
+            // Obtener saldo actual
+            const { data: billetera, error: billeteraError } = await supabase
+                .from('Billetera')
+                .select('credito_actual, credito_retenido')
+                .eq('usuario_id', usuarioId)
+                .single();
+
+            if (billeteraError) throw billeteraError;
+
+            const nuevoSaldo = billetera.credito_actual - monto;
+            const nuevoRetenido = billetera.credito_retenido + monto;
+
+            // Actualizar billetera
+            const { error: updateError } = await supabase
+                .from('Billetera')
+                .update({
+                    credito_actual: nuevoSaldo,
+                    credito_retenido: nuevoRetenido,
+                    ultima_actualizacion: new Date()
+                })
+                .eq('usuario_id', usuarioId);
+
+            if (updateError) throw updateError;
+
+            // Actualizar UI
+            document.getElementById('topCredits').textContent = nuevoSaldo;
+            localStorage.setItem('user_saldo', nuevoSaldo);
+        }
+
+        // Función para crear mensaje automático al vendedor
+        async function crearMensajeAutomatico(intercambioId, producto) {
+            const { error } = await supabase
+                .from('Mensaje')
+                .insert([{
+                    contenido: `¡Hola! He comprado tu producto "${producto.titulo}". Por favor, contáctame para coordinar la entrega.`,
+                    fecha_envio: new Date(),
+                    intercambio_id: intercambioId,
+                    emisor_id: currentUserId,
+                    receptor_id: producto.usuario_id
+                }]);
+
+            if (error) console.error('Error creando mensaje:', error);
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', init);
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="db.js"></script> 
-    <script type="module" src="scripts/main.js"></script>
-
 </body>
+
 </html>

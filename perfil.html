@@ -9,51 +9,114 @@
   <style>
     /* Pequeños estilos locales */
     .hidden { display: none !important; }
-.perfil-header {
-  display: flex;
-  flex-direction: column; /* coloca todo en columna */
-  align-items: center; /* centra el contenido horizontalmente */
-  text-align: center;
-  gap: 1rem;
-}
+    .perfil-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
     .perfil-info { display:flex; align-items:center; gap:1rem; }
     .perfil-foto { width:72px; height:72px; border-radius:50%; object-fit:cover; }
-    .pub-card { position:relative; border:1px solid #e6e6e6; padding:0.25rem; border-radius:6px; background:#fff; }
+    .pub-card { 
+      position:relative; 
+      border:1px solid #e6e6e6; 
+      padding:0.25rem; 
+      border-radius:6px; 
+      background:#fff;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .pub-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
     .pub-credit { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,0.7); color:#fff; padding:3px 6px; border-radius:6px; font-size:12px; }
     .menu-dots { position:absolute; top:6px; right:6px; cursor:pointer; }
-    .menu-opciones { display:none; position:absolute; top:26px; right:6px; background:#fff; border:1px solid #ddd; list-style:none; padding:6px; border-radius:6px; }
+    .menu-opciones { display:none; position:absolute; top:26px; right:6px; background:#fff; border:1px solid #ddd; list-style:none; padding:6px; border-radius:6px; z-index: 10; }
     .menu-opciones.show { display:block; }
-    .back-btn { display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; margin-bottom:1rem; padding:.25rem .5rem; border:1px solid #ddd; border-radius:6px; background:#fff; }
+    .back-btn { 
+      display:inline-flex; 
+      align-items:center; 
+      gap:.5rem; 
+      cursor:pointer; 
+      margin-bottom:1rem; 
+      padding:.5rem 1rem; 
+      border:1px solid #ddd; 
+      border-radius:6px; 
+      background:#fff;
+      transition: background-color 0.2s;
+    }
+    .back-btn:hover {
+      background-color: #f5f5f5;
+    }
     .perfil-actions { display:flex; gap:.5rem; align-items:center; }
-    .grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-top:12px; }
+    .grid { 
+      display:grid; 
+      grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); 
+      gap:12px; 
+      margin-top:12px; 
+    }
     .form-inline { border:1px solid #eee; padding:8px; border-radius:6px; margin-top:8px; }
   
     .btn-recargar {
-  margin-top: 5px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
+      margin-top: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
 
-.btn-recargar:hover {
-  background-color: #45a049;
-}
+    .btn-recargar:hover {
+      background-color: #45a049;
+    }
 
+    .publicacion img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
 
-.publicacion img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-top: 8px;
-}
+    .user-stats {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stat-item {
+      background: #f0f8f0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      min-width: 80px;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      color: #2F9A34;
+    }
+
+    .no-posts {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      grid-column: 1 / -1;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
   </style>
-
-
 </head>
 <body class="perfil-body">
   <section class="perfil-container">
@@ -65,211 +128,332 @@
       <div class="perfil-info">
         <img src="https://i.imgur.com/s1X6L2F.png" class="perfil-foto" alt="foto">
         <div class="perfil-detalle">
-          <h2 id="profileName">ricardo00</h2>
-          <p class="publicaciones" id="pubCounts">0 Publicaciones · 0 Vendidos</p>
+          <h2 id="profileName">Cargando...</h2>
+          <p id="profileEmail" style="color: #666; margin: 5px 0;"></p>
+          <div class="user-stats">
+            <div class="stat-item">
+              <div class="stat-value" id="pubCount">0</div>
+              <div>Publicaciones</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="vendidosCount">0</div>
+              <div>Vendidos</div>
+            </div>
+          </div>
         </div>
       </div>
 
-     <div class="perfil-saldo">
-  <p><strong>Saldo</strong></p>
-  <div class="saldo-badge" id="saldoBadge">0 ♻️</div>
-  <button id="recargarBtn" class="btn-recargar">💰 Recargar saldo</button>
-  <a href="historial.html" class="historial-link">Ver Historial de Compras/Ventas</a>
-</div>
+      <div class="perfil-saldo">
+        <p><strong>Saldo</strong></p>
+        <div class="saldo-badge" id="saldoBadge">0 ♻️</div>
+        <button id="recargarBtn" class="btn-recargar">💰 Recargar saldo</button>
+        <a href="historial.html" class="historial-link" style="display: block; margin-top: 8px; color: #4CAF50; text-decoration: none;">Ver Historial de Compras/Ventas</a>
+      </div>
+    </div>
 
-    <!-- Acciones: Realizar publicación (redirige a publicar.html). Se quitaron Inicio, Ajustes y Cerrar sesión -->
+    <!-- Acciones -->
     <div style="margin-top:12px; display:flex; justify-content:space-between; gap:1rem; align-items:center;">
       <div>
         <button class="btn-publicar" id="openFormBtn">➕ Realizar Publicación</button>
       </div>
 
       <div class="perfil-actions">
-        <!-- botones de Ajustes e Cerrar sesión eliminados por petición -->
+        <button id="logoutBtn" class="btn-recargar" style="background: #f44336;">🚪 Cerrar sesión</button>
       </div>
     </div>
 
-    <!-- (Se eliminó el formulario embebido; la acción de publicar se realiza en publicar.html) -->
-
-    <!-- Publicaciones -->
+    <!-- Publicaciones del usuario -->
     <div class="perfil-publicaciones">
-      <h3>Publicaciones</h3>
+      <h3>Mis Publicaciones</h3>
     </div>
 
-    <!-- Galería de publicaciones (renderizado por JS) -->
+    <!-- Galería de publicaciones -->
     <div class="grid publicaciones-grid" id="userPostsGrid">
-      <!-- JS insertará las tarjetas aquí -->
+      <div class="loading">Cargando publicaciones...</div>
     </div>
   </section>
 
 <script type="module">
-// CÓDIGO CORREGIDO: Asume que db.js está en la carpeta raíz (un nivel arriba de perfil.html)
-import { supabase } from '../db.js';
-    // --- Elementos del DOM ---
-    const backBtn = document.getElementById('backBtn');
-    const openFormBtn = document.getElementById('openFormBtn');
-    const userPostsGrid = document.getElementById('userPostsGrid');
-    const pubCounts = document.getElementById('pubCounts');
-    const profileName = document.getElementById('profileName');
-    const saldoBadge = document.getElementById('saldoBadge');
+import { supabase } from './config/db.js';
 
-    // --- Funciones de Utilidad ---
+// --- Elementos del DOM ---
+const backBtn = document.getElementById('backBtn');
+const openFormBtn = document.getElementById('openFormBtn');
+const userPostsGrid = document.getElementById('userPostsGrid');
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const saldoBadge = document.getElementById('saldoBadge');
+const pubCount = document.getElementById('pubCount');
+const vendidosCount = document.getElementById('vendidosCount');
+const logoutBtn = document.getElementById('logoutBtn');
 
-    // Renderizar las tarjetas de publicación
-    function renderPostsGrid(posts) {
-        userPostsGrid.innerHTML = '';
-        if (posts.length === 0) {
-            userPostsGrid.innerHTML = '<div>No hay publicaciones para mostrar.</div>';
-        } else {
-            posts.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'pub-card';
-                // Usamos el ID de la publicación para identificarla
-                card.dataset.id = p.id_publicacion; 
-                card.innerHTML = `
-                ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.titulo || 'Publicación'}" />` : ''}
-                   
-                <span class="menu-dots" data-id="${p.id_publicacion}">...</span>
-                    <ul class="menu-opciones" id="menu-${p.id_publicacion}">
-                        <li data-action="edit" data-id="${p.id_publicacion}">✏️ Editar</li>
-                        <li data-action="delete" data-id="${p.id_publicacion}">🗑️ Eliminar</li>
-                    </ul>
+let currentUserId = null;
 
-                <div style="padding: 8px;">
-                        <div class="pub-credit" style="position: static; margin-bottom: 8px; background: #eee; color: #333; display: inline-block;">
-                            ${p.precio || 0} ♻️
-                        </div>
+// --- Funciones de Utilidad ---
 
-                        <strong style="display: block;">${p.titulo || 'Sin título'}</strong>
-                        
-                        <p style="font-size: 0.8rem; color: #666; margin-top: 4px;">Descripción: ${p.descripcion || 'Sin descripción'}</p>
-                    </div>
-                `;
-                userPostsGrid.appendChild(card);
-            });
-        }
-        // Las cuentas se muestran como 0 (simplificado)
-        pubCounts.textContent = `${posts.length} Publicaciones · 0 Vendidos`;
-    }
-
-    // Cargar TODAS las publicaciones de la tabla 'Publicacion'
-    async function fetchAllPosts() {
-        userPostsGrid.innerHTML = '<div>Cargando publicaciones...</div>';
-        try {
-            // ⭐ CLAVE: Solo seleccionamos las columnas existentes
-            const { data: posts, error } = await supabase
-                .from('Publicacion') 
-                .select('id_publicacion, titulo, descripcion, precio, imagen_url') // ❌ Eliminada 'imagen_url'
-                .order('id_publicacion', { ascending: false });
-
-            if (error) throw error;
-            
-            renderPostsGrid(posts || []);
-
-        } catch (err) {
-            console.error('Error al cargar publicaciones:', err);
-            // Mensaje de error general
-            userPostsGrid.innerHTML = '<div>Error al cargar las publicaciones. (Verifica RLS)</div>';
-        }
-    }
-
-   // Cargar saldo desde localStorage
-function fetchSaldo() {
-  let saldo = localStorage.getItem('saldo');
-  if (!saldo) {
-    saldo = 0;
-    localStorage.setItem('saldo', saldo);
-  }
-  saldoBadge.textContent = `${saldo} ♻️`;
-}
-
-
-// ... (después de fetchAllPosts y antes de los Event Listeners)
-
-    async function handleDeletePost(postId) {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
+// Cargar datos del usuario
+async function loadUserData() {
+    try {
+        console.log('Cargando datos del usuario...');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            alert('Debes iniciar sesión para ver tu perfil');
+            window.location.href = 'index.html';
             return;
         }
 
-        try {
-            // ⭐ CLAVE: Eliminar de la tabla Publicacion por ID
-            const { error } = await supabase
-                .from('Publicacion')
-                .delete()
-                .eq('id_publicacion', postId); 
+        currentUserId = user.id;
+        console.log('Usuario ID:', currentUserId);
 
-            if (error) throw error;
+        // Obtener datos del usuario desde la tabla 'usuario'
+        const { data: usuario, error } = await supabase
+            .from('usuario')
+            .select('*')
+            .eq('auth_id', user.id)
+            .single();
 
-            alert('Publicación eliminada con éxito.');
-            // Recargar las publicaciones después de eliminar
-            fetchAllPosts(); 
-
-        } catch (err) {
-            console.error('Error al eliminar publicación:', err);
-            alert('Error al eliminar la publicación. Revise la consola y las políticas RLS.');
+        if (error) {
+            console.error('Error al cargar usuario:', error);
+            throw error;
         }
+
+        if (usuario) {
+            console.log('Datos del usuario:', usuario);
+            // Mostrar información del usuario
+            profileName.textContent = usuario.nombre_completo || 'Usuario';
+            profileEmail.textContent = usuario.correo_electronico || user.email;
+            
+            // Actualizar saldo
+            const saldo = usuario.saldo_creditos || 0;
+            saldoBadge.textContent = `${saldo} ♻️`;
+            localStorage.setItem('user_saldo', saldo);
+            
+            // Guardar datos en localStorage para otras páginas
+            localStorage.setItem('user_id', user.id);
+            localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+            localStorage.setItem('user_name', usuario.nombre_completo);
+        } else {
+            console.log('No se encontraron datos del usuario en la tabla usuario');
+        }
+
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        // Usar datos de localStorage como fallback
+        const userName = localStorage.getItem('user_name') || 'Usuario';
+        const userEmail = localStorage.getItem('user_email') || '';
+        const userSaldo = localStorage.getItem('user_saldo') || '0';
+        
+        profileName.textContent = userName;
+        profileEmail.textContent = userEmail;
+        saldoBadge.textContent = `${userSaldo} ♻️`;
+    }
+}
+
+// Cargar publicaciones del usuario
+async function fetchUserPosts() {
+    if (!currentUserId) {
+        console.log('No hay currentUserId, no se pueden cargar publicaciones');
+        return;
     }
 
-
-    // --- Event Listeners ---
+    console.log('Cargando publicaciones para usuario:', currentUserId);
+    userPostsGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
     
-    // Al presionar "Realizar Publicación"
-    openFormBtn.addEventListener('click', function () {
-        window.location.href = 'publicar.html';
-    });
+    try {
+        const { data: posts, error } = await supabase
+            .from('Publicacion')
+            .select('*')
+            .eq('usuario_id', currentUserId);
 
-    // Flecha volver
-    backBtn.addEventListener('click', function () {
-        if (history.length > 1) history.back(); else window.location.href = 'index.html';
-    });
+        if (error) {
+            console.error('Error al cargar publicaciones:', error);
+            throw error;
+        }
+        
+        console.log('Publicaciones encontradas:', posts);
+        renderPostsGrid(posts || []);
+        updateStats(posts || []);
 
-    // Inicializar al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-        profileName.textContent = 'ricardo00';
-        fetchSaldo();
-        fetchAllPosts(); // Llamamos a la función de carga simplificada
-    });
-const recargarBtn = document.getElementById('recargarBtn');
+    } catch (err) {
+        console.error('Error completo al cargar publicaciones:', err);
+        userPostsGrid.innerHTML = `
+            <div class="no-posts">
+                <p>Error al cargar las publicaciones</p>
+                <p>${err.message}</p>
+            </div>
+        `;
+    }
+}
 
-// Al presionar el botón, ir a la página de compra
-recargarBtn.addEventListener('click', function () {
-  window.location.href = 'compra.html';
+// Renderizar publicaciones
+function renderPostsGrid(posts) {
+    userPostsGrid.innerHTML = '';
+    
+    if (posts.length === 0) {
+        userPostsGrid.innerHTML = `
+            <div class="no-posts">
+                <p>No tienes publicaciones aún</p>
+                <p>Crea tu primera publicación haciendo clic en "Realizar Publicación"</p>
+                <button onclick="window.location.href='publicar.html'" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Crear Publicación
+                </button>
+            </div>
+        `;
+    } else {
+        posts.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'pub-card';
+            card.dataset.id = p.id_publicacion;
+            
+            // Mapeo de campos según la estructura real
+            const titulo = p.titulo || p.description || 'Sin título';
+            const descripcion = p.descripcion || p.meaning_of_text || 'Sin descripción';
+            const precio = p.precio || p.private || 0;
+            const categoria = p.nombre_categoria || p.mention_anticipator || 'General';
+            const imagen = p.imagen_url || p.images_url || null;
+            
+            card.innerHTML = `
+                ${imagen ? `
+                    <img src="${imagen}" alt="${titulo}" 
+                         style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px 6px 0 0;">
+                ` : `
+                    <div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 6px 6px 0 0;">
+                        <span style="color: #999;">Sin imagen</span>
+                    </div>
+                `}
+                
+                <span class="menu-dots" data-id="${p.id_publicacion}">⋯</span>
+                <ul class="menu-opciones" id="menu-${p.id_publicacion}">
+                    <li data-action="edit" data-id="${p.id_publicacion}">✏️ Editar</li>
+                    <li data-action="delete" data-id="${p.id_publicacion}">🗑️ Eliminar</li>
+                </ul>
+
+                <div style="padding: 12px;">
+                    <div style="background: #eee; color: #333; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px;">
+                        ${precio} ♻️
+                    </div>
+                    <strong style="display: block; font-size: 1rem; margin-bottom: 4px;">${titulo}</strong>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        ${descripcion}
+                    </p>
+                    <small style="color: #999; font-size: 0.7rem; display: block; margin-top: 8px;">
+                        Categoría: ${categoria}
+                    </small>
+                </div>
+            `;
+            userPostsGrid.appendChild(card);
+        });
+    }
+}
+
+// Actualizar estadísticas
+function updateStats(posts) {
+    pubCount.textContent = posts.length;
+    // Por simplicidad, asumimos que 0 vendidos
+    vendidosCount.textContent = '0';
+}
+
+// Eliminar publicación
+async function handleDeletePost(postId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('Publicacion')
+            .delete()
+            .eq('id_publicacion', postId)
+            .eq('usuario_id', currentUserId);
+
+        if (error) throw error;
+
+        alert('Publicación eliminada con éxito.');
+        fetchUserPosts();
+
+    } catch (err) {
+        console.error('Error al eliminar publicación:', err);
+        alert('Error al eliminar la publicación.');
+    }
+}
+
+// Cerrar sesión
+async function handleLogout() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+
+        // Limpiar localStorage
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_saldo');
+
+        alert('Sesión cerrada correctamente');
+        window.location.href = 'index.html?logout=true';
+
+    } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        alert('Error al cerrar sesión');
+    }
+}
+
+// --- Event Listeners ---
+backBtn.addEventListener('click', () => {
+    if (history.length > 1) history.back(); 
+    else window.location.href = 'index2.html';
 });
 
+openFormBtn.addEventListener('click', () => {
+    window.location.href = 'publicar.html';
+});
+
+logoutBtn.addEventListener('click', handleLogout);
+
 userPostsGrid.addEventListener('click', function(event) {
-        const target = event.target;
-        
-        // 1. Mostrar/Ocultar el menú al hacer clic en los puntos
-        if (target.classList.contains('menu-dots')) {
-            const postId = target.dataset.id;
-            const menu = document.getElementById(`menu-${postId}`);
-            
-            // Ocultar todos los menús primero, excepto el actual
-            document.querySelectorAll('.menu-opciones.show').forEach(m => {
-                if (m.id !== `menu-${postId}`) {
-                    m.classList.remove('show');
-                }
-            });
-
-            menu.classList.toggle('show');
-        }
-
-        // 2. Ejecutar la acción (Editar o Eliminar)
-        if (target.tagName === 'LI' && target.closest('.menu-opciones')) {
-            const action = target.dataset.action;
-            const postId = target.dataset.id;
-
-            // Ocultar el menú después de seleccionar una opción
-            target.closest('.menu-opciones').classList.remove('show');
-
-            if (action === 'delete') {
-                handleDeletePost(postId);
-            } else if (action === 'edit') {
-                // Redirigir a una página de edición, pasando el ID
-                window.location.href = `editar.html?id=${postId}`;
-            }
-        }
-    });
+    const target = event.target;
     
+    // Mostrar/Ocultar menú
+    if (target.classList.contains('menu-dots')) {
+        const postId = target.dataset.id;
+        const menu = document.getElementById(`menu-${postId}`);
+        
+        // Ocultar otros menús
+        document.querySelectorAll('.menu-opciones.show').forEach(m => {
+            if (m.id !== `menu-${postId}`) m.classList.remove('show');
+        });
+
+        menu.classList.toggle('show');
+    }
+
+    // Ejecutar acción
+    if (target.tagName === 'LI' && target.closest('.menu-opciones')) {
+        const action = target.dataset.action;
+        const postId = target.dataset.id;
+
+        target.closest('.menu-opciones').classList.remove('show');
+
+        if (action === 'delete') {
+            handleDeletePost(postId);
+        } else if (action === 'edit') {
+            window.location.href = `editar.html?id=${postId}`;
+        }
+    }
+});
+
+const recargarBtn = document.getElementById('recargarBtn');
+recargarBtn.addEventListener('click', () => {
+    window.location.href = 'compra.html';
+});
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Inicializando perfil...');
+    await loadUserData();
+    await fetchUserPosts();
+});
 </script>
 </body>
 </html>
