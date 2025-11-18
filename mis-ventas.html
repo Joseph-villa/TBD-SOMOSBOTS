@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Ventas - Plataforma de Trueque</title>
+    <link rel="stylesheet" href="styles/estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .venta-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .estado-en_proceso { background: #fff3cd; color: #856404; }
+        .estado-completado { background: #d4edda; color: #155724; }
+        .estado-cancelado { background: #f8d7da; color: #721c24; }
+        
+        .estado-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .creditos-retenidos {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .acciones-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-contactar {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-contactar:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        /* Modal de mensajería */
+        .modal-mensajes {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content-mensajes {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header-mensajes {
+            background: var(--green);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body-mensajes {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .mensaje {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .mensaje-propio {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .mensaje-otro {
+            background: #f5f5f5;
+        }
+
+        .input-mensaje {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-mensaje input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .btn-enviar {
+            background: var(--green);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #007bff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .back-btn:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body class="perfil-body">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            <div id="loadingText">Procesando...</div>
+        </div>
+    </div>
+
+    <section class="perfil-container">
+        <button class="back-btn" onclick="window.location.href='index2.html'">← Volver al Marketplace</button>
+
+        <h2>💰 Mis Ventas</h2>
+
+        <div id="ventasList">
+            <div>Cargando tus ventas...</div>
+        </div>
+    </section>
+
+    <!-- Modal de Mensajería -->
+    <div class="modal-mensajes" id="modalMensajes">
+        <div class="modal-content-mensajes">
+            <div class="modal-header-mensajes">
+                <h3 id="tituloChat">Chat con Comprador</h3>
+                <button onclick="cerrarModalMensajes()"
+                    style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div class="modal-body-mensajes" id="cuerpoMensajes">
+                <!-- Los mensajes se cargarán aquí -->
+            </div>
+            <div class="input-mensaje">
+                <input type="text" id="inputMensaje" placeholder="Escribe tu mensaje..."
+                    onkeypress="if(event.key=='Enter')enviarMensaje()">
+                <button class="btn-enviar" onclick="enviarMensaje()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './config/db.js';
+
+        let currentUserId = null;
+        let intercambioActual = null;
+
+        // Funciones de loading
+        function mostrarLoading(mensaje = 'Procesando...') {
+            document.getElementById('loadingText').textContent = mensaje;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function ocultarLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Cargar ventas del usuario (como vendedor)
+        async function cargarMisVentas() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                currentUserId = user.id;
+                console.log('🔄 Cargando ventas para vendedor:', currentUserId);
+
+                // Obtener intercambios donde el usuario es el vendedor
+                const { data: intercambios, error } = await supabase
+                    .from('Intercambio')
+                    .select('*')
+                    .eq('usuario_vendedor_id', currentUserId)
+                    .order('fecha_creacion', { ascending: false });
+
+                if (error) throw error;
+
+                if (!intercambios || intercambios.length === 0) {
+                    renderVentas([]);
+                    return;
+                }
+
+                // Cargar datos relacionados
+                const ventasCompletas = await Promise.all(
+                    intercambios.map(async (intercambio) => {
+                        // Cargar publicación
+                        let publicacion = null;
+                        if (intercambio.publicacion_id) {
+                            const { data: pubData } = await supabase
+                                .from('Publicacion')
+                                .select('*')
+                                .eq('id_publicacion', intercambio.publicacion_id)
+                                .single();
+                            publicacion = pubData;
+                        }
+
+                        // Cargar mensajes
+                        const { data: mensajes } = await supabase
+                            .from('Mensaje')
+                            .select('*')
+                            .eq('intercambio_id', intercambio.id_intercambio)
+                            .order('fecha_envio', { ascending: true });
+
+                        // Cargar custodia
+                        let custodia = null;
+                        try {
+                            const { data: custodiaData } = await supabase
+                                .from('custodia_creditos')
+                                .select('*')
+                                .eq('intercambio_id', intercambio.id_intercambio)
+                                .single();
+                            custodia = custodiaData;
+                        } catch (custodiaError) {
+                            console.log('ℹ️ No se pudo cargar custodia:', custodiaError.message);
+                        }
+
+                        // Cargar datos del comprador
+                        let comprador = null;
+                        if (intercambio.usuario_id) {
+                            const { data: userData } = await supabase
+                                .from('usuario')
+                                .select('nombre_completo')
+                                .eq('auth_id', intercambio.usuario_id)
+                                .single();
+                            comprador = userData;
+                        }
+
+                        return {
+                            ...intercambio,
+                            publicacion: publicacion,
+                            mensajes: mensajes || [],
+                            custodia: custodia,
+                            comprador: comprador
+                        };
+                    })
+                );
+
+                renderVentas(ventasCompletas);
+
+            } catch (error) {
+                console.error('❌ Error cargando ventas:', error);
+                document.getElementById('ventasList').innerHTML = `
+                    <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
+                        <h3>❌ Error al cargar las ventas</h3>
+                        <p>${error.message}</p>
+                        <button onclick="location.reload()" 
+                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Reintentar
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderVentas(ventas) {
+            const ventasList = document.getElementById('ventasList');
+            
+            if (!ventas || ventas.length === 0) {
+                ventasList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3>📭 No tienes ventas realizadas</h3>
+                        <p>Cuando realices ventas, aparecerán aquí.</p>
+                        <button onclick="window.location.href='publicar.html'" 
+                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            📤 Crear Publicación
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            ventasList.innerHTML = ventas.map(venta => {
+                const precio = parseFloat(venta.creditos_verdes.replace(/[^\d.-]/g, ''));
+                const tieneMensajes = venta.mensajes && venta.mensajes.length > 0;
+                const creditosRetenidos = venta.custodia && venta.custodia.estado === 'retenido';
+                
+                // Contar mensajes no leídos
+                let mensajesNoLeidos = 0;
+                if (tieneMensajes) {
+                    mensajesNoLeidos = venta.mensajes.filter(m => 
+                        m.receptor_id === currentUserId && !m.leido
+                    ).length;
+                }
+
+                const estado = venta.estado || 'en_proceso';
+                const estadoClass = `estado-${estado}`;
+                const estadoTexto = estado.replace('_', ' ');
+
+                const nombreComprador = venta.comprador?.nombre_completo || 'Comprador';
+                const tituloProducto = venta.publicacion?.titulo || 'Producto';
+
+                return `
+                    <div class="venta-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <h3 style="margin: 0; flex: 1;">${tituloProducto}</h3>
+                            <span class="${estadoClass} estado-badge">${estadoTexto.toUpperCase()}</span>
+                        </div>
+                        
+                        <p><strong>Precio:</strong> ${precio} ♻️</p>
+                        <p><strong>Comprador:</strong> ${nombreComprador}</p>
+                        <p><strong>Fecha:</strong> ${new Date(venta.fecha_creacion).toLocaleDateString()}</p>
+                        
+                        ${creditosRetenidos ? `
+                            <div class="creditos-retenidos">
+                                <i class="fas fa-lock"></i> 
+                                <strong>${precio} créditos en custodia</strong>
+                                <br>
+                                <small>Esperando confirmación del comprador</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${venta.custodia && venta.custodia.estado === 'liberado' ? `
+                            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">
+                                <i class="fas fa-check-circle"></i> 
+                                <strong>Créditos liberados</strong>
+                                <br>
+                                <small>El comprador confirmó la recepción</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${tieneMensajes ? `
+                            <p style="color: #17a2b8;">
+                                <i class="fas fa-comments"></i> 
+                                ${mensajesNoLeidos > 0 ? `<strong>${mensajesNoLeidos} mensaje(s) nuevo(s)</strong>` : 'Tienes mensajes'}
+                            </p>
+                        ` : ''}
+                        
+                        <div class="acciones-container">
+                            <button class="btn-contactar" onclick="abrirChat(${venta.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${venta.usuario_id}')">
+                                <i class="fas fa-comment"></i> 
+                                ${tieneMensajes ? 'Ver Chat' : 'Contactar Comprador'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== SISTEMA DE MENSAJERÍA ==========
+
+        window.abrirChat = async function (intercambioId, tituloProducto, compradorId) {
+            intercambioActual = intercambioId;
+            document.getElementById('tituloChat').textContent = `Chat: ${tituloProducto}`;
+            document.getElementById('modalMensajes').style.display = 'flex';
+
+            await cargarMensajes(intercambioId);
+        }
+
+        window.cerrarModalMensajes = function () {
+            document.getElementById('modalMensajes').style.display = 'none';
+            intercambioActual = null;
+        }
+
+        async function cargarMensajes(intercambioId) {
+            try {
+                const { data: mensajes, error } = await supabase
+                    .from('Mensaje')
+                    .select('*')
+                    .eq('intercambio_id', intercambioId)
+                    .order('fecha_envio', { ascending: true });
+
+                if (error) throw error;
+
+                const cuerpoMensajes = document.getElementById('cuerpoMensajes');
+                cuerpoMensajes.innerHTML = '';
+
+                if (mensajes && mensajes.length > 0) {
+                    mensajes.forEach(mensaje => {
+                        const esPropio = mensaje.emisor_id === currentUserId;
+                        const mensajeDiv = document.createElement('div');
+                        mensajeDiv.className = `mensaje ${esPropio ? 'mensaje-propio' : 'mensaje-otro'}`;
+                        mensajeDiv.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                ${esPropio ? 'Tú' : 'Comprador'}
+                            </div>
+                            <div>${mensaje.contenido}</div>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                                ${new Date(mensaje.fecha_envio).toLocaleString()}
+                            </div>
+                        `;
+                        cuerpoMensajes.appendChild(mensajeDiv);
+                    });
+                } else {
+                    cuerpoMensajes.innerHTML = '<p style="text-align: center; color: #666;">No hay mensajes aún. Sé el primero en escribir.</p>';
+                }
+
+                // Scroll al final
+                cuerpoMensajes.scrollTop = cuerpoMensajes.scrollHeight;
+
+            } catch (error) {
+                console.error('Error cargando mensajes:', error);
+            }
+        }
+
+        window.enviarMensaje = async function () {
+            const input = document.getElementById('inputMensaje');
+            const mensaje = input.value.trim();
+
+            if (!mensaje || !intercambioActual) return;
+
+            try {
+                // Obtener el comprador_id del intercambio
+                const { data: intercambio, error } = await supabase
+                    .from('Intercambio')
+                    .select('usuario_id')
+                    .eq('id_intercambio', intercambioActual)
+                    .single();
+
+                if (error) throw error;
+
+                const { error: insertError } = await supabase
+                    .from('Mensaje')
+                    .insert([{
+                        contenido: mensaje,
+                        fecha_envio: new Date(),
+                        intercambio_id: intercambioActual,
+                        emisor_id: currentUserId,
+                        receptor_id: intercambio.usuario_id
+                    }]);
+
+                if (insertError) throw insertError;
+
+                input.value = '';
+                await cargarMensajes(intercambioActual);
+
+            } catch (error) {
+                console.error('Error enviando mensaje:', error);
+                alert('Error al enviar el mensaje');
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', cargarMisVentas);
+    </script>
+</body>
+</html>

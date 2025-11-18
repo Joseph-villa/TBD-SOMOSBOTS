@@ -1,288 +1,967 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Compras - Plataforma de Trueque</title>
     <link rel="stylesheet" href="styles/estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .compra-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
             background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .estado-en-proceso { color: #ff9800; font-weight: bold; }
-        .estado-completado { color: #4CAF50; font-weight: bold; }
-        .estado-cancelado { color: #f44336; font-weight: bold; }
-        .btn-confirmar { background: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-cancelar { background: #f44336; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-contactar { background: #2196F3; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+
+        /* CORREGIDO: Clases de estado bien definidas */
+        .estado-en_proceso {
+            background: #fff3cd;
+            color: #856404;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .estado-completado {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .estado-cancelado {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .btn-confirmar {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-confirmar:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-cancelar {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-cancelar:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-contactar {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-contactar:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .btn-calificar {
+            background: #ffc107;
+            color: #212529;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-calificar:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .acciones-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .creditos-retenidos {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        /* Modal de mensajería */
+        .modal-mensajes {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content-mensajes {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header-mensajes {
+            background: var(--green);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body-mensajes {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .mensaje {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .mensaje-propio {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .mensaje-otro {
+            background: #f5f5f5;
+        }
+
+        .input-mensaje {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-mensaje input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .btn-enviar {
+            background: var(--green);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Modal de calificación */
+        .modal-calificacion {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .estrellas {
+            display: flex;
+            gap: 5px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .estrella {
+            font-size: 2rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .estrella:hover,
+        .estrella.seleccionada {
+            color: #ffc107;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Estado por defecto */
+        .estado {
+            background: #e9ecef;
+            color: #495057;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #007bff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .back-btn:hover {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
+
 <body class="perfil-body">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            <div id="loadingText">Procesando...</div>
+        </div>
+    </div>
+
     <section class="perfil-container">
         <button class="back-btn" onclick="window.location.href='index2.html'">← Volver al Marketplace</button>
-        
+
         <h2>🛒 Mis Compras</h2>
-        
+
         <div id="comprasList">
             <div>Cargando tus compras...</div>
         </div>
     </section>
 
-<script type="module">
-import { supabase } from './config/db.js';
-
-let currentUserId = null;
-
-// Cargar compras del usuario
-async function cargarMisCompras() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        currentUserId = user.id;
-
-        // Obtener intercambios del usuario
-        const { data: intercambios, error } = await supabase
-            .from('Intercambio')
-            .select(`
-                *,
-                publicacion:Publicacion(*),
-                custodia:Custodia_Creditos(*)
-            `)
-            .eq('usuario_id', currentUserId)
-            .order('fecha_creacion', { ascending: false });
-
-        if (error) throw error;
-
-        renderCompras(intercambios || []);
-
-    } catch (error) {
-        console.error('Error cargando compras:', error);
-        document.getElementById('comprasList').innerHTML = '<div>Error al cargar las compras</div>';
-    }
-}
-
-// Renderizar compras
-function renderCompras(compras) {
-    const comprasList = document.getElementById('comprasList');
-    
-    if (compras.length === 0) {
-        comprasList.innerHTML = '<div>No tienes compras realizadas</div>';
-        return;
-    }
-
-    comprasList.innerHTML = compras.map(compra => `
-        <div class="compra-card">
-            <h3>${compra.publicacion?.titulo || 'Producto'}</h3>
-            <p><strong>Precio:</strong> ${compra.creditos_verdes} ♻️</p>
-            <p><strong>Estado:</strong> <span class="estado-${compra.estado}">${compra.estado}</span></p>
-            <p><strong>Fecha:</strong> ${new Date(compra.fecha_creacion).toLocaleDateString()}</p>
-            
-            ${compra.estado === 'en_proceso' ? `
-                <div style="margin-top: 15px;">
-                    <button class="btn-confirmar" onclick="confirmarRecepcion(${compra.id_intercambio})">
-                        ✅ Confirmar Recepción
-                    </button>
-                    <button class="btn-cancelar" onclick="cancelarCompra(${compra.id_intercambio})" style="margin-left: 10px;">
-                        ❌ Cancelar Compra
-                    </button>
-                    <button class="btn-contactar" onclick="contactarVendedor('${compra.publicacion?.usuario_id}')" style="margin-left: 10px;">
-                        📞 Contactar Vendedor
-                    </button>
-                </div>
-            ` : ''}
-            
-            ${compra.estado === 'completado' ? `
-                <p style="color: #4CAF50; margin-top: 10px;">✅ Transacción completada</p>
-            ` : ''}
+    <!-- Modal de Mensajería -->
+    <div class="modal-mensajes" id="modalMensajes">
+        <div class="modal-content-mensajes">
+            <div class="modal-header-mensajes">
+                <h3 id="tituloChat">Chat con Vendedor</h3>
+                <button onclick="cerrarModalMensajes()"
+                    style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div class="modal-body-mensajes" id="cuerpoMensajes">
+                <!-- Los mensajes se cargarán aquí -->
+            </div>
+            <div class="input-mensaje">
+                <input type="text" id="inputMensaje" placeholder="Escribe tu mensaje..."
+                    onkeypress="if(event.key=='Enter')enviarMensaje()">
+                <button class="btn-enviar" onclick="enviarMensaje()">Enviar</button>
+            </div>
         </div>
-    `).join('');
-}
+    </div>
 
-// Confirmar recepción del producto
-window.confirmarRecepcion = async function(intercambioId) {
-    if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor.')) return;
+    <!-- Modal de Calificación -->
+    <div class="modal-calificacion" id="modalCalificacion">
+        <div style="background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px;">
+            <h3>Calificar Transacción</h3>
+            <p id="productoCalificar"></p>
 
-    try {
-        // 1. Actualizar estado del intercambio
-        const { error: intercambioError } = await supabase
-            .from('Intercambio')
-            .update({ 
-                estado: 'completado',
-                fecha_cierre: new Date()
-            })
-            .eq('id_intercambio', intercambioId);
+            <div class="estrellas" id="estrellasCalificacion">
+                <span class="estrella" data-puntuacion="1">★</span>
+                <span class="estrella" data-puntuacion="2">★</span>
+                <span class="estrella" data-puntuacion="3">★</span>
+                <span class="estrella" data-puntuacion="4">★</span>
+                <span class="estrella" data-puntuacion="5">★</span>
+            </div>
 
-        if (intercambioError) throw intercambioError;
+            <textarea id="comentarioCalificacion" placeholder="Comentario opcional..."
+                style="width: 100%; height: 100px; margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 6px;"></textarea>
 
-        // 2. Liberar créditos al vendedor
-        await liberarCreditosVendedor(intercambioId);
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn-confirmar" onclick="enviarCalificacion()">Enviar Calificación</button>
+                <button class="btn-cancelar" onclick="cerrarModalCalificacion()">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
-        // 3. Actualizar custodia
-        const { error: custodiaError } = await supabase
-            .from('Custodia_Creditos')
-            .update({ 
-                estado: 'liberado',
-                fecha_liberacion: new Date()
-            })
-            .eq('intercambio_id', intercambioId);
+    <script type="module">
+        import { supabase } from './config/db.js';
 
-        if (custodiaError) throw custodiaError;
+        let currentUserId = null;
+        let intercambioActual = null;
+        let puntuacionSeleccionada = 0;
 
-        alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor.');
-        
-        // Recargar compras
-        cargarMisCompras();
+        // Función para convertir money a número
+        function convertirMoneyANumero(valorMoney) {
+            if (typeof valorMoney === 'number') return valorMoney;
+            if (typeof valorMoney === 'string') {
+                return parseFloat(valorMoney.replace(/[^\d.-]/g, '')) || 0;
+            }
+            return 0;
+        }
 
-    } catch (error) {
-        console.error('Error confirmando recepción:', error);
-        alert('❌ Error al confirmar la recepción');
-    }
-}
+        // Funciones de loading
+        function mostrarLoading(mensaje = 'Procesando...') {
+            document.getElementById('loadingText').textContent = mensaje;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
 
-// Liberar créditos al vendedor
-async function liberarCreditosVendedor(intercambioId) {
-    // Obtener datos de la custodia
-    const { data: custodia, error } = await supabase
-        .from('Custodia_Creditos')
-        .select('*')
-        .eq('intercambio_id', intercambioId)
-        .single();
+        function ocultarLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
 
-    if (error) throw error;
+        // Cargar compras del usuario
+        async function cargarMisCompras() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    console.error('Usuario no autenticado');
+                    document.getElementById('comprasList').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <h3>🔒 Debes iniciar sesión</h3>
+                            <p>Por favor inicia sesión para ver tus compras.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                currentUserId = user.id;
+                console.log('🔄 Cargando compras para usuario:', currentUserId);
 
-    // Obtener billetera del vendedor
-    const { data: billeteraVendedor, error: billeteraError } = await supabase
-        .from('Billetera')
-        .select('credito_actual, credito_total')
-        .eq('usuario_id', custodia.oferente_id)
-        .single();
+                // Obtener intercambios básicos
+                const { data: intercambios, error } = await supabase
+                    .from('Intercambio')
+                    .select('*')
+                    .eq('usuario_id', currentUserId)
+                    .order('fecha_creacion', { ascending: false });
 
-    if (billeteraError) throw billeteraError;
+                if (error) {
+                    console.error('Error al cargar intercambios:', error);
+                    throw error;
+                }
 
-    // Actualizar billetera del vendedor
-    const nuevoSaldoVendedor = billeteraVendedor.credito_actual + custodia.monto;
-    const nuevoTotalVendedor = billeteraVendedor.credito_total + custodia.monto;
+                console.log('📦 Intercambios encontrados:', intercambios);
 
-    await supabase
-        .from('Billetera')
-        .update({
-            credito_actual: nuevoSaldoVendedor,
-            credito_total: nuevoTotalVendedor,
-            ultima_actualizacion: new Date()
-        })
-        .eq('usuario_id', custodia.oferente_id);
+                if (!intercambios || intercambios.length === 0) {
+                    renderCompras([]);
+                    return;
+                }
 
-    // Actualizar custodia con billetera del vendedor
-    const billeteraVendedorId = await obtenerBilleteraId(custodia.oferente_id);
-    await supabase
-        .from('Custodia_Creditos')
-        .update({ billetera_vendedor: billeteraVendedorId })
-        .eq('intercambio_id', intercambioId);
-}
+                // Cargar datos relacionados
+                const intercambiosCompletos = await Promise.all(
+                    intercambios.map(async (intercambio) => {
+                        console.log('🔄 Procesando intercambio:', intercambio.id_intercambio);
 
-// Cancelar compra
-window.cancelarCompra = async function(intercambioId) {
-    if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta.')) return;
+                        // Cargar publicación
+                        let publicacion = null;
+                        if (intercambio.publicacion_id) {
+                            const { data: pubData } = await supabase
+                                .from('Publicacion')
+                                .select('*')
+                                .eq('id_publicacion', intercambio.publicacion_id)
+                                .single();
+                            publicacion = pubData;
+                        }
 
-    try {
-        // 1. Actualizar estado del intercambio
-        const { error: intercambioError } = await supabase
-            .from('Intercambio')
-            .update({ 
-                estado: 'cancelado',
-                fecha_cierre: new Date()
-            })
-            .eq('id_intercambio', intercambioId);
+                        // Cargar mensajes
+                        const { data: mensajes } = await supabase
+                            .from('Mensaje')
+                            .select('*')
+                            .eq('intercambio_id', intercambio.id_intercambio)
+                            .order('fecha_envio', { ascending: true });
 
-        if (intercambioError) throw intercambioError;
+                        // Cargar custodia (si existe)
+                        let custodia = null;
+                        try {
+                            const { data: custodiaData } = await supabase
+                                .from('custodia_creditos')
+                                .select('*')
+                                .eq('intercambio_id', intercambio.id_intercambio)
+                                .single();
+                            custodia = custodiaData;
+                        } catch (custodiaError) {
+                            console.log('ℹ️ Tabla Custodia_Creditos no disponible:', custodiaError.message);
+                        }
 
-        // 2. Devolver créditos al comprador
-        await devolverCreditosComprador(intercambioId);
+                        // Cargar calificaciones
+                        const { data: calificaciones } = await supabase
+                            .from('calificacion')
+                            .select('*')
+                            .eq('intercambio_id', intercambio.id_intercambio);
 
-        // 3. Actualizar custodia
-        const { error: custodiaError } = await supabase
-            .from('Custodia_Creditos')
-            .update({ 
-                estado: 'devuelto',
-                fecha_liberacion: new Date()
-            })
-            .eq('intercambio_id', intercambioId);
+                        // Cargar datos del vendedor
+                        let vendedor = null;
+                        if (intercambio.usuario_vendedor_id) {
+                            const { data: userData } = await supabase
+                                .from('usuario')
+                                .select('nombre_completo')
+                                .eq('auth_id', intercambio.usuario_vendedor_id)
+                                .single();
+                            vendedor = userData;
+                        }
 
-        if (custodiaError) throw custodiaError;
+                        return {
+                            ...intercambio,
+                            publicacion: publicacion,
+                            mensajes: mensajes || [],
+                            custodia: custodia,
+                            calificaciones: calificaciones || [],
+                            vendedor: vendedor
+                        };
+                    })
+                );
 
-        alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta.');
-        
-        // Recargar compras
-        cargarMisCompras();
+                console.log('✅ Intercambios completos cargados:', intercambiosCompletos);
+                renderCompras(intercambiosCompletos);
 
-    } catch (error) {
-        console.error('Error cancelando compra:', error);
-        alert('❌ Error al cancelar la compra');
-    }
-}
+            } catch (error) {
+                console.error('❌ Error cargando compras:', error);
+                document.getElementById('comprasList').innerHTML = `
+                    <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
+                        <h3>❌ Error al cargar las compras</h3>
+                        <p>${error.message}</p>
+                        <button onclick="location.reload()" 
+                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Reintentar
+                        </button>
+                    </div>
+                `;
+            }
+        }
 
-// Devolver créditos al comprador
-async function devolverCreditosComprador(intercambioId) {
-    const { data: custodia, error } = await supabase
-        .from('Custodia_Creditos')
-        .select('*')
-        .eq('intercambio_id', intercambioId)
-        .single();
+        // CORREGIDO: Función renderCompras bien definida
+        function renderCompras(compras) {
+            const comprasList = document.getElementById('comprasList');
+            
+            if (!compras || compras.length === 0) {
+                comprasList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3>📭 No tienes compras realizadas</h3>
+                        <p>Cuando realices compras, aparecerán aquí.</p>
+                        <button onclick="window.location.href='index2.html'" 
+                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🛍️ Ir al Marketplace
+                        </button>
+                    </div>
+                `;
+                return;
+            }
 
-    if (error) throw error;
+            comprasList.innerHTML = compras.map(compra => {
+                const precio = convertirMoneyANumero(compra.creditos_verdes);
+                const tieneMensajes = compra.mensajes && compra.mensajes.length > 0;
+                const tieneCalificacion = compra.calificaciones && compra.calificaciones.length > 0;
+                const creditosRetenidos = compra.custodia && compra.custodia.estado === 'retenido';
+                
+                // Contar mensajes no leídos de forma segura
+                let mensajesNoLeidos = 0;
+                if (tieneMensajes) {
+                    mensajesNoLeidos = compra.mensajes.filter(m => 
+                        m.receptor_id === currentUserId && !m.leido
+                    ).length;
+                }
 
-    // Obtener billetera actual del comprador
-    const { data: billetera, error: billeteraError } = await supabase
-        .from('Billetera')
-        .select('credito_actual, credito_retenido')
-        .eq('usuario_id', custodia.comprador_id)
-        .single();
+                // Manejar datos de publicación de forma segura
+                const tituloProducto = compra.publicacion?.titulo || 'Producto';
+                const nombreVendedor = compra.vendedor?.nombre_completo || 'Vendedor';
 
-    if (billeteraError) throw billeteraError;
+                // CORREGIDO: Manejo seguro del estado
+                const estado = compra.estado || 'en_proceso';
+                const estadoClass = `estado-${estado}`;
+                const estadoTexto = estado.replace('_', ' ');
 
-    // Devolver créditos
-    const nuevoSaldo = billetera.credito_actual + custodia.monto;
-    const nuevoRetenido = billetera.credito_retenido - custodia.monto;
+                return `
+                    <div class="compra-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <h3 style="margin: 0; flex: 1;">${tituloProducto}</h3>
+                            <span class="${estadoClass}">${estadoTexto.toUpperCase()}</span>
+                        </div>
+                        
+                        <p><strong>Precio:</strong> ${precio} ♻️</p>
+                        <p><strong>Fecha:</strong> ${new Date(compra.fecha_creacion).toLocaleDateString()}</p>
+                        <p><strong>Vendedor:</strong> ${nombreVendedor}</p>
+                        
+                        ${creditosRetenidos ? `
+                            <div class="creditos-retenidos">
+                                <i class="fas fa-lock"></i> 
+                                <strong>${precio} créditos en custodia</strong>
+                                <br>
+                                <small>Confirma la recepción para liberar los créditos al vendedor</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${compra.custodia && compra.custodia.estado === 'liberado' ? `
+                            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">
+                                <i class="fas fa-check-circle"></i> 
+                                <strong>Créditos liberados</strong>
+                                <br>
+                                <small>Has confirmado la recepción del producto</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${tieneMensajes ? `
+                            <p style="color: #17a2b8;">
+                                <i class="fas fa-comments"></i> 
+                                ${mensajesNoLeidos > 0 ? `<strong>${mensajesNoLeidos} mensaje(s) nuevo(s)</strong>` : 'Tienes mensajes'}
+                            </p>
+                        ` : ''}
+                        
+                        ${tieneCalificacion ? `
+                            <p style="color: #28a745;">
+                                <i class="fas fa-star"></i> Ya calificaste esta transacción
+                            </p>
+                        ` : ''}
+                        
+                        <div class="acciones-container">
+                            ${estado === 'en_proceso' ? `
+                                <button class="btn-confirmar" onclick="confirmarRecepcion(${compra.id_intercambio})">
+                                    <i class="fas fa-check"></i> Confirmar Recepción
+                                </button>
+                                <button class="btn-cancelar" onclick="cancelarCompra(${compra.id_intercambio})">
+                                    <i class="fas fa-times"></i> Cancelar Compra
+                                </button>
+                            ` : ''}
+                            
+                            ${estado === 'completado' && !tieneCalificacion ? `
+                                <button class="btn-calificar" onclick="abrirModalCalificacion(${compra.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-star"></i> Calificar
+                                </button>
+                            ` : ''}
+                            
+                            <button class="btn-contactar" onclick="abrirChat(${compra.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')">
+                                <i class="fas fa-comment"></i> 
+                                ${tieneMensajes ? 'Ver Chat' : 'Contactar Vendedor'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
 
-    await supabase
-        .from('Billetera')
-        .update({
-            credito_actual: nuevoSaldo,
-            credito_retenido: nuevoRetenido,
-            ultima_actualizacion: new Date()
-        })
-        .eq('usuario_id', custodia.comprador_id);
+        // Hacer renderCompras global para debugging
+        window.renderCompras = renderCompras;
 
-    // Actualizar UI si está en la misma sesión
-    if (typeof document.getElementById('topCredits') !== 'undefined') {
-        document.getElementById('topCredits').textContent = nuevoSaldo;
-        localStorage.setItem('user_saldo', nuevoSaldo);
-    }
-}
+        // ========== SISTEMA DE CUSTODIA ==========
 
-// Función auxiliar para obtener ID de billetera
-async function obtenerBilleteraId(usuarioId) {
-    const { data, error } = await supabase
-        .from('Billetera')
-        .select('id_billetera')
-        .eq('usuario_id', usuarioId)
-        .single();
+        window.confirmarRecepcion = async function (intercambioId) {
+            if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor.')) return;
 
-    if (error) throw error;
-    return data.id_billetera;
-}
+            try {
+                mostrarLoading('Liberando créditos al vendedor...');
 
-// Contactar vendedor
-window.contactarVendedor = function(vendedorId) {
-    // Aquí puedes implementar un sistema de mensajería
-    alert('Función de mensajería en desarrollo. Por ahora, contacta al vendedor por otros medios.');
-}
+                // 1. Actualizar estado del intercambio
+                const { error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .update({
+                        estado: 'completado',
+                        fecha_cierre: new Date()
+                    })
+                    .eq('id_intercambio', intercambioId);
 
-// Inicializar
-document.addEventListener('DOMContentLoaded', cargarMisCompras);
-</script>
+                if (intercambioError) throw intercambioError;
+
+                // 2. Liberar créditos al vendedor
+                await liberarCreditosVendedor(intercambioId);
+
+                // 3. Actualizar custodia si existe
+                try {
+                    const { error: custodiaError } = await supabase
+                        .from('Custodia_Creditos')
+                        .update({
+                            estado: 'liberado',
+                            fecha_liberacion: new Date()
+                        })
+                        .eq('intercambio_id', intercambioId);
+
+                    if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
+                } catch (custodiaError) {
+                    console.log('ℹ️ No se pudo actualizar custodia:', custodiaError.message);
+                }
+
+                ocultarLoading();
+                alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor.');
+
+                // Recargar compras
+                cargarMisCompras();
+
+            } catch (error) {
+                ocultarLoading();
+                console.error('Error confirmando recepción:', error);
+                alert('❌ Error al confirmar la recepción: ' + error.message);
+            }
+        }
+
+        // Liberar créditos al vendedor
+        async function liberarCreditosVendedor(intercambioId) {
+            try {
+                // Obtener datos del intercambio
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('*')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+
+                // Obtener billetera del vendedor
+                const { data: billeteraVendedor, error: billeteraError } = await supabase
+                    .from('billetera')
+                    .select('credito_actual, credito_total')
+                    .eq('usuario_id', intercambio.usuario_vendedor_id)
+                    .single();
+
+                if (billeteraError) throw billeteraError;
+
+                // Actualizar billetera del vendedor
+                const nuevoSaldoVendedor = billeteraVendedor.credito_actual + monto;
+                const nuevoTotalVendedor = billeteraVendedor.credito_total + monto;
+
+                await supabase
+                    .from('billetera')
+                    .update({
+                        credito_actual: nuevoSaldoVendedor,
+                        credito_total: nuevoTotalVendedor
+                    })
+                    .eq('usuario_id', intercambio.usuario_vendedor_id);
+
+                console.log('✅ Créditos liberados al vendedor:', monto);
+
+            } catch (error) {
+                console.error('Error liberando créditos:', error);
+                throw error;
+            }
+        }
+
+        window.cancelarCompra = async function (intercambioId) {
+            if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta.')) return;
+
+            try {
+                mostrarLoading('Cancelando compra y devolviendo créditos...');
+
+                // 1. Actualizar estado del intercambio
+                const { error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .update({
+                        estado: 'cancelado',
+                        fecha_cierre: new Date()
+                    })
+                    .eq('id_intercambio', intercambioId);
+
+                if (intercambioError) throw intercambioError;
+
+                // 2. Devolver créditos al comprador
+                await devolverCreditosComprador(intercambioId);
+
+                // 3. Actualizar custodia si existe
+                try {
+                    const { error: custodiaError } = await supabase
+                        .from('Custodia_Creditos')
+                        .update({
+                            estado: 'devuelto',
+                            fecha_liberacion: new Date()
+                        })
+                        .eq('intercambio_id', intercambioId);
+
+                    if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
+                } catch (custodiaError) {
+                    console.log('ℹ️ No se pudo actualizar custodia:', custodiaError.message);
+                }
+
+                ocultarLoading();
+                alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta.');
+
+                // Recargar compras
+                cargarMisCompras();
+
+            } catch (error) {
+                ocultarLoading();
+                console.error('Error cancelando compra:', error);
+                alert('❌ Error al cancelar la compra: ' + error.message);
+            }
+        }
+
+        // Devolver créditos al comprador
+        async function devolverCreditosComprador(intercambioId) {
+            try {
+                // Obtener datos del intercambio
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('*')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+
+                // Obtener billetera actual del comprador
+                const { data: billetera, error: billeteraError } = await supabase
+                    .from('billetera')
+                    .select('credito_actual, credito_retenido')
+                    .eq('usuario_id', currentUserId)
+                    .single();
+
+                if (billeteraError) throw billeteraError;
+
+                // Devolver créditos
+                const nuevoSaldo = billetera.credito_actual + monto;
+                const nuevoRetenido = Math.max(0, billetera.credito_retenido - monto);
+
+                await supabase
+                    .from('billetera')
+                    .update({
+                        credito_actual: nuevoSaldo,
+                        credito_retenido: nuevoRetenido
+                    })
+                    .eq('usuario_id', currentUserId);
+
+                // Actualizar UI si está en la misma sesión
+                if (typeof document.getElementById('topCredits') !== 'undefined') {
+                    document.getElementById('topCredits').textContent = nuevoSaldo;
+                    localStorage.setItem('user_saldo', nuevoSaldo);
+                }
+
+                console.log('✅ Créditos devueltos al comprador:', monto);
+
+            } catch (error) {
+                console.error('Error devolviendo créditos:', error);
+                throw error;
+            }
+        }
+
+        // ========== SISTEMA DE MENSAJERÍA ==========
+
+        window.abrirChat = async function (intercambioId, tituloProducto, vendedorId) {
+            intercambioActual = intercambioId;
+            document.getElementById('tituloChat').textContent = `Chat: ${tituloProducto}`;
+            document.getElementById('modalMensajes').style.display = 'flex';
+
+            await cargarMensajes(intercambioId);
+        }
+
+        window.cerrarModalMensajes = function () {
+            document.getElementById('modalMensajes').style.display = 'none';
+            intercambioActual = null;
+        }
+
+        async function cargarMensajes(intercambioId) {
+            try {
+                const { data: mensajes, error } = await supabase
+                    .from('Mensaje')
+                    .select('*')
+                    .eq('intercambio_id', intercambioId)
+                    .order('fecha_envio', { ascending: true });
+
+                if (error) throw error;
+
+                const cuerpoMensajes = document.getElementById('cuerpoMensajes');
+                cuerpoMensajes.innerHTML = '';
+
+                if (mensajes && mensajes.length > 0) {
+                    mensajes.forEach(mensaje => {
+                        const esPropio = mensaje.emisor_id === currentUserId;
+                        const mensajeDiv = document.createElement('div');
+                        mensajeDiv.className = `mensaje ${esPropio ? 'mensaje-propio' : 'mensaje-otro'}`;
+                        mensajeDiv.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 5px;">
+                        ${esPropio ? 'Tú' : 'Vendedor'}
+                    </div>
+                    <div>${mensaje.contenido}</div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        ${new Date(mensaje.fecha_envio).toLocaleString()}
+                    </div>
+                `;
+                        cuerpoMensajes.appendChild(mensajeDiv);
+                    });
+                } else {
+                    cuerpoMensajes.innerHTML = '<p style="text-align: center; color: #666;">No hay mensajes aún. Sé el primero en escribir.</p>';
+                }
+
+                // Scroll al final
+                cuerpoMensajes.scrollTop = cuerpoMensajes.scrollHeight;
+
+            } catch (error) {
+                console.error('Error cargando mensajes:', error);
+            }
+        }
+
+        window.enviarMensaje = async function () {
+            const input = document.getElementById('inputMensaje');
+            const mensaje = input.value.trim();
+
+            if (!mensaje || !intercambioActual) return;
+
+            try {
+                // Obtener el vendedor_id del intercambio
+                const { data: intercambio, error } = await supabase
+                    .from('Intercambio')
+                    .select('usuario_vendedor_id')
+                    .eq('id_intercambio', intercambioActual)
+                    .single();
+
+                if (error) throw error;
+
+                const { error: insertError } = await supabase
+                    .from('Mensaje')
+                    .insert([{
+                        contenido: mensaje,
+                        fecha_envio: new Date(),
+                        intercambio_id: intercambioActual,
+                        emisor_id: currentUserId,
+                        receptor_id: intercambio.usuario_vendedor_id
+                    }]);
+
+                if (insertError) throw insertError;
+
+                input.value = '';
+                await cargarMensajes(intercambioActual);
+
+            } catch (error) {
+                console.error('Error enviando mensaje:', error);
+                alert('Error al enviar el mensaje');
+            }
+        }
+
+        // ========== SISTEMA DE CALIFICACIONES ==========
+
+        window.abrirModalCalificacion = function (intercambioId, productoTitulo) {
+            intercambioActual = intercambioId;
+            puntuacionSeleccionada = 0;
+
+            document.getElementById('productoCalificar').textContent = productoTitulo;
+            document.getElementById('comentarioCalificacion').value = '';
+
+            // Resetear estrellas
+            document.querySelectorAll('.estrella').forEach(star => {
+                star.classList.remove('seleccionada');
+            });
+
+            document.getElementById('modalCalificacion').style.display = 'flex';
+
+            // Configurar event listeners para estrellas
+            document.querySelectorAll('.estrella').forEach(star => {
+                star.onclick = function () {
+                    puntuacionSeleccionada = parseInt(this.dataset.puntuacion);
+
+                    // Actualizar visualización de estrellas
+                    document.querySelectorAll('.estrella').forEach(s => {
+                        s.classList.toggle('seleccionada', parseInt(s.dataset.puntuacion) <= puntuacionSeleccionada);
+                    });
+                };
+            });
+        }
+
+        window.cerrarModalCalificacion = function () {
+            document.getElementById('modalCalificacion').style.display = 'none';
+            intercambioActual = null;
+        }
+
+        window.enviarCalificacion = async function () {
+            if (puntuacionSeleccionada === 0) {
+                alert('Por favor selecciona una puntuación');
+                return;
+            }
+
+            try {
+                // Obtener datos del intercambio
+                const { data: intercambio, error } = await supabase
+                    .from('Intercambio')
+                    .select('usuario_vendedor_id')
+                    .eq('id_intercambio', intercambioActual)
+                    .single();
+
+                if (error) throw error;
+
+                const comentario = document.getElementById('comentarioCalificacion').value.trim();
+
+                // Insertar calificación
+                const { error: calificacionError } = await supabase
+                    .from('Calificacion')
+                    .insert([{
+                        puntuacion: puntuacionSeleccionada,
+                        comentario: comentario || null,
+                        fecha_calificacion: new Date(),
+                        intercambio_id: intercambioActual,
+                        calificador_id: currentUserId,
+                        calificado_id: intercambio.usuario_vendedor_id
+                    }]);
+
+                if (calificacionError) throw calificacionError;
+
+                alert('✅ Calificación enviada correctamente');
+                cerrarModalCalificacion();
+                cargarMisCompras(); // Recargar para actualizar la UI
+
+            } catch (error) {
+                console.error('Error enviando calificación:', error);
+                alert('Error al enviar la calificación: ' + error.message);
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', cargarMisCompras);
+    </script>
 </body>
 </html>
