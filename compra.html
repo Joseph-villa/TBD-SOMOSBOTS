@@ -899,7 +899,7 @@
         opt.classList.add('selected');
         selectedCredits = opt.dataset.credits;
         selectedPrice = opt.dataset.price;
-        totalAmount.textContent = `$${selectedPrice}`;
+        totalAmount.textContent = `Bs${selectedPrice}`;
       });
     });
 
@@ -916,8 +916,8 @@
     rechargeBtn.addEventListener('click', () => {
       if (selectedCredits > 0) {
         summaryCredits.textContent = `${selectedCredits} créditos`;
-        summaryTotal.textContent = `$${selectedPrice}`;
-        const currentBalance = 200;
+        summaryTotal.textContent = `Bs${selectedPrice}`;
+        const currentBalance = parseInt(localStorage.getItem('saldo')) || 0;
         newBalance.textContent = `${currentBalance + parseInt(selectedCredits)} créditos`;
         modal.style.display = 'flex';
       } else {
@@ -932,10 +932,21 @@
         alert('Debes aceptar la política antes de continuar.');
         return;
       }
+      
+      // Obtener saldo actual
+      let saldo = parseInt(localStorage.getItem('saldo') || 0);
+      saldo += parseInt(selectedCredits);
+      localStorage.setItem('saldo', saldo);
+      
       alert(`Recarga completada exitosamente de ${selectedCredits} créditos.`);
       modal.style.display = 'none';
-      totalAmount.textContent = 'bs0';
+      totalAmount.textContent = 'Bs0';
       options.forEach(o => o.classList.remove('selected'));
+      
+      // Redirigir al perfil
+      setTimeout(() => {
+        window.location.href = 'perfil.html';
+      }, 1000);
     });
 
     // Vista de historial
@@ -955,44 +966,5 @@
       mainView.style.display = 'block';
     });
   </script>
-
-  <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const options = document.querySelectorAll(".credit-option");
-  let selectedCredits = 0;
-  let selectedPrice = 0;
-
-  options.forEach(opt => {
-    opt.addEventListener("click", () => {
-      options.forEach(o => o.classList.remove("selected"));
-      opt.classList.add("selected");
-      selectedCredits = parseInt(opt.dataset.credits);
-      selectedPrice = parseFloat(opt.dataset.price);
-    });
-  });
-
-  // Botón para pagar o recargar
-  const pagarBtn = document.createElement("button");
-  pagarBtn.textContent = "Pagar y Recargar";
-  pagarBtn.className = "recharge-button";
-  document.querySelector(".container").appendChild(pagarBtn);
-
-  pagarBtn.addEventListener("click", () => {
-    if (!selectedCredits) {
-      alert("Selecciona un paquete antes de continuar");
-      return;
-    }
-
-    // Obtener saldo actual
-    let saldo = parseInt(localStorage.getItem("saldo") || 0);
-    saldo += selectedCredits;
-    localStorage.setItem("saldo", saldo);
-
-    alert(`Has recargado ${selectedCredits} créditos verdes 🎉`);
-    window.location.href = "perfil.html"; // Redirige al perfil
-  });
-});
-</script>
-
 </body>
 </html>

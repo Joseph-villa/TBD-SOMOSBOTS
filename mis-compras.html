@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Compras - Plataforma de Trueque</title>
+    <link rel="stylesheet" href="styles/estilos.css">
+    <style>
+        .compra-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        .estado-en-proceso { color: #ff9800; font-weight: bold; }
+        .estado-completado { color: #4CAF50; font-weight: bold; }
+        .estado-cancelado { color: #f44336; font-weight: bold; }
+        .btn-confirmar { background: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-cancelar { background: #f44336; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-contactar { background: #2196F3; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body class="perfil-body">
+    <section class="perfil-container">
+        <button class="back-btn" onclick="window.location.href='index2.html'">← Volver al Marketplace</button>
+        
+        <h2>🛒 Mis Compras</h2>
+        
+        <div id="comprasList">
+            <div>Cargando tus compras...</div>
+        </div>
+    </section>
+
+<script type="module">
+import { supabase } from './config/db.js';
+
+let currentUserId = null;
+
+// Cargar compras del usuario
+async function cargarMisCompras() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUserId = user.id;
+
+        // Obtener intercambios del usuario
+        const { data: intercambios, error } = await supabase
+            .from('Intercambio')
+            .select(`
+                *,
+                publicacion:Publicacion(*),
+                custodia:Custodia_Creditos(*)
+            `)
+            .eq('usuario_id', currentUserId)
+            .order('fecha_creacion', { ascending: false });
+
+        if (error) throw error;
+
+        renderCompras(intercambios || []);
+
+    } catch (error) {
+        console.error('Error cargando compras:', error);
+        document.getElementById('comprasList').innerHTML = '<div>Error al cargar las compras</div>';
+    }
+}
+
+// Renderizar compras
+function renderCompras(compras) {
+    const comprasList = document.getElementById('comprasList');
+    
+    if (compras.length === 0) {
+        comprasList.innerHTML = '<div>No tienes compras realizadas</div>';
+        return;
+    }
+
+    comprasList.innerHTML = compras.map(compra => `
+        <div class="compra-card">
+            <h3>${compra.publicacion?.titulo || 'Producto'}</h3>
+            <p><strong>Precio:</strong> ${compra.creditos_verdes} ♻️</p>
+            <p><strong>Estado:</strong> <span class="estado-${compra.estado}">${compra.estado}</span></p>
+            <p><strong>Fecha:</strong> ${new Date(compra.fecha_creacion).toLocaleDateString()}</p>
+            
+            ${compra.estado === 'en_proceso' ? `
+                <div style="margin-top: 15px;">
+                    <button class="btn-confirmar" onclick="confirmarRecepcion(${compra.id_intercambio})">
+                        ✅ Confirmar Recepción
+                    </button>
+                    <button class="btn-cancelar" onclick="cancelarCompra(${compra.id_intercambio})" style="margin-left: 10px;">
+                        ❌ Cancelar Compra
+                    </button>
+                    <button class="btn-contactar" onclick="contactarVendedor('${compra.publicacion?.usuario_id}')" style="margin-left: 10px;">
+                        📞 Contactar Vendedor
+                    </button>
+                </div>
+            ` : ''}
+            
+            ${compra.estado === 'completado' ? `
+                <p style="color: #4CAF50; margin-top: 10px;">✅ Transacción completada</p>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+// Confirmar recepción del producto
+window.confirmarRecepcion = async function(intercambioId) {
+    if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor.')) return;
+
+    try {
+        // 1. Actualizar estado del intercambio
+        const { error: intercambioError } = await supabase
+            .from('Intercambio')
+            .update({ 
+                estado: 'completado',
+                fecha_cierre: new Date()
+            })
+            .eq('id_intercambio', intercambioId);
+
+        if (intercambioError) throw intercambioError;
+
+        // 2. Liberar créditos al vendedor
+        await liberarCreditosVendedor(intercambioId);
+
+        // 3. Actualizar custodia
+        const { error: custodiaError } = await supabase
+            .from('Custodia_Creditos')
+            .update({ 
+                estado: 'liberado',
+                fecha_liberacion: new Date()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (custodiaError) throw custodiaError;
+
+        alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor.');
+        
+        // Recargar compras
+        cargarMisCompras();
+
+    } catch (error) {
+        console.error('Error confirmando recepción:', error);
+        alert('❌ Error al confirmar la recepción');
+    }
+}
+
+// Liberar créditos al vendedor
+async function liberarCreditosVendedor(intercambioId) {
+    // Obtener datos de la custodia
+    const { data: custodia, error } = await supabase
+        .from('Custodia_Creditos')
+        .select('*')
+        .eq('intercambio_id', intercambioId)
+        .single();
+
+    if (error) throw error;
+
+    // Obtener billetera del vendedor
+    const { data: billeteraVendedor, error: billeteraError } = await supabase
+        .from('Billetera')
+        .select('credito_actual, credito_total')
+        .eq('usuario_id', custodia.oferente_id)
+        .single();
+
+    if (billeteraError) throw billeteraError;
+
+    // Actualizar billetera del vendedor
+    const nuevoSaldoVendedor = billeteraVendedor.credito_actual + custodia.monto;
+    const nuevoTotalVendedor = billeteraVendedor.credito_total + custodia.monto;
+
+    await supabase
+        .from('Billetera')
+        .update({
+            credito_actual: nuevoSaldoVendedor,
+            credito_total: nuevoTotalVendedor,
+            ultima_actualizacion: new Date()
+        })
+        .eq('usuario_id', custodia.oferente_id);
+
+    // Actualizar custodia con billetera del vendedor
+    const billeteraVendedorId = await obtenerBilleteraId(custodia.oferente_id);
+    await supabase
+        .from('Custodia_Creditos')
+        .update({ billetera_vendedor: billeteraVendedorId })
+        .eq('intercambio_id', intercambioId);
+}
+
+// Cancelar compra
+window.cancelarCompra = async function(intercambioId) {
+    if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta.')) return;
+
+    try {
+        // 1. Actualizar estado del intercambio
+        const { error: intercambioError } = await supabase
+            .from('Intercambio')
+            .update({ 
+                estado: 'cancelado',
+                fecha_cierre: new Date()
+            })
+            .eq('id_intercambio', intercambioId);
+
+        if (intercambioError) throw intercambioError;
+
+        // 2. Devolver créditos al comprador
+        await devolverCreditosComprador(intercambioId);
+
+        // 3. Actualizar custodia
+        const { error: custodiaError } = await supabase
+            .from('Custodia_Creditos')
+            .update({ 
+                estado: 'devuelto',
+                fecha_liberacion: new Date()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (custodiaError) throw custodiaError;
+
+        alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta.');
+        
+        // Recargar compras
+        cargarMisCompras();
+
+    } catch (error) {
+        console.error('Error cancelando compra:', error);
+        alert('❌ Error al cancelar la compra');
+    }
+}
+
+// Devolver créditos al comprador
+async function devolverCreditosComprador(intercambioId) {
+    const { data: custodia, error } = await supabase
+        .from('Custodia_Creditos')
+        .select('*')
+        .eq('intercambio_id', intercambioId)
+        .single();
+
+    if (error) throw error;
+
+    // Obtener billetera actual del comprador
+    const { data: billetera, error: billeteraError } = await supabase
+        .from('Billetera')
+        .select('credito_actual, credito_retenido')
+        .eq('usuario_id', custodia.comprador_id)
+        .single();
+
+    if (billeteraError) throw billeteraError;
+
+    // Devolver créditos
+    const nuevoSaldo = billetera.credito_actual + custodia.monto;
+    const nuevoRetenido = billetera.credito_retenido - custodia.monto;
+
+    await supabase
+        .from('Billetera')
+        .update({
+            credito_actual: nuevoSaldo,
+            credito_retenido: nuevoRetenido,
+            ultima_actualizacion: new Date()
+        })
+        .eq('usuario_id', custodia.comprador_id);
+
+    // Actualizar UI si está en la misma sesión
+    if (typeof document.getElementById('topCredits') !== 'undefined') {
+        document.getElementById('topCredits').textContent = nuevoSaldo;
+        localStorage.setItem('user_saldo', nuevoSaldo);
+    }
+}
+
+// Función auxiliar para obtener ID de billetera
+async function obtenerBilleteraId(usuarioId) {
+    const { data, error } = await supabase
+        .from('Billetera')
+        .select('id_billetera')
+        .eq('usuario_id', usuarioId)
+        .single();
+
+    if (error) throw error;
+    return data.id_billetera;
+}
+
+// Contactar vendedor
+window.contactarVendedor = function(vendedorId) {
+    // Aquí puedes implementar un sistema de mensajería
+    alert('Función de mensajería en desarrollo. Por ahora, contacta al vendedor por otros medios.');
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', cargarMisCompras);
+</script>
+</body>
+</html>

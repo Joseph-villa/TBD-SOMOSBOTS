@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,101 +9,61 @@
 
     <style>
         /* [ESTILOS DE PERFIL/MENU] */
-        /* Asegura que el menú esté oculto por defecto */
-        .profile-links { display: none; }
-        .profile-open .profile-links { display: block; }
-        .user-area { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: none; padding: 0; font: inherit; color: inherit; }
-        .user-area:focus { outline: 2px solid #6ca; outline-offset: 2px; }
-        .sidebar .profile-links { margin: 0 0 1rem 0; padding: 0; list-style: none; }
-        .sidebar .profile-links li { margin: 0.25rem 0; }
-        
-        /* [ESTILOS PARA LA CABECERA] */
-        .topbar .right-area {
-            display: flex; /* Asegura que los elementos estén en fila */
-            align-items: center;
-            gap: 15px; /* Espacio entre los nuevos botones */
-        }
-
-        .topbar-btn {
-            background-color: #555;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: none; /* Para el enlace de Publicar */
-            transition: background-color 0.2s;
-            font-size: 0.9em;
-        }
-
-        .topbar-btn:hover {
-            background-color: #444;
-        }
-
-        /* [ESTILOS DEL MODAL] */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .profile-links {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 1000;
         }
 
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        #adminCode {
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 1.2em;
-        }
-
-        /* [ESTILOS DE CRÉDITOS COMO ENLACE] */
-        .credits-link {
-            text-decoration: none;
-            color: inherit;
-            display: inline-block;
+        .user-area {
             cursor: pointer;
-        }
-
-        .credits-link:hover .credits-bubble {
-            background-color: #5bb34a; 
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            font: inherit;
+            color: inherit;
+            position: relative;
+            border-radius: 6px;
             transition: background-color 0.2s;
         }
 
-        .credits-bubble {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .user-area:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         /* [ESTILOS PARA EL GRID DE PRODUCTOS] */
-        .layout { display: flex; align-items: flex-start; gap: 1rem; }
-        .content { order: 1; flex: 1; min-width: 0; padding-left: 20px; } 
-        .sidebar { order: 2; width: 240px; } 
+        .layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .content {
+            order: 1;
+            flex: 1;
+            min-width: 0;
+            padding-left: 20px;
+        }
+
+        .sidebar {
+            order: 2;
+            width: 240px;
+        }
 
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 20px;
             padding: 20px 0;
         }
@@ -113,7 +74,13 @@
             overflow: hidden;
             text-align: center;
             position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .product-card img {
@@ -121,38 +88,118 @@
             height: 150px;
             object-fit: cover;
         }
-        
+
         .credits {
-            background-color: #4CAF50; 
+            background-color: #4CAF50;
             color: white;
             padding: 5px 10px;
             font-weight: bold;
             font-size: 1.1em;
         }
 
-        .categories { list-style: none; padding: 0; }
-        .categories li { padding: 8px 0; border-bottom: 1px solid #eee; cursor: pointer; }
-        .categories li:hover { background-color: #f0f0f0; }
+        .categories {
+            list-style: none;
+            padding: 0;
+        }
 
-        #btn-comprar {
-            background-color: #FF5722; 
+        .categories li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .categories li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .categories li.active {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-intercambiar {
+            background-color: #FF5722;
             color: white;
             border: none;
             padding: 10px 15px;
-            margin-bottom: 10px;
+            margin: 10px;
             cursor: pointer;
             font-weight: bold;
             border-radius: 4px;
+            width: calc(100% - 20px);
+            transition: background-color 0.2s;
         }
 
-        /* Responsive */
+        .btn-intercambiar:hover {
+            background-color: #e64a19;
+        }
+
+        .btn-intercambiar:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .no-products {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .credits-bubble {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+        }
+
         @media (max-width: 800px) {
-            .layout { flex-direction: column; }
-            .content { order: 0; padding-left: 0; }
-            .sidebar { order: 1; width: 100%; }
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                order: 0;
+                padding-left: 0;
+            }
+
+            .sidebar {
+                order: 1;
+                width: 100%;
+            }
+        }
+
+        /* Estilos para los enlaces del menú */
+        .profile-links a {
+            display: block;
+            padding: 8px 12px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .profile-links a:hover {
+            background-color: #f5f5f5;
+        }
+
+        .logout-link {
+            color: #f44336 !important;
         }
     </style>
 </head>
+
 <body>
     <header class="topbar">
         <div class="logo-area">
@@ -165,316 +212,491 @@
         </div>
 
         <div class="right-area">
-            
-            <a href="/publicar.html" class="topbar-btn" title="Publicar un artículo">
-                ➕ Publicar
-            </a>
-            
-            <button id="adminBtn" class="topbar-btn" title="Acceso de Administrador">
-                👑 Admin
-            </button>
+            <div class="credits-bubble" title="Créditos disponibles">
+                <span class="coin">♻️</span>
+                <span id="topCredits">0</span>
+            </div>
 
-            <a href="/compra.html" class="credits-link" title="Ir a la página de compra de créditos">
-                <div class="credits-bubble">
-                    <span class="coin">♻️</span>
-                    <span id="topCredits">300</span>
-                </div>
-            </a>
-
-            <a href="/perfil.html" class="user-area" id="profileToggle" title="Abrir menú de perfil">
+            <div class="user-area" id="profileToggle">
                 <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
-            </a>
+                <span id="userName">Usuario</span>
+                <div id="profileLinks" class="profile-links">
+                    <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <strong id="menuUserName">Usuario</strong>
+                        <div style="font-size: 0.8rem; color: #666;" id="menuUserEmail">usuario@ejemplo.com</div>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 10px 0;">
+                        <li><a href="perfil.html">👤 Ver perfil</a></li>
+                        <li><a href="publicar.html">📤 Crear publicación</a></li>
+
+                        <!-- AGREGAR ESTA LÍNEA NUEVA -->
+                        <li><a href="mis-compras.html">🛒 Mis Compras</a></li>
+
+                        <li><a href="historial.html">💰 Ver historial</a></li>
+                        <li><a href="#" id="logoutLink" class="logout-link">🚪 Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         </div>
     </header>
 
-    <div id="adminModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h2>Acceso de Administrador</h2>
-            <p>Ingresa el código de seguridad (6 dígitos).</p>
-            <form id="adminForm">
-                <input type="text" id="adminCode" maxlength="6" inputmode="numeric" required placeholder="000000" pattern="[0-9]{6}">
-                <button type="submit">Ingresar</button>
-            </form>
-            <p id="adminError" style="color: red; margin-top: 10px;"></p>
-        </div>
-    </div>
-
     <main class="layout">
-        <!-- Contenedor para las publicaciones -->
-        <div class="publicaciones-container">
-            <h2>Publicaciones Disponibles</h2>
-            <div class="grid publicaciones-grid" id="allPostsGrid">
-                <!-- JS insertará las tarjetas aquí -->
+        <aside class="sidebar">
+            <h3>Categorías</h3>
+            <ul class="categories" id="categoriesList">
+                <li data-category="all" class="active">Todas las categorías</li>
+                <li data-category="Electrónica">Electrónica</li>
+                <li data-category="Hogar">Artículos para el hogar</li>
+                <li data-category="Ropa">Indumentaria</li>
+                <li data-category="Música">Instrumentos musicales</li>
+                <li data-category="Jardín">Jardín y aire libre</li>
+                <li data-category="Juguetes">Juguetes y juegos</li>
+                <li data-category="Libros">Libros</li>
+                <li data-category="Gratis">Artículos gratuitos</li>
+                <li data-category="Otros">Otros</li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <h2>Intercambios Destacados</h2>
+            <div class="product-grid" id="productGrid">
+                <!-- Los productos se cargarán dinámicamente -->
+                <div>Cargando productos...</div>
             </div>
-        </div>
+        </section>
     </main>
-
-    <script>
-        // Esperar a que el DOM esté listo antes de buscar elementos
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('[DEBUG] DOM cargado — inicializando UI.');
-
-            const profileToggle = document.getElementById('profileToggle');
-            const profileLinks = document.getElementById('profileLinks');
-
-            const adminBtn = document.getElementById('adminBtn');
-            const adminModal = document.getElementById('adminModal');
-            const adminForm = document.getElementById('adminForm');
-            const adminCodeInput = document.getElementById('adminCode');
-            const adminError = document.getElementById('adminError');
-
-            console.log('profileToggle:', !!profileToggle, 'profileLinks:', !!profileLinks);
-            console.log('adminBtn:', !!adminBtn, 'adminModal:', !!adminModal, 'adminForm:', !!adminForm, 'adminCodeInput:', !!adminCodeInput);
-
-            const SECRET_CODE = '123456';
-
-            // Perfil toggle (igual que antes)
-            if (profileToggle && profileLinks) {
-                profileToggle.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    profileLinks.style.display = profileLinks.style.display === 'block' ? 'none' : 'block';
-                });
-            }
-
-            // Admin: abrir modal
-            if (adminBtn && adminModal) {
-                adminBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    adminModal.style.display = 'flex';
-                    if (adminCodeInput) {
-                        adminCodeInput.value = '';
-                        adminCodeInput.focus();
-                    }
-                    if (adminError) adminError.textContent = '';
-                    console.log('[DEBUG] admin modal abierto');
-                });
-            } else {
-                console.warn('[WARN] adminBtn o adminModal no encontrados en DOM');
-            }
-
-            // Cerrar modal si se hace click fuera
-            if (adminModal) {
-                adminModal.addEventListener('click', function (e) {
-                    if (e.target === adminModal) {
-                        adminModal.style.display = 'none';
-                    }
-                });
-            }
-
-            // Manejo del submit del formulario de admin
-            if (adminForm && adminCodeInput && adminError) {
-                adminForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const code = adminCodeInput.value.trim();
-                    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
-                        adminError.textContent = 'Debes ingresar exactamente 6 dígitos.';
-                        adminCodeInput.focus();
-                        return;
-                    }
-                    if (code === SECRET_CODE) {
-                        adminModal.style.display = 'none';
-                        window.location.href = 'admin.html';
-                    } else {
-                        adminError.textContent = 'Código incorrecto. Intenta de nuevo.';
-                        adminCodeInput.value = '';
-                        adminCodeInput.focus();
-                    }
-                });
-            } else {
-                console.warn('[WARN] adminForm/adminCodeInput/adminError faltan — el formulario no funcionará');
-            }
-
-            // Cerrar menú de perfil si clic fuera
-            document.addEventListener('click', function (e) {
-                if (profileLinks && profileLinks.style.display === 'block' &&
-                    !profileLinks.contains(e.target) && profileToggle && !profileToggle.contains(e.target)) {
-                    profileLinks.style.display = 'none';
-                }
-            });
-
-            // ESC cierra modal y menú
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    if (profileLinks) profileLinks.style.display = 'none';
-                    if (adminModal) adminModal.style.display = 'none';
-                }
-            });
-
-            // Función de depuración disponible en consola para forzar apertura
-            window.__debugOpenAdmin = function () {
-                if (adminModal) {
-                    adminModal.style.display = 'flex';
-                    adminCodeInput && adminCodeInput.focus();
-                    console.log('[DEBUG] admin modal forzado a abrir');
-                } else {
-                    console.warn('[DEBUG] adminModal no encontrado');
-                }
-            };
-        });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="db.js"></script>
-    <script type="module" src="scripts/main.js"></script>
 
     <script type="module">
         import { supabase } from './config/db.js';
 
-        const allPostsGrid = document.getElementById('allPostsGrid');
+        let currentUserId = null;
+        let allProducts = [];
+        let currentCategory = 'all';
 
-        // Renderizar todas las publicaciones
-        function renderAllPublications(posts) {
-            allPostsGrid.innerHTML = '';
-            if (posts.length === 0) {
-                allPostsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;">No hay publicaciones disponibles.</div>';
-            } else {
-                posts.forEach(p => {
-                    const card = document.createElement('div');
-                    card.className = 'pub-card';
-                    card.dataset.id = p.id_publicacion;
-                    card.innerHTML = `
-                        ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.titulo || 'Publicación'}" />` : '<div style="width:100%; height:150px; background:#e0e0e0; display:flex; align-items:center; justify-content:center;">Sin imagen</div>'}
-                        
-                        <div style="padding: 12px;">
-                            <strong style="display: block; font-size: 1.1rem; color: #333; margin-bottom: 8px;">${p.titulo || 'Sin título'}</strong>
-                            
-                            <p style="font-size: 0.9rem; color: #666; margin: 0 0 8px 0;">Descripción: ${p.descripcion || 'Sin descripción'}</p>
-                            
-                            <div class="pub-credit" style="display: inline-block; padding: 4px 8px; background-color: #e8f5e9; color: #2F9A34; font-weight: bold; border-radius: 6px; font-size: 0.9rem;">
-                                ${p.precio || 0} ♻️
-                            </div>
-
-                            <p style="font-size: 0.8rem; color: #999; margin-top: 8px;">Por: ${p.usuario_nombre || 'Usuario'}</p>
-
-                            <button class="btn-intercambiar" data-id="${p.id_publicacion}" data-precio="${p.precio || 0}" style="width: 100%; margin-top: 8px; padding: 8px; background-color: #2F9A34; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                Intercambiar
-                            </button>
-                        </div>
-                    `;
-                    allPostsGrid.appendChild(card);
-                });
-            }
-        }
-
-        // 🚨 NUEVA FUNCIÓN: Cargar TODAS las publicaciones de todos los usuarios
-        async function fetchAllPublications() {
-            allPostsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;">Cargando publicaciones...</div>';
+        // Función de inicialización
+        // Función de inicialización - VERSIÓN MEJORADA
+        // Función de inicialización - VERSIÓN MEJORADA
+        async function init() {
             try {
-                const { data: posts, error } = await supabase
-                    .from('Publicacion')
-                    .select(`
-                        id_publicacion, 
-                        titulo, 
-                        descripcion, 
-                        precio, 
-                        imagen_url,
-                        usuario_id,
-                        usuario(nombre_completo)
-                    `)
-                    .order('id_publicacion', { ascending: false });
+                console.log('=== INICIANDO APLICACIÓN ===');
 
-                if (error) {
-                    console.error('Error de Supabase:', error.message);
-                    throw error;
-                }
+                // Verificar autenticación
+                const { data: { user }, error } = await supabase.auth.getUser();
 
-                // Mapear los datos para que sea más fácil acceder al nombre del usuario
-                const postsFormateadas = (posts || []).map(p => ({
-                    ...p,
-                    usuario_nombre: p.usuario?.nombre_completo || 'Usuario Desconocido'
-                }));
-
-                renderAllPublications(postsFormateadas);
-
-            } catch (err) {
-                console.error('Error al cargar publicaciones:', err);
-                allPostsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: red;">Error al cargar las publicaciones. Revisa la consola.</div>';
-            }
-        }
-
-        // 🚨 NUEVA FUNCIÓN: Procesar intercambio
-        async function procesarIntercambio(publicacionId, precio) {
-            const userId = localStorage.getItem('auth_id');
-            
-            if (!userId) {
-                alert('Debes iniciar sesión para hacer intercambios.');
-                window.location.href = 'index2.html';
-                return;
-            }
-
-            try {
-                // 1. Obtener saldo actual del usuario
-                const { data: userData, error: fetchError } = await supabase
-                    .from('usuario')
-                    .select('saldo_creditos')
-                    .eq('auth_id', userId)
-                    .single();
-
-                if (fetchError) throw fetchError;
-
-                const saldoActual = userData.saldo_creditos || 0;
-
-                // 2. Verificar si tiene suficientes créditos
-                if (saldoActual < precio) {
-                    alert(`❌ No tienes suficientes créditos. Necesitas ${precio} ♻️ pero solo tienes ${saldoActual} ♻️`);
+                if (error || !user) {
+                    console.log('Usuario no autenticado, redirigiendo al login');
+                    window.location.href = 'index.html';
                     return;
                 }
 
-                // 3. Restar créditos
-                const nuevoSaldo = saldoActual - precio;
+                currentUserId = user.id;
+                console.log('Usuario autenticado ID:', currentUserId);
+                console.log('Tipo de ID:', typeof currentUserId);
 
-                const { error: updateError } = await supabase
-                    .from('usuario')
-                    .update({ saldo_creditos: nuevoSaldo })
-                    .eq('auth_id', userId);
+                await loadUserData();
+                await loadAllProducts(); // Esta es la función corregida
+                setupCategoryFilters();
+                setupProfileMenu();
 
-                if (updateError) throw updateError;
-
-                // 4. Guardar en localStorage
-                localStorage.setItem('saldo', nuevoSaldo);
-
-                // 5. Crear registro de transacción (opcional, pero recomendado)
-                const { error: transError } = await supabase
-                    .from('transacciones') // Si tienes esta tabla
-                    .insert([{
-                        usuario_id: userId,
-                        publicacion_id: publicacionId,
-                        tipo: 'intercambio',
-                        cantidad: precio,
-                        fecha: new Date().toISOString()
-                    }]).then(() => ({ error: null })).catch(err => ({ error: err }));
-
-                alert(`✅ ¡Intercambio completado! Saldo restante: ${nuevoSaldo} ♻️`);
-
-                // 6. Recargar publicaciones
-                fetchAllPublications();
-
-            } catch (err) {
-                console.error('Error al procesar intercambio:', err);
-                alert('Error al procesar el intercambio. Intenta de nuevo.');
+            } catch (error) {
+                console.error('Error en inicialización:', error);
+                window.location.href = 'index.html';
             }
         }
 
-        // Event listener para botones de intercambio
-        allPostsGrid.addEventListener('click', function(event) {
-            if (event.target.classList.contains('btn-intercambiar')) {
-                const publicacionId = event.target.dataset.id;
-                const precio = parseInt(event.target.dataset.precio) || 0;
+        // Configurar menú de perfil - VERSIÓN SIMPLIFICADA
+        function setupProfileMenu() {
+            console.log('Configurando menú de perfil...');
 
-                if (confirm(`¿Deseas intercambiar por ${precio} ♻️?`)) {
-                    procesarIntercambio(publicacionId, precio);
+            const profileToggle = document.getElementById('profileToggle');
+            const profileLinks = document.getElementById('profileLinks');
+            const logoutLink = document.getElementById('logoutLink');
+
+            // Toggle del menú
+            profileToggle.addEventListener('click', function (e) {
+                console.log('Click en profileToggle');
+                e.stopPropagation();
+                const isVisible = profileLinks.style.display === 'block';
+                profileLinks.style.display = isVisible ? 'none' : 'block';
+            });
+
+            // Cerrar menú al hacer click fuera
+            document.addEventListener('click', function (e) {
+                if (!profileToggle.contains(e.target)) {
+                    profileLinks.style.display = 'none';
                 }
+            });
+
+            // Cerrar sesión
+            logoutLink.addEventListener('click', async function (e) {
+                e.preventDefault();
+                console.log('Click en cerrar sesión');
+                await handleLogout();
+            });
+
+            // Prevenir que los clicks en el menú lo cierren
+            profileLinks.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        // Cargar datos del usuario
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    const { data: usuario, error } = await supabase
+                        .from('usuario')
+                        .select('*')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (!error && usuario) {
+                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+                        document.getElementById('topCredits').textContent = usuario.saldo_creditos || 0;
+
+                        localStorage.setItem('user_id', user.id);
+                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                        localStorage.setItem('user_name', usuario.nombre_completo);
+                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al cargar datos del usuario:', error);
             }
+        }
+
+        // Cargar todas las publicaciones
+        // Cargar solo publicaciones de OTROS usuarios
+        async function loadAllProducts() {
+            try {
+                console.log('🔄 Cargando publicaciones de OTROS usuarios...');
+
+                // Obtener usuario logueado
+                const { data: { user } } = await supabase.auth.getUser();
+                currentUserId = user.id;
+                console.log('👤 Usuario actual:', currentUserId);
+
+                // Cargar TODAS las publicaciones
+                const { data: todasPublicaciones, error } = await supabase
+                    .from('Publicacion')
+                    .select('*')
+                    .order('id_publicacion', { ascending: false });
+
+                if (error) {
+                    console.error('❌ Error:', error);
+                    throw error;
+                }
+
+                console.log('📦 Todas las publicaciones:', todasPublicaciones);
+
+                // FILTRAR: mostrar solo publicaciones de OTROS usuarios
+                const publicacionesFiltradas = todasPublicaciones.filter(p => {
+                    const esMiPublicacion = p.usuario_id === currentUserId;
+                    console.log(`🔍 Publicación "${p.titulo}": ${esMiPublicacion ? 'MI PUBLICACIÓN' : 'OTRO USUARIO'}`);
+                    return !esMiPublicacion; // ← Esto EXCLUYE tus publicaciones
+                });
+
+                console.log('✅ Publicaciones de otros usuarios:', publicacionesFiltradas);
+                console.log(`📊 Estadísticas: ${publicacionesFiltradas.length} de otros usuarios de ${todasPublicaciones.length} totales`);
+
+                // Mostrar solo publicaciones filtradas
+                allProducts = publicacionesFiltradas;
+                renderProducts(publicacionesFiltradas);
+
+            } catch (error) {
+                console.error('💥 Error:', error);
+                document.getElementById('productGrid').innerHTML = `
+            <div class="no-products">
+                <p>Error al cargar publicaciones: ${error.message}</p>
+                <button onclick="window.location.href='publicar.html'" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Crear Publicación
+                </button>
+            </div>
+        `;
+            }
+        }
+        // Renderizar productos -
+        // Renderizar productos - SOLO DE OTROS USUARIOS
+        function renderProducts(products) {
+            const productGrid = document.getElementById('productGrid');
+
+            if (!products || products.length === 0) {
+                productGrid.innerHTML = `
+            <div class="no-products">
+                <p>No hay publicaciones disponibles de otros usuarios en este momento</p>
+                <p>¡Sé el primero en crear una publicación!</p>
+                <button onclick="window.location.href='publicar.html'" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Crear Mi Primera Publicación
+                </button>
+            </div>
+        `;
+                return;
+            }
+
+            productGrid.innerHTML = '';
+
+            products.forEach(producto => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.dataset.productoId = producto.id_publicacion;
+
+                // Datos de la publicación
+                const titulo = producto.titulo || 'Sin título';
+                const descripcion = producto.descripcion || 'Sin descripción';
+                const precio = producto.precio || 0;
+                const categoria = producto.nombre_categoria || 'General';
+                const imagen = producto.imagen_url || null;
+
+                card.innerHTML = `
+            ${imagen ? `
+                <img src="${imagen}" alt="${titulo}" style="width: 100%; height: 150px; object-fit: cover;">
+            ` : `
+                <div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                    <span style="color: #999;">Sin imagen</span>
+                </div>
+            `}
+            
+            <div class="credits">${precio} ♻️</div>
+            <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
+            <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+               ${descripcion}
+            </p>
+            <p style="font-size: 0.7rem; color: #888; padding: 0 10px; margin: 0 0 5px 0;">
+                Categoría: ${categoria}
+            </p>
+            
+            <button class="btn-intercambiar">
+                Comprar
+            </button>
+        `;
+
+                productGrid.appendChild(card);
+            });
+
+            // Agregar event listeners para los botones de compra
+            document.querySelectorAll('.btn-intercambiar').forEach(btn => {
+                btn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    const card = this.closest('.product-card');
+                    const productoId = card.dataset.productoId;
+                    const producto = products.find(p => p.id_publicacion == productoId);
+
+                    if (producto) {
+                        await realizarCompra(producto);
+                    }
+                });
+            });
+        }
+        // Función de cierre de sesión
+        async function handleLogout() {
+            try {
+                console.log('Cerrando sesión...');
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+
+                localStorage.clear();
+                window.location.href = 'index.html?logout=true';
+
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión');
+            }
+        }
+
+        // Configurar filtros
+        function setupCategoryFilters() {
+            const categoryItems = document.querySelectorAll('#categoriesList li');
+
+            categoryItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    categoryItems.forEach(li => li.classList.remove('active'));
+                    item.classList.add('active');
+
+                    currentCategory = item.dataset.category;
+                    filterProductsByCategory(currentCategory);
+                });
+            });
+        }
+
+        function filterProductsByCategory(category) {
+            let filteredProducts = category === 'all' ? allProducts :
+                allProducts.filter(p => (p.nombre_categoria || '').toLowerCase().includes(category.toLowerCase()));
+            renderProducts(filteredProducts);
+        }
+
+        // Búsqueda
+        document.querySelector('.search-bar').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            if (!searchTerm) {
+                filterProductsByCategory(currentCategory);
+                return;
+            }
+
+            const filteredProducts = allProducts.filter(p =>
+                (p.titulo || '').toLowerCase().includes(searchTerm) ||
+                (p.descripcion || '').toLowerCase().includes(searchTerm) ||
+                (p.nombre_categoria || '').toLowerCase().includes(searchTerm)
+            );
+            renderProducts(filteredProducts);
         });
 
-        // Cargar publicaciones al abrir la página
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchAllPublications();
-        });
+        // Funciones de compra
+        // En index2.html - MODIFICAR LA FUNCIÓN realizarCompra
+        async function realizarCompra(producto) {
+            try {
+                const saldoActual = parseInt(document.getElementById('topCredits').textContent);
+                const precio = producto.precio || 0;
 
-        // Refrescar publicaciones cada 5 segundos
-        setInterval(() => {
-            fetchAllPublications();
-        }, 5000);
+                if (producto.usuario_id === currentUserId) {
+                    alert('❌ No puedes comprar tu propia publicación');
+                    return;
+                }
+
+                if (saldoActual < precio) {
+                    alert(`❌ Saldo insuficiente. Necesitas ${precio} créditos pero tienes ${saldoActual}`);
+                    window.location.href = 'compra.html';
+                    return;
+                }
+
+                const titulo = producto.titulo || 'Producto';
+                if (!confirm(`¿Comprar "${titulo}" por ${precio} créditos?\n\nLos créditos quedarán en custodia hasta que confirmes la recepción del producto.`)) return;
+
+                // Crear intercambio con estado "en_proceso"
+                await crearIntercambio(producto, precio);
+
+            } catch (error) {
+                console.error('Error en la compra:', error);
+                alert('❌ Error al procesar la compra');
+            }
+        }
+
+        // Función para crear el intercambio y poner créditos en custodia
+        async function crearIntercambio(producto, precio) {
+            try {
+                console.log('🔄 Creando intercambio...');
+
+                // 1. Crear registro en Intercambio
+                const { data: intercambioData, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .insert([{
+                        creditos_verdes: precio,
+                        cantidad: 1,
+                        estado: 'en_proceso', // Estado inicial
+                        fecha_creacion: new Date(),
+                        fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+                        publicacion_id: producto.id_publicacion,
+                        usuario_id: currentUserId // El comprador
+                    }])
+                    .select();
+
+                if (intercambioError) throw intercambioError;
+
+                const intercambioId = intercambioData[0].id_intercambio;
+                console.log('✅ Intercambio creado:', intercambioId);
+
+                // 2. Poner créditos en custodia
+                const { error: custodiaError } = await supabase
+                    .from('Custodia_Creditos')
+                    .insert([{
+                        monto: precio,
+                        estado: 'retenido',
+                        fecha_retenido: new Date(),
+                        fecha_liberacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+                        billetera_vendedor: null, // Se asignará cuando se confirme
+                        billetera_comprador: await obtenerBilleteraId(currentUserId),
+                        intercambio_id: intercambioId,
+                        comprador_id: currentUserId,
+                        oferente_id: producto.usuario_id
+                    }]);
+
+                if (custodiaError) throw custodiaError;
+
+                // 3. Restar créditos del comprador
+                await actualizarSaldoComprador(currentUserId, precio);
+
+                // 4. Crear mensaje automático al vendedor
+                await crearMensajeAutomatico(intercambioId, producto);
+
+                alert(`✅ ¡Compra realizada!\n\nSe han retenido ${precio} créditos en custodia.\n\nContacta al vendedor para coordinar la entrega y confirma cuando recibas el producto.`);
+
+                // Recargar publicaciones
+                await loadAllProducts();
+
+            } catch (error) {
+                console.error('Error en crearIntercambio:', error);
+                throw error;
+            }
+        }
+
+        // Función auxiliar para obtener ID de billetera
+        async function obtenerBilleteraId(usuarioId) {
+            const { data, error } = await supabase
+                .from('Billetera')
+                .select('id_billetera')
+                .eq('usuario_id', usuarioId)
+                .single();
+
+            if (error) throw error;
+            return data.id_billetera;
+        }
+
+        // Función para actualizar saldo del comprador
+        async function actualizarSaldoComprador(usuarioId, monto) {
+            // Obtener saldo actual
+            const { data: billetera, error: billeteraError } = await supabase
+                .from('Billetera')
+                .select('credito_actual, credito_retenido')
+                .eq('usuario_id', usuarioId)
+                .single();
+
+            if (billeteraError) throw billeteraError;
+
+            const nuevoSaldo = billetera.credito_actual - monto;
+            const nuevoRetenido = billetera.credito_retenido + monto;
+
+            // Actualizar billetera
+            const { error: updateError } = await supabase
+                .from('Billetera')
+                .update({
+                    credito_actual: nuevoSaldo,
+                    credito_retenido: nuevoRetenido,
+                    ultima_actualizacion: new Date()
+                })
+                .eq('usuario_id', usuarioId);
+
+            if (updateError) throw updateError;
+
+            // Actualizar UI
+            document.getElementById('topCredits').textContent = nuevoSaldo;
+            localStorage.setItem('user_saldo', nuevoSaldo);
+        }
+
+        // Función para crear mensaje automático al vendedor
+        async function crearMensajeAutomatico(intercambioId, producto) {
+            const { error } = await supabase
+                .from('Mensaje')
+                .insert([{
+                    contenido: `¡Hola! He comprado tu producto "${producto.titulo}". Por favor, contáctame para coordinar la entrega.`,
+                    fecha_envio: new Date(),
+                    intercambio_id: intercambioId,
+                    emisor_id: currentUserId,
+                    receptor_id: producto.usuario_id
+                }]);
+
+            if (error) console.error('Error creando mensaje:', error);
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
+
 </html>
