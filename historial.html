@@ -52,7 +52,7 @@
     </div>
 
 <script type="module">
-    import { supabase } from './config/supabaseClient.js';
+    import { supabase } from './config/db.js';
 
     // 🔑 ID DE DEMOSTRACIÓN
     const DEMO_USER_ID = 1; 
@@ -68,54 +68,68 @@
      * Carga el historial de transacciones
      */
     async function loadHistorial() {
-        const historialBody = document.getElementById('historialBody');
-        // ... (resto de la función loadHistorial sin cambios) ...
+    const historialBody = document.getElementById('historialBody');
+    historialBody.innerHTML = '<tr><td colspan="3">Cargando historial...</td></tr>';
+    
+    try {
+        // Obtener usuario autenticado
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
         
-        // --- CÓDIGO RESTANTE DE loadHistorial AQUÍ ---
-        historialBody.innerHTML = '<tr><td colspan="3">Cargando historial...</td></tr>';
-        
-        if (!DEMO_USER_ID) {
+        if (authError || !user) {
             historialBody.innerHTML = '<tr><td colspan="3">Error: Debes iniciar sesión para ver tu historial.</td></tr>';
             return;
         }
 
-        try {
-            const { data: transacciones, error: fetchError } = await supabase
-                .from('historial') 
-                .select('fecha, tipo, total') 
-                .eq('usuario_id', DEMO_USER_ID) 
-                .order('fecha', { ascending: false }); 
+        const currentUserId = user.id;
+        console.log('Usuario autenticado:', currentUserId);
 
-            if (fetchError) throw fetchError;
+        // Consultar historial usando auth_id - FORMA CORRECTA
+        const { data: transacciones, error: fetchError } = await supabase
+            .from('historial') 
+            .select('fecha, tipo, total') 
+            .eq('auth_id', currentUserId) // ← Usar eq() correctamente
+            .order('fecha', { ascending: false }); 
 
-            historialBody.innerHTML = ''; 
-
-            if (transacciones.length === 0) {
-                historialBody.innerHTML = '<tr><td colspan="3">Aún no hay transacciones registradas para este usuario.</td></tr>';
-                return;
-            }
-
-            transacciones.forEach(transaccion => {
-                const total = parseFloat(transaccion.total);
-                const esPositivo = total >= 0;
-                
-                const fila = `
-                    <tr>
-                        <td>${formatDate(transaccion.fecha)}</td>
-                        <td>${transaccion.tipo}</td>
-                        <td class="credito ${esPositivo ? 'positivo' : 'negativo'}">
-                            💰 ${esPositivo ? '+' : ''}${total.toFixed(0)}
-                        </td>
-                    </tr>
-                `;
-                historialBody.insertAdjacentHTML('beforeend', fila);
-            });
-
-        } catch (err) {
-            console.error('Error al cargar transacciones:', err);
-            historialBody.innerHTML = `<tr><td colspan="3">Error al cargar el historial: ${err.message}</td></tr>`;
+        if (fetchError) {
+            console.error('Error de Supabase:', fetchError);
+            throw fetchError;
         }
+
+        historialBody.innerHTML = ''; 
+
+        if (!transacciones || transacciones.length === 0) {
+            historialBody.innerHTML = '<tr><td colspan="3">Aún no hay transacciones registradas para este usuario.</td></tr>';
+            return;
+        }
+
+        transacciones.forEach(transaccion => {
+            const total = parseFloat(transaccion.total);
+            const esPositivo = total >= 0;
+            
+            const fila = `
+                <tr>
+                    <td>${formatDate(transaccion.fecha)}</td>
+                    <td>${transaccion.tipo}</td>
+                    <td class="credito ${esPositivo ? 'positivo' : 'negativo'}">
+                        💰 ${esPositivo ? '+' : ''}${total.toFixed(0)}
+                    </td>
+                </tr>
+            `;
+            historialBody.insertAdjacentHTML('beforeend', fila);
+        });
+
+    } catch (err) {
+        console.error('Error al cargar transacciones:', err);
+        historialBody.innerHTML = `
+            <tr>
+                <td colspan="3">
+                    Error al cargar el historial: ${err.message}
+                    <br><small>Verifica que la tabla 'historial' exista y tenga los campos correctos</small>
+                </td>
+            </tr>
+        `;
     }
+}
     
     document.addEventListener('DOMContentLoaded', () => {
         // ⭐ CLAVE: Obtener el botón y añadir el listener
