@@ -6,115 +6,247 @@
     <title>Hacer una Publicación</title>
     <link rel="stylesheet" href="styles/estilos.css"> 
     <style>
-        .hidden { display: none; }
-        .field-row { margin-top: 8px; }
-        .small-input { width: 100%; box-sizing: border-box; }
+        /* Variables de color */
+        :root {
+            --verde: #2F9A34;
+            --verde-dark: #036d19;
+            --verde-light: #e8f5e9;
+            --bg: #f6faf6;
+            --card: #ffffff;
+            --text: #333;
+            --muted: #666;
+            --border: #e6e6e6;
+        }
 
-        /* Estilo para el botón "Volver" */
+        /* Base */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Contenedor principal */
+        .publicar-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 32px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        /* Botón Volver */
         .back-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 16px;
-            background-color: #2F9A34; /* Verde principal */
-            color: white;
-            border: none;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(47, 154, 52, 0.1);
+            color: var(--verde-dark);
+            border: 1px solid rgba(47, 154, 52, 0.15);
             border-radius: 8px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
             text-decoration: none;
-            transition: background-color 0.3s ease, box-shadow 0.2s ease;
         }
 
         .back-btn:hover {
-            background-color: #036d19; /* Verde más oscuro */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background: rgba(47, 154, 52, 0.15);
+            border-color: rgba(47, 154, 52, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(47, 154, 52, 0.15);
         }
 
         .back-btn:active {
-            background-color: #025a14; /* Verde aún más oscuro */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
         }
 
-        /* Estilo general para el contenedor */
-        .publicar-container {
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 24px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
+        /* Título */
         h2 {
-            color: #2F9A34;
-            font-size: 1.5rem;
-            margin-bottom: 16px;
+            color: var(--verde);
+            font-size: 1.6rem;
+            margin: 0 0 24px 0;
+            font-weight: 800;
             text-align: center;
         }
 
-        label {
-            font-weight: 600;
-            color: #333;
+        /* Formulario */
+        .form-publicar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        input, textarea, select {
-            padding: 12px;
-            border: 1px solid #e6e6e6;
+        .field-row {
+            margin-top: 0;
+        }
+
+        /* Etiquetas */
+        label {
+            display: block;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* Inputs y Textareas */
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
             font-family: inherit;
+            color: var(--text);
+            background: var(--card);
+            transition: all 0.2s ease;
             outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        input:focus, textarea:focus, select:focus {
-            border-color: #2F9A34;
-            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.2);
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.15);
+            background: #fafffe;
         }
 
         textarea {
             resize: vertical;
             min-height: 100px;
+            font-family: inherit;
         }
 
-        .btn-publicar {
-            display: inline-block;
-            width: 100%;
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232F9A34' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        /* Preview de imagen */
+        #preview {
+            display: none;
+            margin-top: 12px;
+            max-width: 100%;
+            max-height: 240px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            object-fit: cover;
+        }
+
+        /* Wrapper de "Otros" */
+        #categoriaOtrosWrap {
+            margin-top: 12px;
             padding: 12px;
-            background-color: #2F9A34;
+            background: var(--verde-light);
+            border-radius: 8px;
+            border-left: 4px solid var(--verde);
+        }
+
+        #categoriaOtrosWrap input {
+            margin-top: 8px;
+        }
+
+        /* Clase hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Botón Publicar */
+        .btn-publicar {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--verde), var(--verde-dark));
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.3s ease, box-shadow 0.2s ease;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(47, 154, 52, 0.25);
         }
 
         .btn-publicar:hover {
-            background-color: #036d19;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(47, 154, 52, 0.35);
         }
 
         .btn-publicar:active {
-            background-color: #025a14;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(47, 154, 52, 0.2);
         }
 
-        img#preview {
-            display: none;
-            margin-top: 10px;
-            max-width: 100%;
-            border-radius: 8px;
+        .btn-publicar:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Small input (Clase auxiliar) */
+        .small-input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .publicar-container {
+                margin: 20px;
+                padding: 20px;
+                border-radius: 10px;
+            }
+
+            h2 {
+                font-size: 1.4rem;
+                margin-bottom: 18px;
+            }
+
+            label {
+                font-size: 0.9rem;
+            }
+
+            input,
+            textarea,
+            select {
+                font-size: 16px; /* Evita zoom en iOS */
+            }
+
+            .btn-publicar {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
         }
     </style>
 </head>
 <body class="publicar-body">
 
     <div class="publicar-container">
-        <button id="backBtn" class="back-btn" style="margin-bottom:12px;">← Volver</button>
+        <button id="backBtn" class="back-btn">← Volver</button>
         <h2>📤 Hacer una Publicación</h2>
 
         <form class="form-publicar" id="formPublicar">
@@ -122,14 +254,14 @@
             <input type="text" id="titulo" placeholder="Ej. Laptop Lenovo, Corte de cabello..." required class="small-input">
 
             <label for="descripcion" class="field-row">Descripción</label>
-            <textarea id="descripcion" placeholder="Agrega una descripción breve..." class="small-input"></textarea>
+            <textarea id="descripcion" placeholder="Agrega una descripción breve..." class="small-input" rows="4"></textarea>
 
             <label for="precio" class="field-row">Precio (en créditos)</label>
-            <input type="number" id="precio" placeholder="Ej. 100" min="0" value="100" class="small-input">
+            <input type="number" id="precio" placeholder="Ej. 100" min="1" value="100" class="small-input">
 
             <div class="field-row">
                 <label for="categoria">Categoría</label>
-                <select id="categoria" class="small-input"> 
+                <select id="categoria" class="small-input" required>
                     <option value="">Cargando categorías...</option>
                 </select>
             </div>
@@ -139,92 +271,158 @@
                 <input type="text" id="categoriaOtros" class="small-input" placeholder="Escribe la categoría">
             </div>
 
-            <label for="imagen" class="field-row">Subir imagen</label>
+            <label for="imagen" class="field-row">Subir imagen (opcional)</label>
             <input type="file" id="imagen" accept="image/*">
-            <img id="preview" src="" alt="Vista previa" style="display:none; margin-top:10px; max-width:100%; border-radius:8px;">
+            <img id="preview" src="" alt="Vista previa" style="display:none; margin-top:10px; max-width:100%; border-radius:8px; max-height: 200px;">
 
-
-            <div style="margin-top:12px;">
+            <div style="margin-top:20px;">
                 <button type="submit" class="btn-publicar">Publicar</button>
             </div>
-
-            <div id="lista-publicaciones"></div>
-
         </form>
     </div>
 
 <script type="module">
+    import { supabase } from './config/db.js';
 
-// Ya NO necesitamos importar supabase aquí para la carga de categorías.
-// La importación de supabase se mantiene solo para la función de SUBMIT,
-// para manejar la subida de imagen a Storage y la inserción final.
-import { supabase } from './config/db.js';
-
-let selectedCategoryName = '';
-
-// --- FUNCIÓN CORREGIDA: Llama al Servidor Express ---
-async function fetchCategories() {
-    const select = document.getElementById('categoria');
-    select.innerHTML = '<option value="">Cargando categorías...</option>'; 
-
-    try {
-        // 🚨 CLAVE: Llama a la ruta API de tu servidor Express
-        const response = await fetch('http://localhost:3000/api/categoria');
+    // --- FUNCIÓN PARA CARGAR CATEGORÍAS ---
+    async function fetchCategories() {
+        const select = document.getElementById('categoria');
         
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
+        try {
+            console.log('Cargando categorías...');
+            
+            // Intentar cargar desde la tabla categoria
+            const { data, error } = await supabase
+                .from('categoria')
+                .select('nombre')
+                .order('nombre', { ascending: true });
+
+            if (error) {
+                console.error('Error al cargar categorías:', error);
+                // Si falla, usar categorías por defecto
+                useDefaultCategories();
+                return;
+            }
+
+            // Limpiar el select
+            select.innerHTML = '';
+            
+            // Opción por defecto
+            select.appendChild(new Option('Selecciona una categoría', ''));
+            
+            // Llenar con categorías de la base de datos
+            if (data && data.length > 0) {
+                data.forEach(cat => {
+                    const option = new Option(cat.nombre, cat.nombre);
+                    select.appendChild(option);
+                });
+                console.log('Categorías cargadas desde BD:', data);
+            } else {
+                // Si no hay categorías en la BD, usar las por defecto
+                useDefaultCategories();
+            }
+            
+            // Añadir la opción 'Otros'
+            select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
+            
+            // Configurar el listener
+            setupCategoryChangeListener();
+
+        } catch (err) {
+            console.error('Error al cargar categorías:', err);
+            useDefaultCategories();
         }
-        
-        const data = await response.json();
+    }
 
-        // Limpiar el select y añadir la opción por defecto
+    // Categorías por defecto en caso de error
+    function useDefaultCategories() {
+        const select = document.getElementById('categoria');
+        const defaultCategories = [
+            'Electrónica',
+            'Hogar',
+            'Ropa',
+            'Música',
+            'Jardín',
+            'Juguetes',
+            'Libros',
+            'Deportes',
+            'Herramientas',
+            'Otros'
+        ];
+        
         select.innerHTML = '';
         select.appendChild(new Option('Selecciona una categoría', ''));
         
-        // Llenar las opciones con los datos
-        data.forEach(cat => {
-            // Usamos la ID como valor, ya que tu endpoint de inserción Express espera `categoria_id`
-            const option = new Option(cat.nombre, cat.id_categoria); 
+        defaultCategories.forEach(cat => {
+            const option = new Option(cat, cat);
             select.appendChild(option);
         });
-
-        // Añadir la opción 'Otros'
+        
         select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
-
-        setupCategoryChangeListener(); 
-
-    } catch (err) {
-        console.error('❌ Error al cargar categorías desde el servidor (Express):', err);
-        select.innerHTML = '<option value="">Error al cargar categorías</option>'; 
+        setupCategoryChangeListener();
+        
+        console.log('Usando categorías por defecto');
     }
-}
 
-// --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' ---
-function setupCategoryChangeListener() {
-    const categoriaSelect = document.getElementById('categoria');
-    const categoriaOtrosWrap = document.getElementById('categoriaOtrosWrap');
-    const categoriaOtrosInput = document.getElementById('categoriaOtros');
+    // --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' ---
+    function setupCategoryChangeListener() {
+        const categoriaSelect = document.getElementById('categoria');
+        const categoriaOtrosWrap = document.getElementById('categoriaOtrosWrap');
+        const categoriaOtrosInput = document.getElementById('categoriaOtros');
 
-    categoriaSelect.addEventListener('change', () => {
-        if (categoriaSelect.value === 'OTROS') {
-            categoriaOtrosWrap.classList.remove('hidden');
-            categoriaOtrosInput.setAttribute('required', 'required'); 
-        } else if (categoriaSelect.value) {
-            // Guardar el texto visible de la opción seleccionada
-selectedCategoryName = categoriaSelect.options[categoriaSelect.selectedIndex].text;        } else {
-            selectedCategoryName = '';
-        }
-    });
-}
+        categoriaSelect.addEventListener('change', () => {
+            if (categoriaSelect.value === 'OTROS') {
+                categoriaOtrosWrap.classList.remove('hidden');
+                categoriaOtrosInput.setAttribute('required', 'required');
+            } else {
+                categoriaOtrosWrap.classList.add('hidden');
+                categoriaOtrosInput.removeAttribute('required');
+                categoriaOtrosInput.value = '';
+            }
+        });
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('formPublicar');
-    const backBtn = document.getElementById('backBtn');
-    const imagenInput = document.getElementById('imagen');
-    const preview = document.getElementById('preview');
+    // --- INICIALIZACIÓN ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        const form = document.getElementById('formPublicar');
+        const backBtn = document.getElementById('backBtn');
+        const imagenInput = document.getElementById('imagen');
+        const preview = document.getElementById('preview');
 
-    // Lógica para el botón 'Volver'
-    if (backBtn) {
+        // Cargar categorías al iniciar
+        await fetchCategories();
+
+        // Vista previa de imagen
+        imagenInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    alert('Por favor, selecciona un archivo de imagen válido');
+                    imagenInput.value = '';
+                    return;
+                }
+                
+                // Validar tamaño (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('La imagen es demasiado grande. Máximo 5MB permitido');
+                    imagenInput.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = '';
+                preview.style.display = 'none';
+            }
+        });
+
+        // Botón volver
         backBtn.addEventListener('click', () => {
             if (history.length > 1) {
                 history.back();
@@ -232,140 +430,114 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = 'perfil.html';
             }
         });
-    }
 
-    // Lógica para la vista previa de la imagen
-    imagenInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            preview.src = '';
-            preview.style.display = 'none';
-        }
-    });
+        // Envío del formulario
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Obtener datos del formulario
+            const title = document.getElementById('titulo').value.trim();
+            const description = document.getElementById('descripcion').value.trim();
+            const price = parseInt(document.getElementById('precio').value);
+            const imageFile = document.getElementById('imagen').files[0];
+            const categoriaSelectValue = document.getElementById('categoria').value;
+            const categoriaOtros = document.getElementById('categoriaOtros').value.trim();
 
-
-    // 🚀 Iniciar la carga de categorías
-    fetchCategories();
-
-    // ----------------------------------------------------------------------
-    // ⚠️ ADVERTENCIA: La lógica de `form.addEventListener('submit')` es compleja
-    // porque intenta subir a Storage (Supabase) y luego insertar en la BD (Express API).
-    // Si usas Express, DEBERÍAS manejar la subida de imagen también en Express
-    // (usando Multer o similar) y luego desde ahí llamar a Supabase.
-    // MANTENEMOS la lógica actual solo para que funcione la inserción con los campos correctos.
-    // ----------------------------------------------------------------------
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const title = document.getElementById('titulo').value.trim();
-        const description = document.getElementById('descripcion').value.trim();
-        const price = document.getElementById('precio').value;
-        const priceValue = price ? parseFloat(price) : null; 
-        const imageFile = document.getElementById('imagen').files[0]; 
-        
-        const categoriaSelectValue = document.getElementById('categoria').value;
-        const categoriaOtros = document.getElementById('categoriaOtros').value.trim();
-
-let finalCategoryValueForDB = selectedCategoryName;
-
-        // 1. Manejo de la categoría
-        if (categoriaSelectValue === 'OTROS') {
-            if (!categoriaOtros) {
-                alert('Debe especificar la nueva categoría.');
+            // Validaciones
+            if (!title) {
+                alert('El título es obligatorio.');
                 return;
             }
-            // 🚨 ADVERTENCIA: Si usas el endpoint Express, el valor de la ID
-            // debe ser un ID válido. Necesitarías insertar la categoría primero 
-            // en Supabase para obtener una ID antes de la publicación.
-            alert('Advertencia: La opción "Otros" no es compatible con el endpoint API de Express actual. Por favor, selecciona una categoría existente.');
-            return;
-        } 
-        
-        if (!title || !finalCategoryValueForDB) { 
-            alert('El título y la categoría son obligatorios.'); 
-            return; 
-        }
-        
-        // 2. Subir Imagen a Supabase Storage (Se mantiene aquí, no es lo ideal)
-        let imageUrl = null;
-        
-        if (imageFile) {
-            const filePath = `publicaciones/${Date.now()}_${imageFile.name}`; 
 
-            // Esta parte utiliza el cliente Supabase directamente en el frontend,
-            // lo que requiere que 'supabaseClient.js' esté correctamente configurado.
-            const { error: uploadError } = await supabase.storage
-                .from('imagenes') 
-                .upload(filePath, imageFile, {
-                    cacheControl: '3600',
-                    upsert: false 
-                });
-            
-            if (!uploadError) {
-                const { data: publicUrlData } = supabase
-                    .storage
-                    .from('imagenes')
-                    .getPublicUrl(filePath); 
-
-                imageUrl = publicUrlData.publicUrl;
-            } else {
-                console.error("Error al subir imagen:", uploadError);
-                alert(`❌ ERROR DE IMAGEN: No se pudo subir la imagen. ${uploadError.message}`);
+            if (!categoriaSelectValue) {
+                alert('Por favor selecciona una categoría.');
                 return;
             }
-        }
-        
-        // 3. Insertar la Publicación usando la API de Express
-        try {
-const userId = localStorage.getItem('auth_id'); // 🚨 USAR 'auth_id'            if (!userId) {
-                if (!userId) {
-        alert('Debe iniciar sesión para publicar.');
-        return;
-    }
-            const apiResponse = await fetch('http://localhost:3000/api/publicar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    titulo: title,
-                    descripcion: description,
-                    precio: priceValue,       
-categoria_nombre: finalCategoryValueForDB, // Nuevo campo en el body    
- usuario_id: userId,                // ID del usuario
-                    foto: imageUrl // URL de la imagen
-                })
-            });
-            
-            const result = await apiResponse.json();
 
-            if (!apiResponse.ok) {
-                console.error('Error del servidor al insertar:', result.error);
-                throw new Error(result.error || 'Error desconocido al publicar.');
+            // Determinar categoría final
+            let finalCategoryName = categoriaSelectValue === 'OTROS' ? categoriaOtros : categoriaSelectValue;
+            
+            if (categoriaSelectValue === 'OTROS' && !categoriaOtros) {
+                alert('Debes especificar la categoría.');
+                return;
             }
 
-            alert('✅ ¡Publicación creada exitosamente!');
-            form.reset();
-            preview.src = '';
-            preview.style.display = 'none';
-            window.location.href = 'perfil.html';
+            try {
+                // Obtener usuario actual
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                    alert('Error: No se pudo verificar el usuario. Por favor, inicia sesión nuevamente.');
+                    return;
+                }
 
-        } catch (err) {
-            console.error('Error al enviar la publicación:', err);
-            alert(`❌ ERROR DE PUBLICACIÓN: ${err.message}.`);
-        }
+                let imageUrl = null;
+
+                // Subir imagen si existe
+                if (imageFile) {
+                    console.log('Subiendo imagen...');
+                    
+                    // Crear nombre único para el archivo
+                    const fileExt = imageFile.name.split('.').pop();
+                    const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+                    const filePath = `publicaciones/${fileName}`;
+
+                    // Subir archivo
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('imagenes')
+                        .upload(filePath, imageFile);
+
+                    if (uploadError) {
+                        console.error('Error al subir imagen:', uploadError);
+                        throw new Error('No se pudo subir la imagen: ' + uploadError.message);
+                    }
+
+                    // Obtener URL pública
+                    const { data: publicUrlData } = supabase.storage
+                        .from('imagenes')
+                        .getPublicUrl(filePath);
+
+                    imageUrl = publicUrlData.publicUrl;
+                    console.log('Imagen subida:', imageUrl);
+                }
+
+                // Insertar publicación en la base de datos
+                console.log('Insertando publicación...');
+                const { data: inserted, error: insertError } = await supabase
+                    .from('Publicacion')
+                    .insert([{
+                        titulo: title,
+                        descripcion: description,
+                        precio: price,
+                        nombre_categoria: finalCategoryName,
+                        imagen_url: imageUrl,
+                        usuario_id: user.id
+                    }])
+                    .select();
+
+                if (insertError) {
+                    console.error('Error al insertar publicación:', insertError);
+                    throw new Error('No se pudo crear la publicación: ' + insertError.message);
+                }
+
+                console.log('Publicación creada:', inserted);
+                alert('✅ ¡Publicación creada exitosamente!');
+                
+                // Limpiar formulario
+                form.reset();
+                preview.style.display = 'none';
+                document.getElementById('categoriaOtrosWrap').classList.add('hidden');
+                
+                // Redirigir al perfil después de 1 segundo
+                setTimeout(() => {
+                    window.location.href = 'perfil.html';
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error completo:', error);
+                alert(`❌ Error: ${error.message}`);
+            }
+        });
     });
-
-    // ❌ ELIMINAMOS el listener duplicado que estaba al final del archivo.
-
-});
-
 </script>
 </body>
 </html>
