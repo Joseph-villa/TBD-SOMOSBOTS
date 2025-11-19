@@ -499,7 +499,7 @@
             console.log('📊 Rol del usuario:', usuario.rol);
 
             const isAdmin = usuario.rol && 
-                           (usuario.rol.toLowerCase() === 'administrador' || 
+                            (usuario.rol.toLowerCase() === 'administrador' || 
                             usuario.rol.toLowerCase() === 'admin');
 
             if (!isAdmin) {
@@ -529,6 +529,22 @@
             return false;
         }
     }
+
+    // admin.html - Función auxiliar (generalmente al inicio del script)
+function isRecent(lastSignInDate) {
+    if (!lastSignInDate) return false;
+    const lastLogin = new Date(lastSignInDate);
+    const now = new Date();
+    
+    // Define el umbral de "Activo" en 5 minutos.
+    const activeThresholdMinutes = 5; 
+    
+    const diffTime = Math.abs(now.getTime() - lastLogin.getTime()); // Diferencia en milisegundos
+    const diffMinutes = Math.ceil(diffTime / (1000 * 60)); // Convierte a minutos
+    
+    return diffMinutes <= activeThresholdMinutes;
+}
+
 
     // Función para cargar todos los datos del dashboard
     async function loadDashboardData() {
@@ -567,26 +583,43 @@
     }
 
     // Cargar datos de usuarios
-    async function loadUsersData() {
-        try {
-            const { data: users, error } = await supabase
-                .from('usuario')
-                .select('*')
-                .order('nombre_completo', { ascending: true });
+async function loadUsersData() {
+    try {
+        const { data: users, error } = await supabase
+            .from('usuario')
+            .select('*, ultima_sesion:registro_sesiones(fecha_ultima_conec)')
+            .order('nombre_completo', { ascending: true });
 
-            if (error) throw error;
+        if (error) throw error;
 
-            // Actualizar tabla de usuarios si estamos en esa pestaña
-            if (document.getElementById('users-tab').style.display !== 'none') {
-                renderUsersTable(users);
-            }
+        // Necesitamos guardar los datos actualizados de usuarios en allData para renderizar
+        allData.users = users.map(user => {
+            
+            // 1. Extraer la fecha de la conexión (será null si nunca inició sesión)
+            const lastSignIn = user.ultima_sesion ? user.ultima_sesion[0]?.fecha_ultima_conec : null;
+            
+            // 2. Calcular el estado: Llama a la función isRecent
+            const calculatedState = (lastSignIn && isRecent(lastSignIn)) ? 'Activo' : 'Inactivo';
 
-            return users || [];
-        } catch (error) {
-            console.error('❌ Error cargando usuarios:', error);
-            return [];
+            return {
+                ...user,
+                // Almacenar la fecha de inicio de sesión
+                last_sign_in: lastSignIn, 
+                // 🚨 CAMBIO CRÍTICO: Agregar la propiedad 'estado'
+                estado: calculatedState // <-- ¡El campo que la tabla lee!
+            };
+        });
+
+        if (document.getElementById('users-tab').style.display !== 'none') {
+            renderUsersTable(allData.users);
         }
+
+        return allData.users;
+    } catch (error) {
+        console.error('❌ Error cargando usuarios:', error);
+        return [];
     }
+}
 
     // Cargar datos de publicaciones
     async function loadPublicationsData() {
@@ -614,29 +647,26 @@
 
     // Cargar datos de intercambios
     async function loadExchangesData() {
-        try {
-            const { data: exchanges, error } = await supabase
-                .from('Intercambio')
-                .select(`
-                    *,
-                    publicacion:Publicacion(titulo),
-                    comprador:usuario!Intercambio_usuario_id_fkey(nombre_completo),
-                    vendedor:usuario!Intercambio_usuario_vendedor_id_fkey(nombre_completo)
-                `)
-                .order('fecha_creacion', { ascending: false });
+    try {
+        const { data: exchanges, error } = await supabase
+            .from('Intercambio')
+            // ¡Toda la consulta de selección en una sola línea, sin saltos ni espacios innecesarios!
+            .select('*,Publicacion(titulo),comprador:usuario!fk_intercambio_usuario_comprador(nombre_completo),vendedor:usuario!fk_intercambio_usuario_vendedor(nombre_completo)')
+            .order('fecha_creacion', { ascending: false });
 
-            if (error) throw error;
+        if (error) throw error;
 
-            if (document.getElementById('exchanges-tab').style.display !== 'none') {
-                renderExchangesTable(exchanges);
-            }
-
-            return exchanges || [];
-        } catch (error) {
-            console.error('❌ Error cargando intercambios:', error);
-            return [];
+        if (document.getElementById('exchanges-tab').style.display !== 'none') {
+            renderExchangesTable(exchanges);
         }
+
+        return exchanges || [];
+    } catch (error) {
+        console.error('❌ Error cargando intercambios:', error);
+        return [];
     }
+}
+
 
     // Cargar datos de créditos
     async function loadCreditsData() {
@@ -778,35 +808,42 @@
             return;
         }
 
-        container.innerHTML = `
-            <table>
-                <thead>
+    container.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Créditos</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+            ${users.map(user => {
+                
+                // 🚨 CORRECCIÓN CLAVE: Usamos el campo 'estado' ya calculado en loadUsersData (lógica de 5 minutos)
+                const status = user.estado; 
+                const statusClass = getStatusClass(status); // Utilizamos la función auxiliar general
+
+                return `
                     <tr>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Rol</th>
-                        <th>Créditos</th>
-                        <th>Estado</th>
+                        <td>${user.nombre_completo || 'N/A'}</td>
+                        <td>${user.correo_electronico || 'N/A'}</td>
+                        <td>${user.rol || 'Usuario'}</td>
+                        <td>${user.saldo_creditos || 0} ♻️</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${status}
+                            </span>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${users.map(user => `
-                        <tr>
-                            <td>${user.nombre_completo || 'N/A'}</td>
-                            <td>${user.correo_electronico || 'N/A'}</td>
-                            <td>${user.rol || 'Usuario'}</td>
-                            <td>${user.saldo_creditos || 0} ♻️</td>
-                            <td>
-                                <span class="status-badge status-active">
-                                    Activo
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-    }
+                `;
+            }).join('')}
+            </tbody>
+        </table>
+    `;
+}
 
     // Renderizar tabla de publicaciones
     function renderPublicationsTable(publications) {
