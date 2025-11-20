@@ -587,8 +587,10 @@ async function loadUsersData() {
     try {
         const { data: users, error } = await supabase
             .from('usuario')
-            .select('*, ultima_sesion:registro_sesiones(fecha_ultima_conec)')
-            .order('nombre_completo', { ascending: true });
+// admin.html - loadUsersData
+// admin.html - loadUsersData
+.select('*, ultima_sesion:registro_sesiones!auth_id(fecha_ultima_conec)')
+             .order('nombre_completo', { ascending: true });
 
         if (error) throw error;
 
@@ -628,7 +630,7 @@ async function loadUsersData() {
                 .from('Publicacion')
                 .select(`
                     *,
-                    usuario:usuario(nombre_completo)
+autor:usuario_id(nombre_completo)
                 `)
                 .order('id_publicacion', { ascending: false });
 
@@ -646,13 +648,14 @@ async function loadUsersData() {
     }
 
     // Cargar datos de intercambios
-    async function loadExchangesData() {
+async function loadExchangesData() {
     try {
         const { data: exchanges, error } = await supabase
             .from('Intercambio')
-            // ¡Toda la consulta de selección en una sola línea, sin saltos ni espacios innecesarios!
-            .select('*,Publicacion(titulo),comprador:usuario!fk_intercambio_usuario_comprador(nombre_completo),vendedor:usuario!fk_intercambio_usuario_vendedor(nombre_completo)')
+            // SINTAXIS CRÍTICA EN UNA SOLA LÍNEA LÓGICA (sin saltos de línea en el string)
+            .select('*,publicacion:Publicacion(titulo),comprador:usuario_id(nombre_completo),vendedor:usuario_vendedor_id(nombre_completo)')
             .order('fecha_creacion', { ascending: false });
+
 
         if (error) throw error;
 
@@ -871,7 +874,7 @@ async function loadUsersData() {
                             <td>${pub.titulo || 'Sin título'}</td>
                             <td>${pub.precio || 0} ♻️</td>
                             <td>${pub.nombre_categoria || 'General'}</td>
-                            <td>${pub.usuario?.nombre_completo || 'N/A'}</td>
+<td>${pub.autor?.nombre_completo || 'N/A'}</td>
                             <td>${new Date(pub.fecha_creacion).toLocaleDateString()}</td>
                         </tr>
                     `).join('')}
