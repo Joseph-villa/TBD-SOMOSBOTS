@@ -824,11 +824,24 @@
 
         // ========== FUNCIÓN CREAR INTERCAMBIO MEJORADA ==========
 
-      window.crearIntercambio = async function(producto, precio) {
+      // En la función crearIntercambio
+window.crearIntercambio = async function(producto, precio) {
     try {
-        console.log('🔄 Creando intercambio...');
+        console.log('🔄 Creando intercambio para producto:', producto.id_publicacion);
+        
+        // VERIFICAR que la publicación sigue activa y disponible
+        const { data: publicacion, error: pubError } = await supabase
+            .from('Publicacion')
+            .select('*')
+            .eq('id_publicacion', producto.id_publicacion)
+            .eq('estado', 'activo')
+            .single();
 
-        // SOLO crear el intercambio - NADA MÁS
+        if (pubError || !publicacion) {
+            throw new Error('La publicación ya no está disponible');
+        }
+
+        // CREAR INTERCAMBIO - usar UUID correctamente
         const { data: intercambioData, error: intercambioError } = await supabase
             .from('Intercambio')
             .insert([{
@@ -838,8 +851,8 @@
                 fecha_creacion: new Date(),
                 fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                 publicacion_id: producto.id_publicacion,
-                usuario_id: currentUserId,
-                usuario_vendedor_id: producto.usuario_id
+                usuario_id: currentUserId, // UUID del comprador
+                usuario_vendedor_id: producto.usuario_id // UUID del vendedor
             }])
             .select();
 
@@ -849,11 +862,7 @@
         }
 
         console.log('✅ Intercambio creado:', intercambioData[0].id_intercambio);
-
-        // SOLO actualizar saldo en usuario
-        await actualizarSaldoComprador(currentUserId, precio);
-
-        console.log('✅ Proceso completado exitosamente');
+        return intercambioData[0].id_intercambio;
 
     } catch (error) {
         console.error('❌ Error en crearIntercambio:', error);
