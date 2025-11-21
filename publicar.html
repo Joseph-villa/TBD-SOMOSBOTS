@@ -284,150 +284,171 @@
 <script type="module">
     import { supabase } from './config/db.js';
 
-    // --- FUNCIÓN PARA CARGAR CATEGORÍAS ---
+    // Variable global para almacenar categorías
+    window.categoriasData = [];
+
+    // --- FUNCIÓN PARA CARGAR CATEGORÍAS CORREGIDA ---
     async function fetchCategories() {
         const select = document.getElementById('categoria');
         
         try {
-            console.log('Cargando categorías...');
+            console.log('🔄 Cargando categorías desde la base de datos...');
             
-            // Intentar cargar desde la tabla categoria
-            const { data, error } = await supabase
+            // Cargar categorías con ID y nombre
+            const { data: categorias, error } = await supabase
                 .from('categoria')
-                .select('nombre')
+                .select('id_categoria, nombre, descripcion')
                 .order('nombre', { ascending: true });
 
             if (error) {
-                console.error('Error al cargar categorías:', error);
-                // Si falla, usar categorías por defecto
+                console.error('❌ Error al cargar categorías:', error);
                 useDefaultCategories();
                 return;
             }
 
+            console.log('✅ Categorías cargadas:', categorias);
+
             // Limpiar el select
             select.innerHTML = '';
-            
-            // Opción por defecto
             select.appendChild(new Option('Selecciona una categoría', ''));
             
-            // Llenar con categorías de la base de datos
-            if (data && data.length > 0) {
-                data.forEach(cat => {
-                    const option = new Option(cat.nombre, cat.nombre);
+            if (categorias && categorias.length > 0) {
+                // Guardar categorías en variable global para usar después
+                window.categoriasData = categorias;
+                
+                categorias.forEach(cat => {
+                    // Guardar ID como valor, mostrar nombre
+                    const option = new Option(cat.nombre, cat.id_categoria);
                     select.appendChild(option);
                 });
-                console.log('Categorías cargadas desde BD:', data);
+                console.log(`📊 ${categorias.length} categorías cargadas desde BD`);
             } else {
-                // Si no hay categorías en la BD, usar las por defecto
                 useDefaultCategories();
+                return;
             }
             
             // Añadir la opción 'Otros'
             select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
-            
-            // Configurar el listener
             setupCategoryChangeListener();
 
         } catch (err) {
-            console.error('Error al cargar categorías:', err);
+            console.error('💥 Error al cargar categorías:', err);
             useDefaultCategories();
         }
     }
 
-    // Categorías por defecto en caso de error
+    // --- FUNCIÓN PARA CATEGORÍAS POR DEFECTO ---
     function useDefaultCategories() {
         const select = document.getElementById('categoria');
+        
+        // Para categorías por defecto, usaremos nombres como valores
         const defaultCategories = [
             'Electrónica',
             'Hogar',
-            'Ropa',
+            'Ropa', 
             'Música',
             'Jardín',
             'Juguetes',
             'Libros',
             'Deportes',
-            'Herramientas',
-            'Otros'
+            'Herramientas'
         ];
         
         select.innerHTML = '';
         select.appendChild(new Option('Selecciona una categoría', ''));
         
         defaultCategories.forEach(cat => {
-            const option = new Option(cat, cat);
+            const option = new Option(cat, cat); // Usar nombre como valor
             select.appendChild(option);
         });
         
         select.appendChild(new Option('Otros (Especificar)', 'OTROS'));
         setupCategoryChangeListener();
         
-        console.log('Usando categorías por defecto');
+        console.log('📋 Usando categorías por defecto (sin IDs reales)');
     }
 
-    // --- FUNCIÓN PARA MANEJAR EL CAMPO 'OTROS' ---
+    // --- FUNCIÓN PARA CONFIGURAR EL CAMPO "OTROS" ---
     function setupCategoryChangeListener() {
         const categoriaSelect = document.getElementById('categoria');
         const categoriaOtrosWrap = document.getElementById('categoriaOtrosWrap');
         const categoriaOtrosInput = document.getElementById('categoriaOtros');
 
+        if (!categoriaSelect || !categoriaOtrosWrap || !categoriaOtrosInput) {
+            console.error('❌ Elementos del formulario no encontrados');
+            return;
+        }
+
         categoriaSelect.addEventListener('change', () => {
             if (categoriaSelect.value === 'OTROS') {
                 categoriaOtrosWrap.classList.remove('hidden');
                 categoriaOtrosInput.setAttribute('required', 'required');
+                categoriaOtrosInput.focus();
             } else {
                 categoriaOtrosWrap.classList.add('hidden');
                 categoriaOtrosInput.removeAttribute('required');
                 categoriaOtrosInput.value = '';
             }
         });
+
+        console.log('✅ Listener de categorías configurado');
     }
 
-   // --- FUNCIONES DE BONIFICACIÓN POR PRIMERA PUBLICACIÓN ---
-async function verificarPrimeraPublicacion(userId) {
-    try {
-        console.log('🔍 Verificando si es primera publicación del usuario:', userId);
-        
-        // Contar publicaciones existentes del usuario
-        const { data: publicaciones, error } = await supabase
-            .from('Publicacion')
-            .select('id_publicacion')
-            .eq('usuario_id', userId);
+    // --- FUNCIONES DE BONIFICACIÓN POR PRIMERA PUBLICACIÓN ---
+    async function verificarPrimeraPublicacion(userId) {
+        try {
+            console.log('🔍 Verificando si es primera publicación del usuario:', userId);
+            
+            // Contar publicaciones existentes del usuario
+            const { data: publicaciones, error } = await supabase
+                .from('Publicacion')
+                .select('id_publicacion')
+                .eq('usuario_id', userId);
 
-        if (error) {
-            console.error('Error al verificar publicaciones:', error);
+            if (error) {
+                console.error('Error al verificar publicaciones:', error);
+                return false;
+            }
+
+            const esPrimeraPublicacion = !publicaciones || publicaciones.length === 0;
+            console.log('📊 Es primera publicación:', esPrimeraPublicacion);
+            
+            return esPrimeraPublicacion;
+        } catch (error) {
+            console.error('Error en verificación de primera publicación:', error);
             return false;
         }
-
-        const esPrimeraPublicacion = !publicaciones || publicaciones.length === 0;
-        console.log('📊 Es primera publicación:', esPrimeraPublicacion);
-        
-        return esPrimeraPublicacion;
-    } catch (error) {
-        console.error('Error en verificación de primera publicación:', error);
-        return false;
     }
-}
 
-async function obtenerOcrearBilletera(userId) {
-    try {
-        console.log('💰 Buscando billetera para usuario:', userId);
-        
-        // Verificar si existe billetera
-        const { data: billeteraExistente, error: billeteraError } = await supabase
-            .from('billetera')
-            .select('*')
-            .eq('usuario_id', userId)
-            .single();
+    async function obtenerOcrearBilletera(userId) {
+        try {
+            console.log('💰 Buscando billetera para usuario:', userId);
+            
+            // Primero, verificar si el usuario YA TIENE una billetera
+            const { data: billeteraExistente, error: billeteraError } = await supabase
+                .from('billetera')
+                .select('id_billetera, credito_total, credito_actual, credito_retenido')
+                .eq('usuario_id', userId)
+                .maybeSingle();
 
-        if (billeteraError && billeteraError.code === 'PGRST116') {
-            // No existe billetera, crear una nueva
+            if (billeteraError) {
+                console.error('❌ Error al buscar billetera:', billeteraError);
+            }
+
+            // Si encontramos una billetera existente, la retornamos
+            if (billeteraExistente) {
+                console.log('✅ Billetera encontrada:', billeteraExistente);
+                return billeteraExistente;
+            }
+
+            // Si no existe, crear una nueva
             console.log('🆕 Creando nueva billetera para usuario...');
             const { data: nuevaBilletera, error: crearError } = await supabase
                 .from('billetera')
                 .insert([{
                     usuario_id: userId,
-                    credito_total: 10,
-                    credito_actual: 10,
+                    credito_total: 0,
+                    credito_actual: 0,
                     credito_retenido: 0,
                     ultima_actualizacion: new Date()
                 }])
@@ -436,196 +457,35 @@ async function obtenerOcrearBilletera(userId) {
 
             if (crearError) {
                 console.error('❌ Error al crear billetera:', crearError);
+                
+                // Si es error de duplicado, intentar buscar nuevamente
+                if (crearError.code === '23505') {
+                    console.log('🔄 Intentando recuperar billetera existente después de error de duplicado...');
+                    const { data: billeteraRecuperada, error: errorRecuperar } = await supabase
+                        .from('billetera')
+                        .select('id_billetera, credito_total, credito_actual, credito_retenido')
+                        .eq('usuario_id', userId)
+                        .single();
+                    
+                    if (errorRecuperar) {
+                        throw crearError; // Lanzar el error original
+                    }
+                    
+                    console.log('✅ Billetera recuperada después de error:', billeteraRecuperada);
+                    return billeteraRecuperada;
+                }
+                
                 throw crearError;
             }
 
             console.log('✅ Billetera creada:', nuevaBilletera);
             return nuevaBilletera;
-        } else if (billeteraError) {
-            console.error('❌ Error al buscar billetera:', billeteraError);
-            throw billeteraError;
-        }
 
-        console.log('✅ Billetera encontrada:', billeteraExistente);
-        return billeteraExistente;
-    } catch (error) {
-        console.error('❌ Error en obtenerOcrearBilletera:', error);
-        throw error;
+        } catch (error) {
+            console.error('❌ Error en obtenerOcrearBilletera:', error);
+            throw error;
+        }
     }
-}
-
-async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
-    try {
-        console.log('💰 Otorgando créditos por primera publicación a:', userId);
-        
-        // 1. Obtener datos del usuario
-        const { data: usuario, error: usuarioError } = await supabase
-            .from('usuario')
-            .select('saldo_creditos, nombre_completo')
-            .eq('auth_id', userId)
-            .single();
-
-        if (usuarioError) {
-            console.error('Error al obtener datos del usuario:', usuarioError);
-            throw usuarioError;
-        }
-
-        const saldoActual = usuario.saldo_creditos || 0;
-        const nuevoSaldo = saldoActual + 10;
-
-        console.log('💳 Saldo actual:', saldoActual, 'Nuevo saldo:', nuevoSaldo);
-
-        // 2. Actualizar saldo en la tabla usuario
-        const { error: updateError } = await supabase
-            .from('usuario')
-            .update({ 
-                saldo_creditos: nuevoSaldo 
-            })
-            .eq('auth_id', userId);
-
-        if (updateError) {
-            console.error('Error al actualizar créditos en usuario:', updateError);
-            throw updateError;
-        }
-
-        // 3. Obtener o crear billetera
-        const billetera = await obtenerOcrearBilletera(userId);
-        
-        // 4. Actualizar billetera
-        const nuevoCreditoTotal = (billetera.credito_total || 0) + 10;
-        const nuevoCreditoActual = (billetera.credito_actual || 0) + 10;
-
-        const { error: billeteraUpdateError } = await supabase
-            .from('billetera')
-            .update({
-                credito_total: nuevoCreditoTotal,
-                credito_actual: nuevoCreditoActual,
-                ultima_actualizacion: new Date()
-            })
-            .eq('usuario_id', userId);
-
-        if (billeteraUpdateError) {
-            console.error('Error al actualizar billetera:', billeteraUpdateError);
-            throw billeteraUpdateError;
-        }
-
-        // 5. Registrar movimiento de crédito
-        try {
-            const { error: movimientoError } = await supabase
-                .from('Movimiento_Credito')
-                .insert([{
-                    tipo_movimiento: 'bonificación',
-                    monto: 10,
-                    origen: 'primera_publicacion',
-                    fecha_mov: new Date(),
-                    descripcion: 'Bonificación por primera publicación',
-                    billetera_id: billetera.id_billetera
-                }]);
-
-            if (movimientoError) {
-                console.warn('⚠️ No se pudo registrar movimiento de crédito:', movimientoError);
-            } else {
-                console.log('✅ Movimiento de crédito registrado');
-            }
-        } catch (movimientoError) {
-            console.warn('⚠️ Error en movimiento de crédito:', movimientoError.message);
-        }
-
-        // 6. Registrar en bitácora de modificaciones
-        try {
-            const { error: bitacoraError } = await supabase
-                .from('bitacora_modificaciones')
-                .insert([{
-                    tabla_afectada: 'usuario',
-                    registro_id: publicacionId,
-                    usuario_modificador: userId,
-                    tipo_operacion: 'INSERT',
-                    valores_anteriores: JSON.stringify({ saldo_creditos: saldoActual }),
-                    valores_nuevos: JSON.stringify({ saldo_creditos: nuevoSaldo }),
-                    detalle: 'Bonificación de 10 créditos por primera publicación',
-                    fecha_modificacion: new Date()
-                }]);
-
-            if (bitacoraError) {
-                console.warn('⚠️ No se pudo registrar en bitácora:', bitacoraError);
-            } else {
-                console.log('✅ Bitácora de modificaciones registrada');
-            }
-        } catch (bitacoraError) {
-            console.warn('⚠️ Error en bitácora de modificaciones:', bitacoraError.message);
-        }
-
-        // 7. Registrar en bitácora de usuario
-        try {
-            const { error: bitacoraUsuarioError } = await supabase
-                .from('Bitacora_Usuario')
-                .insert([{
-                    accion_realizada: 'bonificación_primera_publicacion',
-                    fecha_accion: new Date(),
-                    detalle: `Recibió 10 créditos por crear su primera publicación (ID: ${publicacionId})`,
-                    usuario_id: userId
-                }]);
-
-            if (bitacoraUsuarioError) {
-                console.warn('⚠️ No se pudo registrar en bitácora usuario:', bitacoraUsuarioError);
-            } else {
-                console.log('✅ Bitácora de usuario registrada');
-            }
-        } catch (bitacoraUsuarioError) {
-            console.warn('⚠️ Error en bitácora de usuario:', bitacoraUsuarioError.message);
-        }
-
-        // 8. Registrar reporte de impacto ecológico
-        try {
-            const { error: impactoError } = await supabase
-                .from('Reportes_Impacto')
-                .insert([{
-                    id_usuario: publicacionId, // Usamos el ID de publicación como referencia
-                    co2: 2.5, // Ejemplo: 2.5kg de CO2 ahorrado por reutilización
-                    energia_ahorrada: 15, // Ejemplo: 15kWh de energía ahorrada
-                    agua_preservada: 100, // Ejemplo: 100L de agua preservada
-                    fecha_registro: new Date(),
-                    publicacion_id: publicacionId,
-                    usuario_id: userId
-                }]);
-
-            if (impactoError) {
-                console.warn('⚠️ No se pudo registrar reporte de impacto:', impactoError);
-            } else {
-                console.log('✅ Reporte de impacto registrado');
-            }
-        } catch (impactoError) {
-            console.warn('⚠️ Error en reporte de impacto:', impactoError.message);
-        }
-
-        // 9. Registrar en historial
-        try {
-            const { error: historialError } = await supabase
-                .from('historial')
-                .insert([{
-                    fecha: new Date(),
-                    tipo: 'bonificación_primera_publicacion',
-                    total: 10,
-                    auth_id: userId
-                }]);
-
-            if (historialError) {
-                console.warn('⚠️ No se pudo registrar en historial:', historialError);
-            } else {
-                console.log('✅ Historial registrado');
-            }
-        } catch (historialError) {
-            console.warn('⚠️ Error en historial:', historialError.message);
-        }
-
-        console.log('✅ Todos los créditos y registros otorgados exitosamente');
-        return true;
-
-    } catch (error) {
-        console.error('❌ Error al otorgar créditos:', error);
-        throw error;
-    }
-}
 
     // --- INICIALIZACIÓN ---
     document.addEventListener('DOMContentLoaded', async () => {
@@ -633,6 +493,15 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
         const backBtn = document.getElementById('backBtn');
         const imagenInput = document.getElementById('imagen');
         const preview = document.getElementById('preview');
+
+        // Botón volver
+        backBtn.addEventListener('click', () => {
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = 'perfil.html';
+            }
+        });
 
         // Cargar categorías al iniciar
         await fetchCategories();
@@ -667,16 +536,7 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
             }
         });
 
-        // Botón volver
-        backBtn.addEventListener('click', () => {
-            if (history.length > 1) {
-                history.back();
-            } else {
-                window.location.href = 'perfil.html';
-            }
-        });
-
-        // Envío del formulario
+        // Envío del formulario CORREGIDO SEGÚN TU SCHEMA
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -699,12 +559,23 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
                 return;
             }
 
-            // Determinar categoría final
-            let finalCategoryName = categoriaSelectValue === 'OTROS' ? categoriaOtros : categoriaSelectValue;
-            
-            if (categoriaSelectValue === 'OTROS' && !categoriaOtros) {
-                alert('Debes especificar la categoría.');
-                return;
+            // DETERMINAR CATEGORÍA_ID CORRECTAMENTE
+            let categoriaId = null;
+            let nombreCategoriaPersonalizada = null;
+
+            if (categoriaSelectValue === 'OTROS') {
+                // Para "Otros", no tenemos ID, usar null y guardar el nombre
+                categoriaId = null;
+                nombreCategoriaPersonalizada = categoriaOtros;
+                
+                if (!categoriaOtros) {
+                    alert('Debes especificar la categoría.');
+                    return;
+                }
+            } else {
+                // Para categorías normales, usar el ID de la categoría seleccionada
+                categoriaId = parseInt(categoriaSelectValue);
+                nombreCategoriaPersonalizada = null;
             }
 
             try {
@@ -714,6 +585,11 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
                     alert('Error: No se pudo verificar el usuario. Por favor, inicia sesión nuevamente.');
                     return;
                 }
+
+                // CREAR BILLETERA PRIMERO (para evitar el error del trigger)
+                console.log('💰 Creando/Asegurando billetera primero...');
+                const billetera = await obtenerOcrearBilletera(user.id);
+                console.log('✅ Billetera asegurada:', billetera);
 
                 let imageUrl = null;
 
@@ -745,17 +621,21 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
                     console.log('Imagen subida:', imageUrl);
                 }
 
-                // Insertar publicación en la base de datos
-                console.log('Insertando publicación...');
+                // Insertar publicación en la base de datos CORREGIDO
+                console.log('📝 Insertando publicación...');
                 const { data: inserted, error: insertError } = await supabase
                     .from('Publicacion')
                     .insert([{
                         titulo: title,
                         descripcion: description,
                         precio: price,
-                        nombre_categoria: finalCategoryName,
+                        categoria_id: categoriaId,  // USAR categoria_id (puede ser null)
+                        nombre_categoria: nombreCategoriaPersonalizada, // Guardar nombre si es "Otros"
                         imagen_url: imageUrl,
-                        usuario_id: user.id
+                        usuario_id: user.id,
+                        estado: 'activo',
+                        fecha_publicacion: new Date(),
+                        fecha_actualizacion: new Date()
                     }])
                     .select();
 
@@ -765,30 +645,124 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
                 }
 
                 const publicacionId = inserted[0].id_publicacion;
-                console.log('Publicación creada con ID:', publicacionId);
+                console.log('✅ Publicación creada con ID:', publicacionId);
 
-                // --- BONIFICACIÓN POR PRIMERA PUBLICACIÓN ---
-                try {
-                    const esPrimeraPublicacion = await verificarPrimeraPublicacion(user.id);
+                // REGISTRO MANUAL DE BONIFICACIÓN SEGÚN TU SCHEMA
+                const esPrimeraPublicacion = await verificarPrimeraPublicacion(user.id);
+
+                if (esPrimeraPublicacion) {
+                    console.log('🎉 ¡Primera publicación detectada! Otorgando 10 créditos...');
                     
-                    if (esPrimeraPublicacion) {
-                        console.log('🎉 ¡Primera publicación detectada! Otorgando 10 créditos...');
+                    try {
+                        // 1. Obtener datos actualizados del usuario
+                        const { data: usuarioActual, error: usuarioError } = await supabase
+                            .from('usuario')
+                            .select('saldo_creditos, nombre_completo')
+                            .eq('auth_id', user.id)
+                            .single();
+
+                        if (usuarioError) throw usuarioError;
+
+                        const saldoActual = usuarioActual.saldo_creditos || 0;
+                        const nuevoSaldo = saldoActual + 10;
+
+                        console.log('💰 Actualizando saldo:', saldoActual, '→', nuevoSaldo);
+
+                        // 2. Actualizar saldo en usuario
+                        const { error: updateError } = await supabase
+                            .from('usuario')
+                            .update({ 
+                                saldo_creditos: nuevoSaldo 
+                            })
+                            .eq('auth_id', user.id);
+
+                        if (updateError) throw updateError;
+
+                        // 3. Actualizar billetera - SEGÚN TU SCHEMA
+                        const { data: billeteraActual, error: billeteraError } = await supabase
+                            .from('billetera')
+                            .select('id_billetera, credito_total, credito_actual')
+                            .eq('usuario_id', user.id)
+                            .single();
+
+                        if (!billeteraError && billeteraActual) {
+                            const nuevoCreditoTotal = (billeteraActual.credito_total || 0) + 10;
+                            const nuevoCreditoActual = (billeteraActual.credito_actual || 0) + 10;
+
+                            const { error: billeteraUpdateError } = await supabase
+                                .from('billetera')
+                                .update({
+                                    credito_total: nuevoCreditoTotal,
+                                    credito_actual: nuevoCreditoActual,
+                                    ultima_actualizacion: new Date()
+                                })
+                                .eq('id_billetera', billeteraActual.id_billetera);  // CORREGIDO
+
+                            if (billeteraUpdateError) {
+                                console.warn('⚠️ No se pudo actualizar billetera:', billeteraUpdateError);
+                            }
+
+                            // 4. Registrar movimiento de crédito - SOLO si tenemos billetera_id
+                            const { error: movimientoError } = await supabase
+                                .from('Movimiento_Credito')
+                                .insert([{
+                                    tipo_movimiento: 'bonificación',
+                                    monto: 10,
+                                    origen: 'primera_publicacion',
+                                    fecha_mov: new Date(),
+                                    descripcion: 'Bonificación por primera publicación',
+                                    billetera_id: billeteraActual.id_billetera  // id_billetera existe
+                                }]);
+
+                            if (movimientoError) {
+                                console.warn('⚠️ No se pudo registrar movimiento de crédito:', movimientoError);
+                            }
+                        }
+
+                        // 5. REGISTRAR EN BITACORA_USUARIO - SEGÚN TU SCHEMA
+                        const { error: bitacoraError } = await supabase
+                            .from('bitacora_usuario')
+                            .insert([{
+                                accion_realizada: 'bonificacion_primera_publicacion',
+                                fecha_accion: new Date(),
+                                detalle: `Bonificación de 10 créditos por primera publicación (ID: ${publicacionId})`,
+                                usuario_id: user.id  // usuario_id UUID correcto
+                            }]);
+
+                        if (bitacoraError) {
+                            console.warn('⚠️ No se pudo registrar en bitácora:', bitacoraError);
+                        } else {
+                            console.log('✅ Registrado en bitacora_usuario');
+                        }
+
+                        // 6. REGISTRAR EN HISTORIAL - SEGÚN TU SCHEMA
+                        const { error: historialError } = await supabase
+                            .from('historial')
+                            .insert([{
+                                fecha: new Date(),
+                                tipo: 'bonificación',
+                                total: 10,
+                                auth_id: user.id  // auth_id UUID correcto
+                            }]);
+
+                        if (historialError) {
+                            console.warn('⚠️ No se pudo registrar en historial:', historialError);
+                        } else {
+                            console.log('✅ Registrado en historial');
+                        }
+
+                        // 7. Mostrar mensaje de éxito
+                        alert(`✅ ¡Publicación creada exitosamente!\n\n🎁 ¡Felicidades! Por ser tu primera publicación, has recibido 10 créditos de bonificación.\n\nTu saldo actual: ${nuevoSaldo} créditos ♻️`);
                         
-                        await otorgarCreditosPrimeraPublicacion(user.id, publicacionId);
-                        
-                        // Mostrar mensaje especial
-                        alert('✅ ¡Publicación creada exitosamente!\n\n🎁 ¡Felicidades! Por ser tu primera publicación, has recibido 10 créditos de bonificación.\n\n🌱 También se registró tu impacto ecológico positivo.');
-                        
-                        // Actualizar localStorage si está disponible
-                        const saldoActual = parseInt(localStorage.getItem('user_saldo') || '0');
-                        localStorage.setItem('user_saldo', (saldoActual + 10).toString());
-                        
-                    } else {
-                        alert('✅ ¡Publicación creada exitosamente!');
+                        // Actualizar localStorage
+                        localStorage.setItem('user_saldo', nuevoSaldo.toString());
+
+                    } catch (bonusError) {
+                        console.error('❌ Error en bonificación:', bonusError);
+                        alert('✅ ¡Publicación creada exitosamente!\n\n⚠️ Hubo un problema con la bonificación, pero tu publicación se creó correctamente.');
                     }
-                } catch (bonusError) {
-                    console.error('Error en bonificación:', bonusError);
-                    alert('✅ ¡Publicación creada exitosamente!\n\n⚠️ Hubo un problema con la bonificación, pero tu publicación se creó correctamente.');
+                } else {
+                    alert('✅ ¡Publicación creada exitosamente!');
                 }
 
                 // Limpiar formulario
@@ -796,10 +770,10 @@ async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
                 preview.style.display = 'none';
                 document.getElementById('categoriaOtrosWrap').classList.add('hidden');
                 
-                // Redirigir al perfil después de 1 segundo
+                // Redirigir al perfil después de 2 segundos
                 setTimeout(() => {
                     window.location.href = 'perfil.html';
-                }, 1000);
+                }, 2000);
 
             } catch (error) {
                 console.error('Error completo:', error);
