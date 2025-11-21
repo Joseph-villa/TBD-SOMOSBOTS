@@ -6,24 +6,242 @@
     <title>Hacer una Publicación</title>
     <link rel="stylesheet" href="styles/estilos.css"> 
     <style>
-        .hidden { display:none; }
-        .field-row { margin-top:8px; }
-        .small-input { width:100%; box-sizing:border-box; }
-        .back-btn {
-            background: none;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-            color: #007bff;
-            font-size: 16px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+    /* Variables de color */
+    :root {
+        --verde: #2F9A34;
+        --verde-dark: #036d19;
+        --verde-light: #e8f5e9;
+        --bg: #f6faf6;
+        --card: #ffffff;
+        --text: #333;
+        --muted: #666;
+        --border: #e6e6e6;
+    }
+
+    /* Base */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Contenedor principal */
+    .publicar-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 32px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    /* Botón Volver */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: rgba(47, 154, 52, 0.1);
+        color: var(--verde-dark);
+        border: 1px solid rgba(47, 154, 52, 0.15);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .back-btn:hover {
+        background: rgba(47, 154, 52, 0.15);
+        border-color: rgba(47, 154, 52, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(47, 154, 52, 0.15);
+    }
+
+    .back-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Título */
+    h2 {
+        color: var(--verde);
+        font-size: 1.6rem;
+        margin: 0 0 24px 0;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    /* Formulario */
+    .form-publicar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .field-row {
+        margin-top: 0;
+    }
+
+    /* Etiquetas */
+    label {
+        display: block;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+
+    /* Inputs y Textareas */
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        color: var(--text);
+        background: var(--card);
+        transition: all 0.2s ease;
+        outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+        border-color: var(--verde);
+        box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.15);
+        background: #fafffe;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+        font-family: inherit;
+    }
+
+    select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232F9A34' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px;
+    }
+
+    /* Preview de imagen */
+    #preview {
+        display: none;
+        margin-top: 12px;
+        max-width: 100%;
+        max-height: 240px;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        object-fit: cover;
+    }
+
+    /* Wrapper de "Otros" */
+    #categoriaOtrosWrap {
+        margin-top: 12px;
+        padding: 12px;
+        background: var(--verde-light);
+        border-radius: 8px;
+        border-left: 4px solid var(--verde);
+    }
+
+    #categoriaOtrosWrap input {
+        margin-top: 8px;
+    }
+
+    /* Clase hidden */
+    .hidden {
+        display: none !important;
+    }
+
+    /* Botón Publicar */
+    .btn-publicar {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, var(--verde), var(--verde-dark));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 12px;
+        transition: all 0.3s ease;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(47, 154, 52, 0.25);
+    }
+
+    .btn-publicar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(47, 154, 52, 0.35);
+    }
+
+    .btn-publicar:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(47, 154, 52, 0.2);
+    }
+
+    .btn-publicar:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Small input (Clase auxiliar) */
+    .small-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .publicar-container {
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
         }
-        .back-btn:hover {
-            background-color: #f8f9fa;
+
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 18px;
         }
-    </style>
+
+        label {
+            font-size: 0.9rem;
+        }
+
+        input,
+        textarea,
+        select {
+            font-size: 16px; /* Evita zoom en iOS */
+        }
+
+        .btn-publicar {
+            padding: 12px;
+            font-size: 0.95rem;
+        }
+    }
+</style>
 </head>
 <body class="publicar-body">
 
@@ -164,6 +382,251 @@
         });
     }
 
+   // --- FUNCIONES DE BONIFICACIÓN POR PRIMERA PUBLICACIÓN ---
+async function verificarPrimeraPublicacion(userId) {
+    try {
+        console.log('🔍 Verificando si es primera publicación del usuario:', userId);
+        
+        // Contar publicaciones existentes del usuario
+        const { data: publicaciones, error } = await supabase
+            .from('Publicacion')
+            .select('id_publicacion')
+            .eq('usuario_id', userId);
+
+        if (error) {
+            console.error('Error al verificar publicaciones:', error);
+            return false;
+        }
+
+        const esPrimeraPublicacion = !publicaciones || publicaciones.length === 0;
+        console.log('📊 Es primera publicación:', esPrimeraPublicacion);
+        
+        return esPrimeraPublicacion;
+    } catch (error) {
+        console.error('Error en verificación de primera publicación:', error);
+        return false;
+    }
+}
+
+async function obtenerOcrearBilletera(userId) {
+    try {
+        console.log('💰 Buscando billetera para usuario:', userId);
+        
+        // Verificar si existe billetera
+        const { data: billeteraExistente, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('*')
+            .eq('usuario_id', userId)
+            .single();
+
+        if (billeteraError && billeteraError.code === 'PGRST116') {
+            // No existe billetera, crear una nueva
+            console.log('🆕 Creando nueva billetera para usuario...');
+            const { data: nuevaBilletera, error: crearError } = await supabase
+                .from('billetera')
+                .insert([{
+                    usuario_id: userId,
+                    credito_total: 10,
+                    credito_actual: 10,
+                    credito_retenido: 0,
+                    ultima_actualizacion: new Date()
+                }])
+                .select()
+                .single();
+
+            if (crearError) {
+                console.error('❌ Error al crear billetera:', crearError);
+                throw crearError;
+            }
+
+            console.log('✅ Billetera creada:', nuevaBilletera);
+            return nuevaBilletera;
+        } else if (billeteraError) {
+            console.error('❌ Error al buscar billetera:', billeteraError);
+            throw billeteraError;
+        }
+
+        console.log('✅ Billetera encontrada:', billeteraExistente);
+        return billeteraExistente;
+    } catch (error) {
+        console.error('❌ Error en obtenerOcrearBilletera:', error);
+        throw error;
+    }
+}
+
+async function otorgarCreditosPrimeraPublicacion(userId, publicacionId) {
+    try {
+        console.log('💰 Otorgando créditos por primera publicación a:', userId);
+        
+        // 1. Obtener datos del usuario
+        const { data: usuario, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos, nombre_completo')
+            .eq('auth_id', userId)
+            .single();
+
+        if (usuarioError) {
+            console.error('Error al obtener datos del usuario:', usuarioError);
+            throw usuarioError;
+        }
+
+        const saldoActual = usuario.saldo_creditos || 0;
+        const nuevoSaldo = saldoActual + 10;
+
+        console.log('💳 Saldo actual:', saldoActual, 'Nuevo saldo:', nuevoSaldo);
+
+        // 2. Actualizar saldo en la tabla usuario
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({ 
+                saldo_creditos: nuevoSaldo 
+            })
+            .eq('auth_id', userId);
+
+        if (updateError) {
+            console.error('Error al actualizar créditos en usuario:', updateError);
+            throw updateError;
+        }
+
+        // 3. Obtener o crear billetera
+        const billetera = await obtenerOcrearBilletera(userId);
+        
+        // 4. Actualizar billetera
+        const nuevoCreditoTotal = (billetera.credito_total || 0) + 10;
+        const nuevoCreditoActual = (billetera.credito_actual || 0) + 10;
+
+        const { error: billeteraUpdateError } = await supabase
+            .from('billetera')
+            .update({
+                credito_total: nuevoCreditoTotal,
+                credito_actual: nuevoCreditoActual,
+                ultima_actualizacion: new Date()
+            })
+            .eq('usuario_id', userId);
+
+        if (billeteraUpdateError) {
+            console.error('Error al actualizar billetera:', billeteraUpdateError);
+            throw billeteraUpdateError;
+        }
+
+        // 5. Registrar movimiento de crédito
+        try {
+            const { error: movimientoError } = await supabase
+                .from('Movimiento_Credito')
+                .insert([{
+                    tipo_movimiento: 'bonificación',
+                    monto: 10,
+                    origen: 'primera_publicacion',
+                    fecha_mov: new Date(),
+                    descripcion: 'Bonificación por primera publicación',
+                    billetera_id: billetera.id_billetera
+                }]);
+
+            if (movimientoError) {
+                console.warn('⚠️ No se pudo registrar movimiento de crédito:', movimientoError);
+            } else {
+                console.log('✅ Movimiento de crédito registrado');
+            }
+        } catch (movimientoError) {
+            console.warn('⚠️ Error en movimiento de crédito:', movimientoError.message);
+        }
+
+        // 6. Registrar en bitácora de modificaciones
+        try {
+            const { error: bitacoraError } = await supabase
+                .from('bitacora_modificaciones')
+                .insert([{
+                    tabla_afectada: 'usuario',
+                    registro_id: publicacionId,
+                    usuario_modificador: userId,
+                    tipo_operacion: 'INSERT',
+                    valores_anteriores: JSON.stringify({ saldo_creditos: saldoActual }),
+                    valores_nuevos: JSON.stringify({ saldo_creditos: nuevoSaldo }),
+                    detalle: 'Bonificación de 10 créditos por primera publicación',
+                    fecha_modificacion: new Date()
+                }]);
+
+            if (bitacoraError) {
+                console.warn('⚠️ No se pudo registrar en bitácora:', bitacoraError);
+            } else {
+                console.log('✅ Bitácora de modificaciones registrada');
+            }
+        } catch (bitacoraError) {
+            console.warn('⚠️ Error en bitácora de modificaciones:', bitacoraError.message);
+        }
+
+        // 7. Registrar en bitácora de usuario
+        try {
+            const { error: bitacoraUsuarioError } = await supabase
+                .from('Bitacora_Usuario')
+                .insert([{
+                    accion_realizada: 'bonificación_primera_publicacion',
+                    fecha_accion: new Date(),
+                    detalle: `Recibió 10 créditos por crear su primera publicación (ID: ${publicacionId})`,
+                    usuario_id: userId
+                }]);
+
+            if (bitacoraUsuarioError) {
+                console.warn('⚠️ No se pudo registrar en bitácora usuario:', bitacoraUsuarioError);
+            } else {
+                console.log('✅ Bitácora de usuario registrada');
+            }
+        } catch (bitacoraUsuarioError) {
+            console.warn('⚠️ Error en bitácora de usuario:', bitacoraUsuarioError.message);
+        }
+
+        // 8. Registrar reporte de impacto ecológico
+        try {
+            const { error: impactoError } = await supabase
+                .from('Reportes_Impacto')
+                .insert([{
+                    id_usuario: publicacionId, // Usamos el ID de publicación como referencia
+                    co2: 2.5, // Ejemplo: 2.5kg de CO2 ahorrado por reutilización
+                    energia_ahorrada: 15, // Ejemplo: 15kWh de energía ahorrada
+                    agua_preservada: 100, // Ejemplo: 100L de agua preservada
+                    fecha_registro: new Date(),
+                    publicacion_id: publicacionId,
+                    usuario_id: userId
+                }]);
+
+            if (impactoError) {
+                console.warn('⚠️ No se pudo registrar reporte de impacto:', impactoError);
+            } else {
+                console.log('✅ Reporte de impacto registrado');
+            }
+        } catch (impactoError) {
+            console.warn('⚠️ Error en reporte de impacto:', impactoError.message);
+        }
+
+        // 9. Registrar en historial
+        try {
+            const { error: historialError } = await supabase
+                .from('historial')
+                .insert([{
+                    fecha: new Date(),
+                    tipo: 'bonificación_primera_publicacion',
+                    total: 10,
+                    auth_id: userId
+                }]);
+
+            if (historialError) {
+                console.warn('⚠️ No se pudo registrar en historial:', historialError);
+            } else {
+                console.log('✅ Historial registrado');
+            }
+        } catch (historialError) {
+            console.warn('⚠️ Error en historial:', historialError.message);
+        }
+
+        console.log('✅ Todos los créditos y registros otorgados exitosamente');
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error al otorgar créditos:', error);
+        throw error;
+    }
+}
+
     // --- INICIALIZACIÓN ---
     document.addEventListener('DOMContentLoaded', async () => {
         const form = document.getElementById('formPublicar');
@@ -301,9 +764,33 @@
                     throw new Error('No se pudo crear la publicación: ' + insertError.message);
                 }
 
-                console.log('Publicación creada:', inserted);
-                alert('✅ ¡Publicación creada exitosamente!');
-                
+                const publicacionId = inserted[0].id_publicacion;
+                console.log('Publicación creada con ID:', publicacionId);
+
+                // --- BONIFICACIÓN POR PRIMERA PUBLICACIÓN ---
+                try {
+                    const esPrimeraPublicacion = await verificarPrimeraPublicacion(user.id);
+                    
+                    if (esPrimeraPublicacion) {
+                        console.log('🎉 ¡Primera publicación detectada! Otorgando 10 créditos...');
+                        
+                        await otorgarCreditosPrimeraPublicacion(user.id, publicacionId);
+                        
+                        // Mostrar mensaje especial
+                        alert('✅ ¡Publicación creada exitosamente!\n\n🎁 ¡Felicidades! Por ser tu primera publicación, has recibido 10 créditos de bonificación.\n\n🌱 También se registró tu impacto ecológico positivo.');
+                        
+                        // Actualizar localStorage si está disponible
+                        const saldoActual = parseInt(localStorage.getItem('user_saldo') || '0');
+                        localStorage.setItem('user_saldo', (saldoActual + 10).toString());
+                        
+                    } else {
+                        alert('✅ ¡Publicación creada exitosamente!');
+                    }
+                } catch (bonusError) {
+                    console.error('Error en bonificación:', bonusError);
+                    alert('✅ ¡Publicación creada exitosamente!\n\n⚠️ Hubo un problema con la bonificación, pero tu publicación se creó correctamente.');
+                }
+
                 // Limpiar formulario
                 form.reset();
                 preview.style.display = 'none';

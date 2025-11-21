@@ -19,34 +19,79 @@ app.use(bodyParser.json());
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, "../")));
 
-// ✅ Obtener categorías
-app.get("/api/categorias", async (req, res) => {
-    const { data, error } = await supabase.from("Categorias").select("*");
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+// scripts/main.js (VERIFICADO)
+app.get("/api/categoria", async (req, res) => {
+    // Aquí deberías asegurarte de que Supabase te devuelve la ID y el nombre
+const { data, error } = await supabase.from("categoria").select("id_categoria, nombre"); // ⚠️ Verifica si es 'id' o 'id_categoria'    // ...
+if (error) {
+        console.error("❌ ERROR DE SUPABASE al obtener categorías:", error.message);
+        return res.status(500).json({ error: error.message });
+    }
+    
+    // ✅ Agrega un log aquí para ver la data que se envía al frontend
+    console.log("✅ Categorías enviadas:", data); 
+    res.json(data);
+
 });
+
+// scripts/main.js
+
+
+// scripts/main.js (Añade o confirma estas rutas)
+
+// Ruta para servir index.html (funciona para http://localhost:3000/)
+app.get('/', (req, res) => {
+    // Nota: Si usas index2.html, cambia el nombre
+    res.sendFile(path.join(__dirname, '..', 'index2.html')); 
+});
+
+// Ruta para servir perfil.html (funciona para http://localhost:3000/perfil)
+app.get('/perfil', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'perfil.html')); 
+});
+
+// Ruta para servir publicar.html (funciona para http://localhost:3000/publicar)
+app.get('/publicar', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'publicar.html')); 
+});
+
+
 
 // ✅ Insertar publicación
 app.post("/api/publicar", async (req, res) => {
-    const { titulo, descripcion, foto, precio, categoria_id, usuario_id } = req.body;
+  const { titulo, descripcion, foto, precio, categoria_nombre, usuario_id } = req.body;
 
-    const { data, error } = await supabase.from("Publicacion").insert([
-        {
-            titulo,
-            descripcion,
-            foto,
-            precio,
-            categoria_id,
-            usuario_id,
-        },
-    ]);
+    try {
+        // 🚨 VALIDACIÓN CLAVE: Si falta una variable, falla el insert.
+        if (!usuario_id || !categoria_nombre || !titulo) {
+             return res.status(400).json({ error: "Faltan datos obligatorios (usuario, categoría o título)." });
+        }
+        
+        const { data, error } = await supabase.from("Publicacion").insert([
+            {
+                titulo,
+                descripcion,
+                imagen_url: foto,
+                precio,
+                nombre_categoria: categoria_nombre, // OK, guarda el nombre
+                usuario_id: usuario_id,             // OK
+            },
+        ]);
 
-    if (error) {
-        console.error("❌ ERROR DE INSERCIÓN:", error.message);
-        return res.status(500).json({ error: error.message });
-    }
+        if (error) {
+            // Esto se enviará al frontend en formato JSON
+            console.error("❌ ERROR DE INSERCIÓN EN BD:", error.message);
+            return res.status(500).json({ error: `Fallo en Supabase: ${error.message}` });
+        }
+        
+        res.json({ success: true, data });
 
-    res.json({ success: true, data });
+    } catch (e) {
+        // ✅ Esto captura ERRORES DE SINTAXIS/PROGRAMACIÓN y devuelve JSON, 
+        // evitando el error "<!DOCTYPE...".
+        console.error("❌ ERROR INESPERADO EN API /PUBLICAR:", e.message, e.stack);
+        res.status(500).json({ error: "Error interno del servidor al procesar la solicitud. Revisa la consola de Express." });
+    }
 });
 
 const PORT = 3000;

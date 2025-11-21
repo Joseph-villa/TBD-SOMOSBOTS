@@ -198,6 +198,153 @@
         .logout-link {
             color: #f44336 !important;
         }
+
+        /* Botón Admin en topbar */
+        .admin-btn {
+            padding: 8px 14px;
+            background-color: #2F9A34;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .admin-btn:hover {
+            background-color: #036d19;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .admin-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        /* Contenido del Modal */
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #2F9A34;
+            font-size: 1.4rem;
+            margin: 0 0 12px 0;
+        }
+
+        .modal-content p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0 0 18px 0;
+        }
+
+        /* Formulario Admin */
+        #adminForm {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        #adminCode {
+            padding: 12px;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 4px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: border-color 0.2s ease;
+        }
+
+        #adminCode:focus {
+            border-color: #2F9A34;
+            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.2);
+            outline: none;
+        }
+
+        /* Botón Enviar */
+        .btn-admin-submit {
+            padding: 12px;
+            background-color: #2F9A34;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-admin-submit:hover {
+            background-color: #036d19;
+        }
+
+        .btn-admin-submit:active {
+            background-color: #025a14;
+        }
+
+        /* Mensaje de Error */
+        .admin-error {
+            color: #f44336;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin: 0 !important;
+            min-height: 20px;
+        }
+
+        /* Botón Cancelar */
+        .btn-admin-close {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-admin-close:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .modal-content {
+                padding: 24px;
+            }
+
+            .modal-content h2 {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 
@@ -239,6 +386,26 @@
         </div>
         </div>
     </header>
+
+    <!-- 🚨 NUEVO: Botón Admin -->
+    <button id="adminBtn" class="admin-btn" title="Acceso de Administrador">🔐 Admin</button>
+
+    <!-- 🚨 NUEVO: Modal Admin -->
+    <div id="adminModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🔐 Acceso de Administrador</h2>
+            <p>Ingresa el código de seguridad (6 dígitos)</p>
+
+            <form id="adminForm">
+                <input type="text" id="adminCode" maxlength="6" inputmode="numeric" placeholder="000000" pattern="[0-9]{6}"
+                    required autocomplete="off">
+                <button type="submit" class="btn-admin-submit">Ingresar</button>
+            </form>
+
+            <p id="adminError" class="admin-error"></p>
+            <button id="closeAdminModal" class="btn-admin-close">Cancelar</button>
+        </div>
+    </div>
 
     <main class="layout">
         <aside class="sidebar">
@@ -821,6 +988,79 @@ async function actualizarSaldoComprador(usuarioId, monto) {
         // ========== INICIALIZAR APLICACIÓN ==========
 
         document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+    <!-- Script para manejar el Modal Admin -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminBtn = document.getElementById('adminBtn');
+            const adminModal = document.getElementById('adminModal');
+            const adminForm = document.getElementById('adminForm');
+            const adminCode = document.getElementById('adminCode');
+            const adminError = document.getElementById('adminError');
+            const closeAdminModal = document.getElementById('closeAdminModal');
+
+            const SECRET_CODE = '123456'; // 🚨 CAMBIAR EN PRODUCCIÓN
+
+            // Abrir modal
+            if (adminBtn) {
+                adminBtn.addEventListener('click', () => {
+                    adminModal.classList.add('show');
+                    adminCode.focus();
+                    adminError.textContent = '';
+                    adminCode.value = '';
+                });
+            }
+
+            // Cerrar modal (botón cancelar)
+            if (closeAdminModal) {
+                closeAdminModal.addEventListener('click', () => {
+                    adminModal.classList.remove('show');
+                });
+            }
+
+            // Cerrar modal al hacer clic fuera
+            if (adminModal) {
+                adminModal.addEventListener('click', (e) => {
+                    if (e.target === adminModal) {
+                        adminModal.classList.remove('show');
+                    }
+                });
+            }
+
+            // Manejar envío del formulario
+            if (adminForm) {
+                adminForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+
+                    const code = adminCode.value.trim();
+
+                    // Validar que sean exactamente 6 dígitos
+                    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+                        adminError.textContent = '❌ Debes ingresar exactamente 6 dígitos.';
+                        adminCode.focus();
+                        return;
+                    }
+
+                    // Verificar código
+                    if (code === SECRET_CODE) {
+                        adminModal.classList.remove('show');
+                        window.location.href = 'admin.html';
+                    } else {
+                        adminError.textContent = '❌ Código incorrecto. Intenta de nuevo.';
+                        adminCode.value = '';
+                        adminCode.focus();
+                    }
+                });
+            }
+
+            // Cerrar modal con ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && adminModal.classList.contains('show')) {
+                    adminModal.classList.remove('show');
+                }
+            });
+        });
     </script>
 </body>
 
