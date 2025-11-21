@@ -34,76 +34,227 @@
   }; */
 })();
 
-////////////////////////////////////////////////////////////////////////// Consulta registros
-// Registros semanales (últimos 7 días)
+// ------------- Seccion de eventos para actualizacion de reportes ------------
+let reportUpdateInterval = null;
+const REPORT_UPDATE_DELAY = 30000;
+
+document.addEventListener('DOMContentLoaded', function () {
+  startReportListener();
+});
+
+function startReportListener() {
+  document.querySelectorAll('.menu-item').forEach(boton => {
+    boton.addEventListener('click', function () {
+      const tabId = this.getAttribute('data-tab') + '-tab';
+
+      if (tabId === 'reports-tab') {
+        // Reports tab clicked - start updates
+        console.log("Empezar acualización de reportes...");
+        startReportUpdates();
+      } else {
+        // Other tab clicked - stop updates  
+        console.log("Detener acualización de reportes...");
+        stopReportUpdates();
+      }
+    });
+  });
+}
+
+function startReportUpdates() {
+  stopReportUpdates();
+
+  // Update immediately
+  updateReports();
+
+  // Set up periodic updates
+  reportUpdateInterval = setInterval(updateReports, REPORT_UPDATE_DELAY);
+}
+
+function stopReportUpdates() {
+  if (reportUpdateInterval) {
+    clearInterval(reportUpdateInterval);
+    reportUpdateInterval = null;
+  }
+}
+
+// -------- Seccion de Actualizacion de Reportes - Consultas a Supabase --------
+let reportData = null;
+
+async function updateReports() {
+  console.log("Updating Reports...");
+  reportData = await getAllSupabaseData();
+  console.log(reportData);
+}
+
+async function getAllSupabaseData() {
+  try {
+    const [
+      registrosSemanales,
+      registrosMensuales,
+      registrosAnuales,
+    ] = await Promise.all([
+      getRegistrosSemanales(),
+      getRegistrosMensuales(),
+      getRegistrosAnuales(),
+    ]);
+
+    return {
+      users: {
+        weekely: registrosSemanales,
+        monthly: registrosMensuales,
+        yearly: registrosAnuales
+      },
+      eco: mockEco,
+    };
+
+  } catch (error) {
+    console.error('Error cargando datos:', error);
+  }
+  console.log(reportData);
+  // Retornar datos mock en caso de error
+  return { users: mockUsers, eco: mockEco };
+}
+
+// Registros semanales (últimos 7 días) - Solo días con datos
 async function getRegistrosSemanales() {
+  // Calcular fecha de hace 7 días
+  const fechaInicio = new Date();
+  fechaInicio.setDate(fechaInicio.getDate() - 7);
+
   const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: true });
+    .from('usuario')
+    .select('fecha_creacion')
+    .gte('fecha_creacion', fechaInicio.toISOString())
+    .order('fecha_creacion', { ascending: true });
 
   if (error) throw error;
 
-  // Procesar datos por día
+  // Procesar datos por día - SOLO días con registros
   const dailyCounts = {};
+
+  // Contar registros por día
   data.forEach(user => {
-    const day = new Date(user.created_at).getDate().toString();
-    dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+    // Parsear la fecha de creación (formato: 2025-11-21 21:11:38.79002)
+    const fechaCreacion = new Date(user.fecha_creacion);
+    const dia = fechaCreacion.getDate().toString();
+    dailyCounts[dia] = (dailyCounts[dia] || 0) + 1;
+  });
+
+  // Ordenar los días cronológicamente y filtrar solo los que tienen datos
+  const diasConDatos = Object.keys(dailyCounts)
+    .map(dia => parseInt(dia)) // Convertir a número para ordenar
+    .sort((a, b) => a - b)     // Ordenar numéricamente
+    .map(dia => dia.toString()); // Volver a string
+
+  // Preparar arrays finales solo con días que tienen datos
+  const labels = [];
+  const counts = [];
+
+  diasConDatos.forEach(dia => {
+    labels.push(dia);
+    counts.push(dailyCounts[dia]);
   });
 
   return {
-    labels: Object.keys(dailyCounts),
-    data: Object.values(dailyCounts),
+    labels: labels,
+    data: counts,
     title: 'Registro de usuarios semanal'
   };
 }
 
-// Registros mensuales (últimos 4 meses)
+// Registros mensuales (últimos 6 meses) - Solo meses con datos
 async function getRegistrosMensuales() {
+  // Calcular fecha de hace 6 meses
+  const fechaInicio = new Date();
+  fechaInicio.setMonth(fechaInicio.getMonth() - 6);
+
   const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .gte('created_at', new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: true });
+    .from('usuario')
+    .select('fecha_creacion')
+    .gte('fecha_creacion', fechaInicio.toISOString())
+    .order('fecha_creacion', { ascending: true });
 
   if (error) throw error;
 
-  const monthlyCounts = {};
+  // Procesar datos por mes - SOLO meses con registros
+  const registrosPorMes = {};
+
   data.forEach(user => {
-    const month = new Date(user.created_at).toLocaleDateString('es-ES', { month: 'short' });
-    monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+    const fechaCreacion = new Date(user.fecha_creacion);
+    const mes = fechaCreacion.toLocaleDateString('es-ES', {
+      month: 'short',
+      year: 'numeric'
+    }); // Ej: "nov 2024"
+
+    if (!registrosPorMes[mes]) {
+      registrosPorMes[mes] = {
+        count: 0,
+        fecha: fechaCreacion,
+        mesNumero: fechaCreacion.getMonth(),
+        año: fechaCreacion.getFullYear()
+      };
+    }
+    registrosPorMes[mes].count++;
   });
 
+  // Ordenar por fecha (más antiguo primero)
+  const mesesOrdenados = Object.values(registrosPorMes)
+    .sort((a, b) => a.fecha - b.fecha);
+
+  // Preparar arrays finales solo con meses que tienen datos
+  const labels = mesesOrdenados.map(mes =>
+    mes.fecha.toLocaleDateString('es-ES', { month: 'short' })
+  );
+  const counts = mesesOrdenados.map(mes => mes.count);
+
   return {
-    labels: Object.keys(monthlyCounts),
-    data: Object.values(monthlyCounts),
+    labels: labels,
+    data: counts,
     title: 'Registro de usuarios mensual'
   };
 }
 
-// Registros anuales
+// Registros anuales - Solo años con datos
 async function getRegistrosAnuales() {
   const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .order('created_at', { ascending: true });
+    .from('usuario')
+    .select('fecha_creacion')
+    .order('fecha_creacion', { ascending: true });
 
   if (error) throw error;
 
-  const yearlyCounts = {};
+  // Procesar datos por año - SOLO años con registros
+  const registrosPorAño = {};
+
   data.forEach(user => {
-    const year = new Date(user.created_at).getFullYear().toString();
-    yearlyCounts[year] = (yearlyCounts[year] || 0) + 1;
+    const fechaCreacion = new Date(user.fecha_creacion);
+    const año = fechaCreacion.getFullYear().toString();
+
+    if (!registrosPorAño[año]) {
+      registrosPorAño[año] = {
+        count: 0,
+        año: año,
+        fecha: fechaCreacion
+      };
+    }
+    registrosPorAño[año].count++;
   });
 
+  // Ordenar por año (más antiguo primero)
+  const añosOrdenados = Object.values(registrosPorAño)
+    .sort((a, b) => a.año - b.año);
+
+  // Preparar arrays finales solo con años que tienen datos
+  const labels = añosOrdenados.map(año => año.año);
+  const counts = añosOrdenados.map(año => año.count);
+
   return {
-    labels: Object.keys(yearlyCounts),
-    data: Object.values(yearlyCounts),
+    labels: labels,
+    data: counts,
     title: 'Registro de usuarios Anual'
   };
 }
-////////////////////////////////////////////////////////////////////////// Consulta registros
+
 
 ////////////////////////////////////////////////////////////////////////// CO2
 // CO2 por categoría - Semanal
@@ -245,46 +396,9 @@ async function getCO2PorCategoriaAnual() {
 }
 //////////////////////////////////////////////////////////////////////////
 
-async function cargarDatosGraficos() {
-  try {
-    const [
-      registrosSemanales,
-      registrosMensuales,
-      registrosAnuales,
-      co2Semanal,
-      co2Mensual,
-      co2Anual
-    ] = await Promise.all([
-      getRegistrosSemanales(),
-      getRegistrosMensuales(),
-      getRegistrosAnuales(),
-      getCO2PorCategoriaSemanal(),
-      getCO2PorCategoriaMensual(),
-      getCO2PorCategoriaAnual()
-    ]);
+// -------------------- Seccion de datos de prueba --------------------------
 
-    return {
-      mockSub: {
-        weekely: registrosSemanales,
-        monthly: registrosMensuales,
-        yearly: registrosAnuales
-      },
-      mockCateg: {
-        weekely: co2Semanal,
-        monthly: co2Mensual,
-        yearly: co2Anual
-      }
-    };
-
-  } catch (error) {
-    console.error('Error cargando datos:', error);
-    // Retornar datos mock en caso de error
-    return { mockSub, mockCateg };
-  }
-}
-
-
-const mockSub = {
+const mockUsers = {
   weekely: {
     labels: ['13', '14', '15', '16', '17', '18', '19'],
     data: [2, 5, 12, 8, 25, 18, 15],
@@ -302,7 +416,7 @@ const mockSub = {
   }
 };
 
-const mockCateg = {
+const mockEco = {
   weekely: {
     labels: ['Ropa', 'Tecnología', 'Servicios', 'Otros'],
     data: [150, 100, 200, 100], // kg de CO2 ahorrado
@@ -353,70 +467,83 @@ const mockCateg = {
   },
 };
 
-let chartInstance = null;
+// ---------------------- Borrar Despues ------------------------------------
+// Datos de supabase
+async function cargarDatosGraficos() {
+  try {
+    const [
+      registrosSemanales,
+      registrosMensuales,
+      registrosAnuales,
+      co2Semanal,
+      co2Mensual,
+      co2Anual
+    ] = await Promise.all([
+      getRegistrosSemanales(),
+      getRegistrosMensuales(),
+      getRegistrosAnuales(),
+      getCO2PorCategoriaSemanal(),
+      getCO2PorCategoriaMensual(),
+      getCO2PorCategoriaAnual()
+    ]);
 
-let co2 = 0;
-
-function generateCategyReport(type) {
-  const ctx = document.getElementById('canvas-chart-display').getContext('2d');
-
-
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
-
-  const data = mockCateg[type];
-  //co2 = data.data.reduce((a, b) => a + b, 0);
-
-  console.log(type, data);
-
-  chartInstance = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: data.labels,
-      datasets: [{
-        data: data.data,
-        backgroundColor: data.colores,
-        borderColor: data.bordes,
-        borderWidth: 2,
-        hoverOffset: 15
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              const label = context.label || '';
-              const value = context.raw;
-              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percentage = Math.round((value / total) * 100);
-              return `${label}: ${formatearNumero(value)} (${percentage}%)`;
-            }
-          }
-        }
+    return {
+      mockSub: {
+        weekely: registrosSemanales,
+        monthly: registrosMensuales,
+        yearly: registrosAnuales
       },
-      animation: {
-        animateScale: true,
-        animateRotate: true
+      mockCateg: {
+        weekely: co2Semanal,
+        monthly: co2Mensual,
+        yearly: co2Anual
       }
-    }
-  });
+    };
+
+  } catch (error) {
+    console.error('Error cargando datos:', error);
+    // Retornar datos mock en caso de error
+    return { mockSub, mockCateg };
+  }
 }
 
+// Función para formatear números
+function formatearNumero(num) {
+  return new Intl.NumberFormat('es-ES').format(num);
+}
 
-function generateSubcriptionReports(time) {
+// ----------------------- Control de reportes -------------------------------
+let chartInstance = null;
+let selectedReportType = "users";
+let selectedReportTime = "weekely";
+let co2 = 0;
+let water = 0;
+
+function changeReportType(type) {
+  selectedReportType = type;
+  generateReport();
+}
+
+function changeReportTime(time) {
+  selectedReportTime = time;
+  generateReport();
+}
+
+// generar el reporte actual
+function generateReport() {
+  console.log("Will generate", selectedReportType);
+
+  if (selectedReportType === "users") {
+    generateSubcriptionReports();
+  }
+
+  if (selectedReportType === "eco") {
+    generateEcoReport("weekely");
+  }
+}
+
+// Reporte registro usuarios
+function generateSubcriptionReports() {
   const ctx = document.getElementById('canvas-chart-display').getContext('2d');
 
   // Destruir gráfico anterior si existe
@@ -424,7 +551,7 @@ function generateSubcriptionReports(time) {
     chartInstance.destroy();
   }
 
-  const data = mockSub[time];
+  const data = reportData.users[selectedReportTime];
 
   // Configuración del gráfico
   const config = {
@@ -512,6 +639,64 @@ function generateSubcriptionReports(time) {
   // Crear nuevo gráfico
   chartInstance = new Chart(ctx, config);
 }
+
+// Reporte Dona
+function generateEcoReport() {
+  const ctx = document.getElementById('canvas-chart-display').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  const data = reportData.eco[selectedReportTime];
+  //co2 = data.data.reduce((a, b) => a + b, 0);
+
+  chartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.data,
+        backgroundColor: data.colores,
+        borderColor: data.bordes,
+        borderWidth: 2,
+        hoverOffset: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.label || '';
+              const value = context.raw;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = Math.round((value / total) * 100);
+              return `${label}: ${formatearNumero(value)} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      }
+    }
+  });
+}
+
+
 /* WIP
 function updateActiveButton(type, selected) {
   if (type === "users") {
@@ -525,67 +710,12 @@ function updateActiveButton(type, selected) {
 
 } */
 
-// Crear un reporte de impacto
-function generateReport(type) {
-  console.log("Will generate", type);
-
-  if (type === "users") {
-    const canvasControls = document.getElementById("canvas-display-controls");
-    canvasControls.innerHTML = '';
-
-    const buttonTypes = [
-      { type: "weekely", text: "Semanal" },
-      { type: "monthly", text: "Mensual" },
-      { type: "yearly", text: "Anual" },
-    ]
-
-    buttonTypes.forEach(e => {
-      const button = document.createElement('button');
-      button.className = 'btn control-button-activity';
-      button.style.color = "black";
-      button.style.backgroundColor = "white";
-      button.style.borderWidth = "1px";
-      button.style.borderColor = "black";
-      button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
-      button.textContent = e.text;
-      button.addEventListener('click', () => generateSubcriptionReports(e.type));
-      canvasControls.appendChild(button);
-    })
-
-    generateSubcriptionReports("weekely");
-  }
-
-  if (type === "eco") {
-    const canvasControls = document.getElementById("canvas-display-controls");
-    canvasControls.innerHTML = '';
-
-    const buttonTypes = [
-      { type: "weekely", text: "Semanal" },
-      { type: "monthly", text: "Mensual" },
-      { type: "yearly", text: "Anual" },
-    ]
-
-    buttonTypes.forEach(e => {
-      const button = document.createElement('button');
-      button.className = 'btn control-button-activity';
-      button.style.color = "black";
-      button.style.backgroundColor = "white";
-      button.style.borderWidth = "1px";
-      button.style.borderColor = "black";
-      button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
-      button.textContent = e.text;
-      button.addEventListener('click', () => generateCategyReport(e.type));
-      canvasControls.appendChild(button);
-    })
-
-    generateCategyReport("weekely");
-  }
-}
-
+// --------------------- UI del Panel de Control -----------------------------
 function generatePanel() {
   const reportContainer = document.getElementById("report-seccion-container");
   reportContainer.innerHTML = ''; // Limpiar contenedor
 
+  //--------------- Control del tipo de Reporte ---------------------------
   const buttonConfigs = [
     { type: "users", text: "Usuarios" },
     { type: "eco", text: "Ecológico" },
@@ -596,10 +726,11 @@ function generatePanel() {
     button.className = 'btn control-button-activity';
     button.textContent = config.text;
     button.style.marginLeft = "5px";
-    button.addEventListener('click', () => generateReport(config.type));
+    button.addEventListener('click', () => changeReportType(config.type));
     reportContainer.appendChild(button);
   });
 
+  //---------------- Elemento Grafico del Reporte --------------------------
   const canvasContainer = document.createElement("div");
   canvasContainer.style.width = "100%";
   canvasContainer.style.height = "300px";
@@ -608,6 +739,10 @@ function generatePanel() {
   const canvas = document.createElement("canvas");
   canvas.id = "canvas-chart-display";
 
+  canvasContainer.appendChild(canvas);
+  reportContainer.appendChild(canvasContainer);
+
+  //---------------- Elemento de control del tiempo ------------------------
   const canvasControls = document.createElement("div");
   canvasControls.id = "canvas-display-controls";
   canvasControls.style.display = "flex";
@@ -615,8 +750,24 @@ function generatePanel() {
   canvasControls.style.gap = "10px";
   canvasControls.style.marginTop = "5px";
 
-  canvasContainer.appendChild(canvas);
+  const buttonTypes = [
+    { type: "weekely", text: "Semanal" },
+    { type: "monthly", text: "Mensual" },
+    { type: "yearly", text: "Anual" },
+  ]
 
-  reportContainer.appendChild(canvasContainer);
+  buttonTypes.forEach(e => {
+    const button = document.createElement('button');
+    button.className = 'btn control-button-activity';
+    button.style.color = "black";
+    button.style.backgroundColor = "white";
+    button.style.borderWidth = "1px";
+    button.style.borderColor = "black";
+    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
+    button.textContent = e.text;
+    button.addEventListener('click', () => changeReportTime(e.type));
+    canvasControls.appendChild(button);
+  })
+
   reportContainer.appendChild(canvasControls);
 }
