@@ -10,5 +10,8 @@
   "scripts": {
     "start": "node scripts/main.js",
     "dev": "nodemon scripts/main.js"
+  },
+  "devDependencies": {
+    "supabase": "^2.58.5"
   }
 }

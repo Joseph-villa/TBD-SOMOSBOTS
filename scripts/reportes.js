@@ -296,7 +296,7 @@ function processUsersByPeriod(data, period) {
 // Consulta para Reportes_Impacto
 async function getUnifiedImpactData() {
   const startDate = new Date();
-  startDate.setFullYear(startDate.getFullYear() - 1); // Ultimo año
+  startDate.setFullYear(startDate.getFullYear() - 3); // Ultimo año
 
   const { data, error } = await supabase
     .from('Reportes_Impacto')
@@ -418,12 +418,24 @@ function processImpactForLine(data) {
     yearly: { co2: {}, energy: {}, water: {} }
   };
 
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(today.getDate() - i);
+    const dayKey = date.getDate().toString();
+    grouped.weekly.co2[dayKey] = 0;
+    grouped.weekly.energy[dayKey] = 0;
+    grouped.weekly.water[dayKey] = 0;
+  }
+
   data.forEach(item => {
     const date = new Date(item.fecha_registro);
 
     // Group by day (weekly)
     const day = date.getDate().toString();
-    groupData(grouped.weekly, day, item);
+    if (grouped.weekly.co2.hasOwnProperty(day)) {
+      groupData(grouped.weekly, day, item);
+    }
 
     // Group by month (monthly)  
     const month = date.toLocaleDateString('es-ES', { month: 'short' });
@@ -475,13 +487,27 @@ function convertForLine(grouped) {
 
 
 // ----------------------- Report Control -------------------------------
-function changeReportType(type) {
+function changeReportType(type, event) {
   selectedReportType = type;
+
+  document.querySelectorAll('.type-ctl-btn').forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+
   generateReport();
 }
 
-function changeReportTime(time) {
+function changeReportTime(time, event) {
   selectedReportTime = time;
+
+  document.querySelectorAll('.period-ctl-btn').forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+
   generateReport();
 }
 
@@ -1018,9 +1044,14 @@ function generatePanel() {
 
   buttonConfigs.forEach(config => {
     const button = document.createElement('button');
-    button.className = 'btn control-button-activity';
+    button.className = `btn control-button-activity type-ctl-btn ${config.type === "users" ? "active" : ""}`;
+    button.style.color = "black";
+    button.style.backgroundColor = "white";
+    button.style.borderWidth = "1px";
+    button.style.borderColor = "black";
+    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.3)";
     button.textContent = config.text;
-    button.addEventListener('click', () => changeReportType(config.type));
+    button.addEventListener('click', (e) => changeReportType(config.type, e));
     topControls.appendChild(button);
   });
 
@@ -1064,14 +1095,14 @@ function generatePanel() {
 
   buttonTypes.forEach(e => {
     const button = document.createElement('button');
-    button.className = 'btn control-button-activity';
+    button.className = `btn control-button-activity period-ctl-btn ${e.type === "weekly" ? "active" : ""}`;
     button.style.color = "black";
     button.style.backgroundColor = "white";
     button.style.borderWidth = "1px";
     button.style.borderColor = "black";
-    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
+    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.3)";
     button.textContent = e.text;
-    button.addEventListener('click', () => changeReportTime(e.type));
+    button.addEventListener('click', (ev) => changeReportTime(e.type, ev));
     canvasControls.appendChild(button);
   })
 
