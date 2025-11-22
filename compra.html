@@ -873,8 +873,19 @@
         confirmButtonText.innerHTML = '<div class="loading"></div> Procesando...';
 
         console.log('🔄 Procesando recarga de créditos...');
+        console.log('📋 Detalles:', {
+            usuario: currentUserId,
+            creditos: selectedCredits,
+            precio: selectedPrice,
+            saldo_actual: currentBalance
+        });
 
-        // 1. Actualizar saldo en la tabla 'usuario' (SIN ultima_actualizacion)
+        // 1. ACTUALIZAR BILLETERA PRIMERO (para que el trigger funcione)
+        console.log('💰 Paso 1: Actualizando billetera...');
+        await updateBilletera(selectedCredits);
+
+        // 2. Actualizar saldo en la tabla 'usuario'
+        console.log('👤 Paso 2: Actualizando tabla usuario...');
         const nuevoSaldo = currentBalance + selectedCredits;
         
         const { error: updateError } = await supabase
@@ -884,12 +895,13 @@
             })
             .eq('auth_id', currentUserId);
 
-        if (updateError) throw updateError;
-
-        // 2. Actualizar billetera si existe
-        await updateBilletera(selectedCredits);
+        if (updateError) {
+            console.error('❌ Error actualizando usuario:', updateError);
+            throw updateError;
+        }
 
         // 3. Registrar en el historial
+        console.log('📝 Paso 3: Registrando en historial...');
         await registrarEnHistorial(selectedCredits, selectedPrice);
 
         console.log('✅ Recarga procesada exitosamente');
@@ -926,50 +938,82 @@
 
     async function updateBilletera(creditos) {
     try {
+        console.log('💰 Actualizando billetera con:', creditos, 'créditos');
+        
         // Verificar si existe billetera
         const { data: billetera, error: billeteraError } = await supabase
-            .from('Billetera')
+            .from('billetera')
             .select('*')
             .eq('usuario_id', currentUserId)
             .single();
 
+        console.log('📊 Estado actual de billetera:', billetera);
+
         if (billeteraError && billeteraError.code !== 'PGRST116') {
+            console.error('❌ Error al verificar billetera:', billeteraError);
             throw billeteraError;
         }
 
         if (billetera) {
-            // Actualizar billetera existente (SIN ultima_actualizacion)
-            const { error: updateError } = await supabase
-                .from('Billetera')
-                .update({
-                    credito_total: billetera.credito_total + creditos,
-                    credito_actual: billetera.credito_actual + creditos,
-                    credito_retenido: billetera.credito_retenido
-                })
-                .eq('usuario_id', currentUserId);
+            // Actualizar billetera existente - USAR LOS VALORES CORRECTOS
+            const nuevoTotal = (parseFloat(billetera.credito_total) || 0) + creditos;
+            const nuevoActual = (parseFloat(billetera.credito_actual) || 0) + creditos;
+            
+            console.log('🔄 Actualizando billetera existente:', {
+                anterior_total: billetera.credito_total,
+                anterior_actual: billetera.credito_actual,
+                nuevo_total: nuevoTotal,
+                nuevo_actual: nuevoActual
+            });
 
-            if (updateError) throw updateError;
+            const { data, error: updateError } = await supabase
+                .from('billetera')
+                .update({
+                    credito_total: nuevoTotal,
+                    credito_actual: nuevoActual,
+                    credito_retenido: billetera.credito_retenido || 0,
+                    ultima_actualizacion: new Date().toISOString()
+                })
+                .eq('usuario_id', currentUserId)
+                .select();
+
+            if (updateError) {
+                console.error('❌ Error actualizando billetera:', updateError);
+                throw updateError;
+            }
+            
+            console.log('✅ Billetera actualizada:', data);
+
         } else {
-            // Crear nueva billetera (SIN ultima_actualizacion)
-            const { error: insertError } = await supabase
-                .from('Billetera')
+            // Crear nueva billetera
+            console.log('🆕 Creando nueva billetera con:', creditos, 'créditos');
+            
+            const { data, error: insertError } = await supabase
+                .from('billetera')
                 .insert([{
                     usuario_id: currentUserId,
                     credito_total: creditos,
                     credito_actual: creditos,
-                    credito_retenido: 0
-                }]);
+                    credito_retenido: 0,
+                    ultima_actualizacion: new Date().toISOString()
+                }])
+                .select();
 
-            if (insertError) throw insertError;
+            if (insertError) {
+                console.error('❌ Error creando billetera:', insertError);
+                throw insertError;
+            }
+            
+            console.log('✅ Nueva billetera creada:', data);
         }
 
-        console.log('✅ Billetera actualizada');
+        console.log('✅ Billetera actualizada exitosamente');
+
     } catch (error) {
-        console.warn('⚠️ No se pudo actualizar la billetera:', error);
-        // No lanzar error, es opcional ya que el saldo principal está en 'usuario'
+        console.error('❌ Error crítico en updateBilletera:', error);
+        throw error;
     }
 }
-
     async function registrarEnHistorial(creditos, precio) {
     try {
         const { error } = await supabase
