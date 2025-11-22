@@ -130,6 +130,36 @@ const mockEcoLine = {
   }
 };
 
+const mockMoneyGains = {
+  weekly: {
+    labels: ['15', '16', '17', '18', '19', '20', '21'],
+    data: [50, 75, 120, 90, 150, 200, 180]
+  },
+  monthly: {
+    labels: ['Mar', 'Apr', 'May', 'Jun'],
+    data: [800, 1200, 950, 1100]
+  },
+  yearly: {
+    labels: ['2020', '2021', '2022', '2023', '2024'],
+    data: [6000, 5900, 6100, 6200, 6300]
+  }
+};
+
+const mockCreditsGenerated = {
+  weekly: {
+    labels: ['15', '16', '17', '18', '19', '20', '21'],
+    data: [500, 750, 1200, 900, 1500, 2000, 1800]
+  },
+  monthly: {
+    labels: ['Mar', 'Apr', 'May', 'Jun'],
+    data: [8000, 12000, 9500, 11000]
+  },
+  yearly: {
+    labels: ['2020', '2021', '2022', '2023', '2024'],
+    data: [60000, 59000, 61000, 62000, 63000]
+  }
+};
+
 // --------------------- Asegurar Chart.js disponible ------------------------
 (function () {
   'use strict';
@@ -197,23 +227,30 @@ async function updateReports() {
 // Funcion para obtener todos los datos de supabase
 async function getAllSupabaseData() {
   try {
-    const [userData, impactData] = await Promise.all([
+    const [userData, impactData, gainsData] = await Promise.all([
       getUnifiedUserData(),
-      getUnifiedImpactData()
+      getUnifiedImpactData(),
+      getUnifiedPackageData()
     ]);
 
     return {
       users: userData,
-      eco: impactData
+      eco: impactData,
+      gains: gainsData
     };
 
   } catch (error) {
     console.error('Error loading data:', error);
-    return { users: mockUsers, eco: mockEco };
+    return {
+      users: mockUsers, eco: mockEco, gains: {
+        cost: mockMoneyGains,
+        points: mockCreditsGenerated
+      }
+    };
   }
 }
 
-// Obtener registros de usuarios
+// Consulta para registros de usuarios
 async function getUnifiedUserData() {
   const { data, error } = await supabase
     .from('usuario')
@@ -484,6 +521,148 @@ function convertForLine(grouped) {
   };
 }
 
+// Consulta para Ganancias
+async function getUnifiedPackageData() {
+  try {
+    const { data, error } = await supabase
+      .from('Compra_Paquete')
+      .select(`
+        fecha_compra,
+        Paquete_Recarga!Compra_Paquete_paquete_recarga_id_fkey (
+          costo,
+          puntos
+        )
+      `)
+      .order('fecha_compra', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return {
+        cost: mockMoneyGains,
+        points: mockCreditsGenerated
+      };
+    }
+
+    return {
+      rawData: data,
+      cost: processPackageData(data, 'cost'),
+      points: processPackageData(data, 'points')
+    };
+
+  } catch (error) {
+    console.error('Error obteniendo datos de paquetes:', error);
+    return {
+      cost: mockMoneyGains,
+      points: mockCreditsGenerated
+    };
+  }
+}
+
+// Procesar datos para costo o puntos
+function processPackageData(data, type = 'cost') {
+  const now = new Date();
+
+  // Inicializar estructuras para todos los períodos
+  const weekly = initializeDateRange('weekly', now);
+  const monthly = initializeDateRange('monthly', now);
+  const yearly = initializeDateRange('yearly', now);
+
+  data.forEach(compra => {
+    const fecha = new Date(compra.fecha_compra);
+    const valor = type === 'cost'
+      ? parseFloat(compra.Paquete_Recarga.costo.replace(/[^\d.-]/g, '')) // Convertir money a número
+      : compra.Paquete_Recarga.puntos;
+
+    // Agrupar por período
+    groupByPeriod(weekly, fecha, valor, 'weekly');
+    groupByPeriod(monthly, fecha, valor, 'monthly');
+    groupByPeriod(yearly, fecha, valor, 'yearly');
+  });
+
+  return {
+    weekly: convertPackageForChart(weekly, 'weekly'),
+    monthly: convertPackageForChart(monthly, 'monthly'),
+    yearly: convertPackageForChart(yearly, 'yearly')
+  };
+}
+
+// Inicializar rangos de fechas
+function initializeDateRange(period, baseDate) {
+  const data = {};
+  const count = period === 'weekly' ? 7 : period === 'monthly' ? 30 : 12;
+
+  for (let i = count - 1; i >= 0; i--) {
+    const date = new Date(baseDate);
+    let key;
+
+    switch (period) {
+      case 'weekly':
+        date.setDate(date.getDate() - i);
+        key = date.getDate().toString();
+        break;
+      case 'monthly':
+        date.setDate(date.getDate() - i);
+        key = date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        break;
+      case 'yearly':
+        date.setMonth(date.getMonth() - i);
+        key = date.toLocaleDateString('es-ES', { month: 'short' });
+        break;
+    }
+
+    data[key] = 0;
+  }
+
+  return data;
+}
+
+// Agrupar datos por período
+function groupByPeriod(periodData, fecha, valor, periodType) {
+  let key;
+
+  switch (periodType) {
+    case 'weekly':
+      key = fecha.getDate().toString();
+      break;
+    case 'monthly':
+      key = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+      break;
+    case 'yearly':
+      key = fecha.toLocaleDateString('es-ES', { month: 'short' });
+      break;
+  }
+
+  if (periodData[key] !== undefined) {
+    periodData[key] += valor;
+  }
+}
+
+// Convertir para gráficos
+function convertPackageForChart(periodData, period) {
+  let labels = Object.keys(periodData);
+  let data = Object.values(periodData);
+
+  // Ordenar labels según el período
+  if (period === 'weekly') {
+    labels = labels.map(day => parseInt(day)).sort((a, b) => a - b).map(day => day.toString());
+  } else if (period === 'monthly') {
+    // Ordenar por fecha (DD/MM)
+    labels = labels.sort((a, b) => {
+      const [dayA, monthA] = a.split('/').map(Number);
+      const [dayB, monthB] = b.split('/').map(Number);
+      return monthA - monthB || dayA - dayB;
+    });
+  } else if (period === 'yearly') {
+    const monthOrder = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    labels = labels.sort((a, b) => monthOrder.indexOf(a.toLowerCase()) - monthOrder.indexOf(b.toLowerCase()));
+  }
+
+  return {
+    labels: labels,
+    data: labels.map(key => periodData[key] || 0)
+  };
+}
 
 
 // ----------------------- Report Control -------------------------------
@@ -528,11 +707,14 @@ function prepareGraphicsArea() {
     }
   }
 
-  if (selectedReportType === "eco" && graphicsArea.childElementCount !== 2) {
+  if (["eco", "earnings"].includes(selectedReportType) &&
+    graphicsArea.childElementCount !== 2) {
+
     graphicsArea.firstChild.style.flex = "1 1 48%";
     const canvasContainerTwo = document.createElement("div");
     canvasContainerTwo.style.flex = "1 1 48%";
     canvasContainerTwo.style.minHeight = "350px";
+    canvasContainerTwo.style.minWidth = "200px";
     canvasContainerTwo.style.position = "relative";
 
     const canvasTwo = document.createElement("canvas");
@@ -555,6 +737,11 @@ function generateReport() {
     generateEcoDonut();
     generateEcoLine();
   }
+
+  if (selectedReportType === "earnings") {
+    generateCreditsBought();
+    generateMoneyGains();
+  }
 }
 
 // Reporte de registros de usuario
@@ -564,6 +751,7 @@ function generateSubscriptionReports() {
   // Destroy previous chart if exists
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
 
   const data = reportData.users[selectedReportTime];
@@ -655,6 +843,7 @@ function generateEcoDonut() {
 
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
 
   const data = reportData.eco[selectedReportTime];
@@ -710,6 +899,7 @@ function generateEcoLine() {
 
   if (secondaryChartInstance) {
     secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
   }
 
   const data = getCurrentEcoData();
@@ -807,6 +997,88 @@ function generateEcoLine() {
       }
     }
   });
+}
+
+// Linea para creditos comprados
+function generateCreditsBought() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  const data = reportData.gains.cost[selectedReportTime];
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Ingresos por compra de Paquetes',
+        data: data.data,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: getPackageChartOptions('Ingresos por Paquetes (BOB)')
+  });
+}
+
+// Linea para dinero ganado
+function generateMoneyGains() {
+  const ctx = document.getElementById("canvas-chart-display-two").getContext('2d');
+
+  if (secondaryChartInstance) {
+    secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
+  }
+
+  const data = reportData.gains.points[selectedReportTime];
+
+  secondaryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Creditos verdes vendidos',
+        data: data.data,
+        borderColor: 'rgba(255, 159, 64, 1)',
+        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: getPackageChartOptions('Creditos verdes vendidos')
+  });
+}
+
+// Comunes para linea de ganancias
+function getPackageChartOptions(title) {
+  const titleES = {
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "yearly": "Anual"
+  }
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: true,
+        text: `${title} - ${titleES[selectedReportTime]}`
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
 }
 
 // ------------------ Auxiliares para grafico de Linea Chart -----------------
@@ -1040,6 +1312,7 @@ function generatePanel() {
   const buttonConfigs = [
     { type: "users", text: "Usuarios Registrados" },
     { type: "eco", text: "Impacto Ambiental" },
+    { type: "earnings", text: "Dinero generado" }
   ];
 
   buttonConfigs.forEach(config => {
@@ -1061,7 +1334,7 @@ function generatePanel() {
   const graphicsArea = document.createElement("div");
   graphicsArea.id = "graphics-area-container";
   graphicsArea.style.width = "100%";
-  graphicsArea.style.height = "400px";
+  graphicsArea.style.minHeight = "400px";
   graphicsArea.style.display = "flex";
   graphicsArea.style.flexWrap = "wrap";
   graphicsArea.style.gap = "20px";
@@ -1070,6 +1343,7 @@ function generatePanel() {
   const canvasContainerOne = document.createElement("div");
   canvasContainerOne.style.flex = "1 1 100%";
   canvasContainerOne.style.minHeight = "350px";
+  canvasContainerOne.style.minWidth = "200px";
   canvasContainerOne.style.position = "relative";
 
   const canvasOne = document.createElement("canvas");
