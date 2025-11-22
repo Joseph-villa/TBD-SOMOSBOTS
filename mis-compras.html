@@ -355,7 +355,9 @@
         function convertirMoneyANumero(valorMoney) {
             if (typeof valorMoney === 'number') return valorMoney;
             if (typeof valorMoney === 'string') {
-                return parseFloat(valorMoney.replace(/[^\d.-]/g, '')) || 0;
+                // Manejar formato money de PostgreSQL: "$1,234.56"
+                const cleaned = valorMoney.replace(/[^\d.-]/g, '');
+                return parseFloat(cleaned) || 0;
             }
             return 0;
         }
@@ -430,17 +432,39 @@
                             .eq('intercambio_id', intercambio.id_intercambio)
                             .order('fecha_envio', { ascending: true });
 
-                        // Cargar custodia (si existe)
+                        // Cargar custodia (si existe) - VERSIÓN MEJORADA
                         let custodia = null;
                         try {
-                            const { data: custodiaData } = await supabase
+                            const { data: custodiaData, error: custodiaError } = await supabase
                                 .from('custodia_creditos')
                                 .select('*')
                                 .eq('intercambio_id', intercambio.id_intercambio)
-.limit(1); 
-      custodia = custodiaData;
+                                .single();
+                            
+                            if (custodiaError) {
+                                console.log('❌ Error cargando custodia:', {
+                                    code: custodiaError.code,
+                                    message: custodiaError.message,
+                                    details: custodiaError.details,
+                                    hint: custodiaError.hint
+                                });
+                                
+                                if (custodiaError.code === 'PGRST116') {
+                                    console.log('ℹ️ No hay registro de custodia para este intercambio');
+                                } else if (custodiaError.code === '406') {
+                                    console.log('⚠️ Error 406 - Problema de permisos RLS en custodia_creditos');
+                                }
+                            } else if (custodiaData) {
+                                // Verificar que la custodia pertenece al usuario actual
+                                if (custodiaData.comprador_id === currentUserId || custodiaData.oferente_id === currentUserId) {
+                                    custodia = custodiaData;
+                                    console.log('✅ Custodia cargada:', custodia);
+                                } else {
+                                    console.log('🚫 Custodia no pertenece al usuario actual');
+                                }
+                            }
                         } catch (custodiaError) {
-                            console.log('ℹ️ Tabla Custodia_Creditos no disponible:', custodiaError.message);
+                            console.log('💥 Error inesperado en custodia:', custodiaError);
                         }
 
                         // Cargar calificaciones
@@ -598,16 +622,79 @@
             }).join('');
         }
 
-        // Hacer renderCompras global para debugging
-        window.renderCompras = renderCompras;
+        // ========== FUNCIONES PARA ACTUALIZAR PUBLICACIONES ==========
+
+        async function marcarPublicacionComoVendida(intercambioId) {
+            try {
+                console.log('🏷️ Marcando publicación como vendida para intercambio:', intercambioId);
+                
+                // 1. Obtener el publicacion_id del intercambio
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('publicacion_id')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                console.log('📦 Publicación a marcar como vendida:', intercambio.publicacion_id);
+
+                // 2. Marcar publicación como vendida/inactiva
+                const { error: updatePubError } = await supabase
+                    .from('Publicacion')
+                    .update({
+                        estado: 'vendido'
+                    })
+                    .eq('id_publicacion', intercambio.publicacion_id);
+
+                if (updatePubError) throw updatePubError;
+
+                console.log('✅ Publicación marcada como vendida');
+
+            } catch (error) {
+                console.error('❌ Error marcando publicación como vendida:', error);
+                throw error;
+            }
+        }
+
+        async function reactivarPublicacion(intercambioId) {
+            try {
+                console.log('🔄 Reactivando publicación para intercambio:', intercambioId);
+                
+                // 1. Obtener el publicacion_id del intercambio
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('publicacion_id')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                // 2. Reactivar publicación (volver a estado activo)
+                const { error: updatePubError } = await supabase
+                    .from('Publicacion')
+                    .update({
+                        estado: 'activo'
+                    })
+                    .eq('id_publicacion', intercambio.publicacion_id);
+
+                if (updatePubError) throw updatePubError;
+
+                console.log('✅ Publicación reactivada');
+
+            } catch (error) {
+                console.error('❌ Error reactivando publicación:', error);
+                throw error;
+            }
+        }
 
         // ========== SISTEMA DE CUSTODIA ==========
 
         window.confirmarRecepcion = async function (intercambioId) {
-            if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor.')) return;
+            if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor y la publicación se marcará como vendida.')) return;
 
             try {
-                mostrarLoading('Liberando créditos al vendedor...');
+                mostrarLoading('Confirmando recepción y actualizando estado...');
 
                 // 1. Actualizar estado del intercambio
                 const { error: intercambioError } = await supabase
@@ -623,7 +710,10 @@
                 // 2. Liberar créditos al vendedor
                 await liberarCreditosVendedor(intercambioId);
 
-                // 3. Actualizar custodia si existe
+                // 3. Marcar publicación como VENDIDA
+                await marcarPublicacionComoVendida(intercambioId);
+
+                // 4. Actualizar custodia si existe
                 try {
                     const { error: custodiaError } = await supabase
                         .from('custodia_creditos')
@@ -639,7 +729,7 @@
                 }
 
                 ocultarLoading();
-                alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor.');
+                alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor y la publicación se ha marcado como vendida.');
 
                 // Recargar compras
                 cargarMisCompras();
@@ -654,74 +744,161 @@
         // Liberar créditos al vendedor
         async function liberarCreditosVendedor(intercambioId) {
             try {
-                // Obtener datos del intercambio
+                console.log('💰 Liberando créditos al vendedor para intercambio:', intercambioId);
+                
+                // 1. Obtener datos del intercambio
                 const { data: intercambio, error: intercambioError } = await supabase
                     .from('Intercambio')
-                    .select('*,creditos_verdes, usuario_vendedor_id')
+                    .select('*')
                     .eq('id_intercambio', intercambioId)
                     .single();
 
                 if (intercambioError) throw intercambioError;
 
-const monto = convertirMoneyANumero(intercambio.creditos_verdes);
-            const vendedorId = intercambio.usuario_vendedor_id;
+                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+                const vendedorId = intercambio.usuario_vendedor_id;
 
-            const compradorId = currentUserId;
+                console.log('📊 Datos intercambio:', { monto, vendedorId });
 
-            // B. PROCESAR BILLETERA DEL COMPRADOR (Liberar Retenido)
-            const { data: billeteraComprador, error: compError } = await supabase
-                .from('billetera')
-                .select('credito_retenido')
-                .eq('usuario_id', compradorId) // Ahora esta variable ya existe
-                .single();
-
-            if (compError) throw compError;
-            
-            const nuevoRetenidoComprador = Math.max(0, billeteraComprador.credito_retenido - monto);
-
-            const { error: updateCompError } = await supabase
-                .from('billetera')
-                .update({ credito_retenido: nuevoRetenidoComprador })
-                .eq('usuario_id', compradorId);
-
-            if (updateCompError) throw updateCompError;
-            
-                // Obtener billetera del vendedor
+                // 2. Buscar billetera del vendedor
                 const { data: billeteraVendedor, error: billeteraError } = await supabase
                     .from('billetera')
-                    .select('credito_actual, credito_total')
-.eq('usuario_id', compradorId)
+                    .select('*')
+                    .eq('usuario_id', vendedorId)
                     .single();
 
-                if (billeteraError) throw billeteraError;
+                // Si no existe billetera, CREARLA
+                if (billeteraError && billeteraError.code === 'PGRST116') {
+                    console.log('🆕 Creando nueva billetera para vendedor:', vendedorId);
+                    
+                    const { data: nuevaBilletera, error: createError } = await supabase
+                        .from('billetera')
+                        .insert([{
+                            usuario_id: vendedorId,
+                            credito_total: parseFloat(monto),
+                            credito_actual: parseFloat(monto),
+                            credito_retenido: 0,
+                            ultima_actualizacion: new Date().toISOString()
+                        }])
+                        .select();
 
-                // Actualizar billetera del vendedor
-                const nuevoSaldoVendedor = billeteraVendedor.credito_actual + monto;
-                const nuevoTotalVendedor = billeteraVendedor.credito_total + monto;
+                    if (createError) {
+                        console.error('❌ Error creando billetera vendedor:', createError);
+                        throw createError;
+                    }
+                    
+                    console.log('✅ Nueva billetera creada para vendedor:', nuevaBilletera);
+                    
+                } else if (billeteraError) {
+                    console.error('❌ Error buscando billetera vendedor:', billeteraError);
+                    throw billeteraError;
+                    
+                } else {
+                    // Billetera existe - ACTUALIZAR
+                    console.log('📊 Billetera vendedor encontrada:', billeteraVendedor);
+                    
+                    const creditoActual = parseFloat(billeteraVendedor.credito_actual) || 0;
+                    const creditoTotal = parseFloat(billeteraVendedor.credito_total) || 0;
+                    const montoNum = parseFloat(monto);
 
-                await supabase
-                    .from('billetera')
-                    .update({
-                        credito_actual: nuevoSaldoVendedor,
-                        credito_total: nuevoTotalVendedor
-                    })
-                    .eq('usuario_id', intercambio.usuario_vendedor_id);
+                    const nuevoActual = creditoActual + montoNum;
+                    const nuevoTotal = creditoTotal + montoNum;
 
-                console.log('✅ Créditos liberados al vendedor:', monto);
+                    console.log('🔄 Actualizando billetera vendedor:', {
+                        anterior: { actual: creditoActual, total: creditoTotal },
+                        nuevo: { actual: nuevoActual, total: nuevoTotal }
+                    });
+
+                    const { data: billeteraActualizada, error: updateError } = await supabase
+                        .from('billetera')
+                        .update({
+                            credito_actual: nuevoActual,
+                            credito_total: nuevoTotal,
+                            ultima_actualizacion: new Date().toISOString()
+                        })
+                        .eq('usuario_id', vendedorId)
+                        .select();
+
+                    if (updateError) {
+                        console.error('❌ Error actualizando billetera vendedor:', updateError);
+                        throw updateError;
+                    }
+                    
+                    console.log('✅ Billetera vendedor actualizada:', billeteraActualizada);
+                }
+
+                // 3. Actualizar saldo del vendedor en tabla usuario
+                await actualizarSaldoVendedor(vendedorId, monto);
+
+                console.log('✅ Créditos liberados al vendedor en billetera y usuario');
 
             } catch (error) {
-                console.error('Error liberando créditos:', error);
+                console.error('❌ Error liberando créditos:', error);
                 throw error;
             }
         }
 
+        async function actualizarSaldoVendedor(vendedorId, monto) {
+    try {
+        console.log('💰 Actualizando saldo del vendedor en tabla usuario:', { vendedorId, monto });
+        
+        // 1. Obtener saldo actual del vendedor desde la tabla usuario
+        const { data: vendedor, error: vendedorError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', vendedorId)
+            .single();
+
+        if (vendedorError) {
+            console.error('❌ Error obteniendo saldo del vendedor:', vendedorError);
+            throw vendedorError;
+        }
+
+        const saldoActual = parseFloat(vendedor.saldo_creditos) || 0;
+        const montoNum = parseFloat(monto);
+        const nuevoSaldo = saldoActual + montoNum;
+
+        console.log('💰 Saldo vendedor - Actual:', saldoActual, 'Monto a agregar:', montoNum, 'Nuevo saldo:', nuevoSaldo);
+
+        // 2. Actualizar tabla usuario del vendedor
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: nuevoSaldo
+            })
+            .eq('auth_id', vendedorId);
+
+        if (updateError) {
+            console.error('❌ Error actualizando saldo en usuario:', updateError);
+            throw updateError;
+        }
+
+        console.log('✅ Saldo vendedor actualizado en tabla usuario:', nuevoSaldo);
+
+    } catch (error) {
+        console.error('❌ Error actualizando saldo vendedor:', error);
+        throw error;
+    }
+}
+
         window.cancelarCompra = async function (intercambioId) {
-            if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta.')) return;
+            if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta y la publicación volverá a estar disponible.')) return;
 
             try {
                 mostrarLoading('Cancelando compra y devolviendo créditos...');
 
-                // 1. Actualizar estado del intercambio
+                // 1. Obtener datos del intercambio PRIMERO
+                const { data: intercambio, error: getError } = await supabase
+                    .from('Intercambio')
+                    .select('creditos_verdes')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (getError) throw getError;
+
+                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+
+                // 2. Actualizar estado del intercambio
                 const { error: intercambioError } = await supabase
                     .from('Intercambio')
                     .update({
@@ -732,26 +909,25 @@ const monto = convertirMoneyANumero(intercambio.creditos_verdes);
 
                 if (intercambioError) throw intercambioError;
 
-                // 2. Devolver créditos al comprador
-                await devolverCreditosComprador(intercambioId);
+                // 3. Devolver créditos al comprador
+                await devolverCreditosComprador(currentUserId, monto);
 
-                // 3. Actualizar custodia si existe
-                try {
-                    const { error: custodiaError } = await supabase
-                        .from('custodia_creditos')
-                        .update({
-                            estado: 'devuelto',
-                            fecha_liberacion: new Date()
-                        })
-                        .eq('intercambio_id', intercambioId);
+                // 4. Reactivar publicación
+                await reactivarPublicacion(intercambioId);
 
-                    if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
-                } catch (custodiaError) {
-                    console.log('ℹ️ No se pudo actualizar custodia:', custodiaError.message);
-                }
+                // 5. Actualizar custodia
+                const { error: custodiaError } = await supabase
+                    .from('custodia_creditos')
+                    .update({
+                        estado: 'cancelado',
+                        fecha_liberacion: new Date().toISOString()
+                    })
+                    .eq('intercambio_id', intercambioId);
+
+                if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
 
                 ocultarLoading();
-                alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta.');
+                alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta y la publicación está disponible nuevamente.');
 
                 // Recargar compras
                 cargarMisCompras();
@@ -764,51 +940,164 @@ const monto = convertirMoneyANumero(intercambio.creditos_verdes);
         }
 
         // Devolver créditos al comprador
-        async function devolverCreditosComprador(intercambioId) {
+        async function devolverCreditosComprador(usuarioId, monto) {
+    try {
+        console.log('💳 Devolviendo créditos al comprador:', { usuarioId, monto });
+        
+        // 1. Obtener saldo actual desde usuario
+        const { data: usuario, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', usuarioId)
+            .single();
+
+        if (usuarioError) {
+            console.error('❌ Error obteniendo saldo del comprador:', usuarioError);
+            throw usuarioError;
+        }
+
+        const saldoActual = parseFloat(usuario.saldo_creditos) || 0;
+        const montoNum = parseFloat(monto);
+        const nuevoSaldo = saldoActual + montoNum;
+
+        console.log('💰 Saldo comprador - Actual:', saldoActual, 'Monto a devolver:', montoNum, 'Nuevo saldo:', nuevoSaldo);
+
+        // 2. Actualizar tabla usuario
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: nuevoSaldo
+            })
+            .eq('auth_id', usuarioId);
+
+        if (updateError) {
+            console.error('❌ Error actualizando saldo en usuario:', updateError);
+            throw updateError;
+        }
+
+        // 3. Actualizar billetera
+        await actualizarBilleteraDevolucion(usuarioId, monto);
+
+        // 4. Actualizar UI de forma segura
+        actualizarCreditosUI(nuevoSaldo);
+
+        console.log('✅ Créditos devueltos al comprador en tabla usuario y billetera');
+
+    } catch (error) {
+        console.error('❌ Error devolviendo créditos:', error);
+        throw error;
+    }
+}
+
+        async function actualizarBilleteraDevolucion(usuarioId, monto) {
             try {
-                // Obtener datos del intercambio
-                const { data: intercambio, error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .select('*')
-                    .eq('id_intercambio', intercambioId)
-                    .single();
-
-                if (intercambioError) throw intercambioError;
-
-                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
-
-                // Obtener billetera actual del comprador
+                console.log('🔄 Actualizando billetera para devolución:', { usuarioId, monto });
+                
+                // Buscar billetera del usuario
                 const { data: billetera, error: billeteraError } = await supabase
                     .from('billetera')
-                    .select('credito_actual, credito_retenido')
-                    .eq('usuario_id', currentUserId)
+                    .select('*')
+                    .eq('usuario_id', usuarioId)
                     .single();
 
-                if (billeteraError) throw billeteraError;
+                // Si no existe billetera, CREARLA
+                if (billeteraError && billeteraError.code === 'PGRST116') {
+                    console.log('🆕 Creando nueva billetera para usuario:', usuarioId);
+                    
+                    const { data: nuevaBilletera, error: createError } = await supabase
+                        .from('billetera')
+                        .insert([{
+                            usuario_id: usuarioId,
+                            credito_total: parseFloat(monto),
+                            credito_actual: parseFloat(monto),
+                            credito_retenido: 0,
+                            ultima_actualizacion: new Date().toISOString()
+                        }])
+                        .select();
 
-                // Devolver créditos
-                const nuevoSaldo = billetera.credito_actual + monto;
-                const nuevoRetenido = Math.max(0, billetera.credito_retenido - monto);
+                    if (createError) {
+                        console.error('❌ Error creando billetera:', createError);
+                        throw createError;
+                    }
+                    
+                    console.log('✅ Nueva billetera creada:', nuevaBilletera);
+                    
+                } else if (billeteraError) {
+                    console.error('❌ Error buscando billetera:', billeteraError);
+                    throw billeteraError;
+                    
+                } else {
+                    // Billetera existe - ACTUALIZAR
+                    console.log('📊 Billetera actual encontrada:', billetera);
+                    
+                    const creditoActual = parseFloat(billetera.credito_actual) || 0;
+                    const creditoTotal = parseFloat(billetera.credito_total) || 0;
+                    const creditoRetenido = parseFloat(billetera.credito_retenido) || 0;
+                    const montoNum = parseFloat(monto);
 
-                await supabase
-                    .from('billetera')
-                    .update({
-                        credito_actual: nuevoSaldo,
-                        credito_retenido: nuevoRetenido
-                    })
-                    .eq('usuario_id', currentUserId);
+                    const nuevoActual = creditoActual + montoNum;
+                    const nuevoTotal = creditoTotal + montoNum;
+                    // Reducir créditos retenidos (si los hay)
+                    const nuevoRetenido = Math.max(0, creditoRetenido - montoNum);
 
-                // Actualizar UI si está en la misma sesión
-                if (typeof document.getElementById('topCredits') !== 'undefined') {
-                    document.getElementById('topCredits').textContent = nuevoSaldo;
-                    localStorage.setItem('user_saldo', nuevoSaldo);
+                    console.log('🔄 Actualizando billetera:', {
+                        anterior: { actual: creditoActual, total: creditoTotal, retenido: creditoRetenido },
+                        nuevo: { actual: nuevoActual, total: nuevoTotal, retenido: nuevoRetenido }
+                    });
+
+                    const { data: billeteraActualizada, error: updateError } = await supabase
+                        .from('billetera')
+                        .update({
+                            credito_actual: nuevoActual,
+                            credito_total: nuevoTotal,
+                            credito_retenido: nuevoRetenido,
+                            ultima_actualizacion: new Date().toISOString()
+                        })
+                        .eq('usuario_id', usuarioId)
+                        .select();
+
+                    if (updateError) {
+                        console.error('❌ Error actualizando billetera:', updateError);
+                        throw updateError;
+                    }
+                    
+                    console.log('✅ Billetera actualizada:', billeteraActualizada);
                 }
 
-                console.log('✅ Créditos devueltos al comprador:', monto);
-
             } catch (error) {
-                console.error('Error devolviendo créditos:', error);
+                console.error('❌ Error en actualizarBilleteraDevolucion:', error);
                 throw error;
+            }
+        }
+
+        function actualizarCreditosUI(nuevoSaldo) {
+            console.log('🔄 Actualizando UI con nuevo saldo:', nuevoSaldo);
+            
+            // Lista de todos los elementos que pueden mostrar créditos
+            const creditElements = [
+                'topCredits', 'currentBalance', 'saldoBadge', 
+                'userCredits', 'creditos-disponibles'
+            ];
+            
+            let elementosActualizados = 0;
+            
+            creditElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = nuevoSaldo;
+                    elementosActualizados++;
+                    console.log(`✅ Actualizado elemento: ${id}`);
+                }
+            });
+            
+            // Actualizar localStorage
+            localStorage.setItem('user_saldo', nuevoSaldo);
+            
+            console.log(`📊 Elementos actualizados: ${elementosActualizados}`);
+            
+            // Si no se actualizó ningún elemento, mostrar advertencia
+            if (elementosActualizados === 0) {
+                console.warn('⚠️ No se encontraron elementos de créditos para actualizar');
             }
         }
 
@@ -959,7 +1248,7 @@ const monto = convertirMoneyANumero(intercambio.creditos_verdes);
 
                 // Insertar calificación
                 const { error: calificacionError } = await supabase
-                    .from('Calificacion')
+                    .from('calificacion')
                     .insert([{
                         puntuacion: puntuacionSeleccionada,
                         comentario: comentario || null,
