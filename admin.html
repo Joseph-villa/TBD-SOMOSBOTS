@@ -586,34 +586,52 @@ function isRecent(lastSignInDate) {
     }
 
     // Cargar datos de usuarios
+// Cargar datos de usuarios CORREGIDO
 async function loadUsersData() {
     try {
+        // 1. Primero cargar usuarios básicos
         const { data: users, error } = await supabase
             .from('usuario')
-// admin.html - loadUsersData
-// admin.html - loadUsersData
-.select('*, ultima_sesion:registro_sesiones!auth_id(fecha_ultima_conec)')
-             .order('nombre_completo', { ascending: true });
+            .select('*')
+            .order('nombre_completo', { ascending: true });
 
         if (error) throw error;
 
-        // Necesitamos guardar los datos actualizados de usuarios en allData para renderizar
-        allData.users = users.map(user => {
-            
-            // 1. Extraer la fecha de la conexión (será null si nunca inició sesión)
-            const lastSignIn = user.ultima_sesion ? user.ultima_sesion[0]?.fecha_ultima_conec : null;
-            
-            // 2. Calcular el estado: Llama a la función isRecent
-            const calculatedState = (lastSignIn && isRecent(lastSignIn)) ? 'Activo' : 'Inactivo';
+        // 2. Cargar sesiones por separado y combinar
+        const { data: sesiones, error: sesionesError } = await supabase
+            .from('registro_sesiones')
+            .select('auth_id, fecha_ultima_conec')
+            .order('fecha_ultima_conec', { ascending: false });
 
-            return {
+        if (!sesionesError) {
+            // Crear mapa de últimas sesiones por usuario
+            const ultimasSesiones = {};
+            sesiones.forEach(sesion => {
+                if (!ultimasSesiones[sesion.auth_id] || 
+                    new Date(sesion.fecha_ultima_conec) > new Date(ultimasSesiones[sesion.auth_id])) {
+                    ultimasSesiones[sesion.auth_id] = sesion.fecha_ultima_conec;
+                }
+            });
+
+            // Combinar datos
+            allData.users = users.map(user => {
+                const lastSignIn = ultimasSesiones[user.auth_id] || null;
+                const calculatedState = (lastSignIn && isRecent(lastSignIn)) ? 'Activo' : 'Inactivo';
+
+                return {
+                    ...user,
+                    last_sign_in: lastSignIn,
+                    estado: calculatedState
+                };
+            });
+        } else {
+            // Si hay error en sesiones, usar solo datos básicos
+            allData.users = users.map(user => ({
                 ...user,
-                // Almacenar la fecha de inicio de sesión
-                last_sign_in: lastSignIn, 
-                // 🚨 CAMBIO CRÍTICO: Agregar la propiedad 'estado'
-                estado: calculatedState // <-- ¡El campo que la tabla lee!
-            };
-        });
+                last_sign_in: null,
+                estado: 'Desconocido'
+            }));
+        }
 
         if (document.getElementById('users-tab').style.display !== 'none') {
             renderUsersTable(allData.users);
@@ -625,6 +643,7 @@ async function loadUsersData() {
         return [];
     }
 }
+
 
     // Cargar datos de publicaciones
     async function loadPublicationsData() {
