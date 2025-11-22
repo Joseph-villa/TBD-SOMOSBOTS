@@ -217,6 +217,18 @@
         let currentUserId = null;
         let intercambioActual = null;
 
+        // --- 1. FUNCIÓN SEGURA PARA CONVERTIR DINERO ---
+    function convertirMoneyANumero(valorMoney) {
+        // Si ya es número, lo devolvemos tal cual
+        if (typeof valorMoney === 'number') return valorMoney;
+        
+        // Si es texto, limpiamos símbolos
+        if (typeof valorMoney === 'string') {
+            return parseFloat(valorMoney.replace(/[^\d.-]/g, '')) || 0;
+        }
+        return 0;
+    }
+
         // Funciones de loading
         function mostrarLoading(mensaje = 'Procesando...') {
             document.getElementById('loadingText').textContent = mensaje;
@@ -281,9 +293,13 @@
                                 .from('custodia_creditos')
                                 .select('*')
                                 .eq('intercambio_id', intercambio.id_intercambio)
-                                .single();
-                            custodia = custodiaData;
-                        } catch (custodiaError) {
+                                .limit(1); 
+
+if (custError) throw custError;
+if (custodiaData && custodiaData.length > 0) {
+                            custodia = custodiaData[0];
+                        }
+} catch (custodiaError) {
                             console.log('ℹ️ No se pudo cargar custodia:', custodiaError.message);
                         }
 
@@ -343,7 +359,7 @@
             }
 
             ventasList.innerHTML = ventas.map(venta => {
-                const precio = parseFloat(venta.creditos_verdes.replace(/[^\d.-]/g, ''));
+const precio = convertirMoneyANumero(venta.creditos_verdes);
                 const tieneMensajes = venta.mensajes && venta.mensajes.length > 0;
                 const creditosRetenidos = venta.custodia && venta.custodia.estado === 'retenido';
                 

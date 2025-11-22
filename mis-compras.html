@@ -437,8 +437,8 @@
                                 .from('custodia_creditos')
                                 .select('*')
                                 .eq('intercambio_id', intercambio.id_intercambio)
-                                .single();
-                            custodia = custodiaData;
+.limit(1); 
+      custodia = custodiaData;
                         } catch (custodiaError) {
                             console.log('ℹ️ Tabla Custodia_Creditos no disponible:', custodiaError.message);
                         }
@@ -626,7 +626,7 @@
                 // 3. Actualizar custodia si existe
                 try {
                     const { error: custodiaError } = await supabase
-                        .from('Custodia_Creditos')
+                        .from('custodia_creditos')
                         .update({
                             estado: 'liberado',
                             fecha_liberacion: new Date()
@@ -657,19 +657,40 @@
                 // Obtener datos del intercambio
                 const { data: intercambio, error: intercambioError } = await supabase
                     .from('Intercambio')
-                    .select('*')
+                    .select('*,creditos_verdes, usuario_vendedor_id')
                     .eq('id_intercambio', intercambioId)
                     .single();
 
                 if (intercambioError) throw intercambioError;
 
-                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+            const vendedorId = intercambio.usuario_vendedor_id;
 
+            const compradorId = currentUserId;
+
+            // B. PROCESAR BILLETERA DEL COMPRADOR (Liberar Retenido)
+            const { data: billeteraComprador, error: compError } = await supabase
+                .from('billetera')
+                .select('credito_retenido')
+                .eq('usuario_id', compradorId) // Ahora esta variable ya existe
+                .single();
+
+            if (compError) throw compError;
+            
+            const nuevoRetenidoComprador = Math.max(0, billeteraComprador.credito_retenido - monto);
+
+            const { error: updateCompError } = await supabase
+                .from('billetera')
+                .update({ credito_retenido: nuevoRetenidoComprador })
+                .eq('usuario_id', compradorId);
+
+            if (updateCompError) throw updateCompError;
+            
                 // Obtener billetera del vendedor
                 const { data: billeteraVendedor, error: billeteraError } = await supabase
                     .from('billetera')
                     .select('credito_actual, credito_total')
-                    .eq('usuario_id', intercambio.usuario_vendedor_id)
+.eq('usuario_id', compradorId)
                     .single();
 
                 if (billeteraError) throw billeteraError;
@@ -717,7 +738,7 @@
                 // 3. Actualizar custodia si existe
                 try {
                     const { error: custodiaError } = await supabase
-                        .from('Custodia_Creditos')
+                        .from('custodia_creditos')
                         .update({
                             estado: 'devuelto',
                             fecha_liberacion: new Date()
