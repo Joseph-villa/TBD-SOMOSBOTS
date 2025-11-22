@@ -217,17 +217,16 @@
         let currentUserId = null;
         let intercambioActual = null;
 
-        // --- 1. FUNCIÓN SEGURA PARA CONVERTIR DINERO ---
-    function convertirMoneyANumero(valorMoney) {
-        // Si ya es número, lo devolvemos tal cual
-        if (typeof valorMoney === 'number') return valorMoney;
-        
-        // Si es texto, limpiamos símbolos
-        if (typeof valorMoney === 'string') {
-            return parseFloat(valorMoney.replace(/[^\d.-]/g, '')) || 0;
+        // 🆕 FUNCIÓN PARA CONVERTIR MONEY A NÚMERO
+        function convertirMoneyANumero(valorMoney) {
+            if (typeof valorMoney === 'number') return valorMoney;
+            if (typeof valorMoney === 'string') {
+                // Manejar formato money de PostgreSQL: "$1,234.56"
+                const cleaned = valorMoney.replace(/[^\d.-]/g, '');
+                return parseFloat(cleaned) || 0;
+            }
+            return 0;
         }
-        return 0;
-    }
 
         // Funciones de loading
         function mostrarLoading(mensaje = 'Procesando...') {
@@ -241,106 +240,144 @@
 
         // Cargar ventas del usuario (como vendedor)
         async function cargarMisVentas() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    window.location.href = 'index.html';
-                    return;
-                }
-                
-                currentUserId = user.id;
-                console.log('🔄 Cargando ventas para vendedor:', currentUserId);
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        currentUserId = user.id;
+        console.log('🔄 Cargando ventas para vendedor:', currentUserId);
 
-                // Obtener intercambios donde el usuario es el vendedor
-                const { data: intercambios, error } = await supabase
-                    .from('Intercambio')
-                    .select('*')
-                    .eq('usuario_vendedor_id', currentUserId)
-                    .order('fecha_creacion', { ascending: false });
+        // Verificar conexión primero
+        const { data: test, error: testError } = await supabase
+            .from('Intercambio')
+            .select('id_intercambio')
+            .limit(1);
 
-                if (error) throw error;
-
-                if (!intercambios || intercambios.length === 0) {
-                    renderVentas([]);
-                    return;
-                }
-
-                // Cargar datos relacionados
-                const ventasCompletas = await Promise.all(
-                    intercambios.map(async (intercambio) => {
-                        // Cargar publicación
-                        let publicacion = null;
-                        if (intercambio.publicacion_id) {
-                            const { data: pubData } = await supabase
-                                .from('Publicacion')
-                                .select('*')
-                                .eq('id_publicacion', intercambio.publicacion_id)
-                                .single();
-                            publicacion = pubData;
-                        }
-
-                        // Cargar mensajes
-                        const { data: mensajes } = await supabase
-                            .from('Mensaje')
-                            .select('*')
-                            .eq('intercambio_id', intercambio.id_intercambio)
-                            .order('fecha_envio', { ascending: true });
-
-                        // Cargar custodia
-                        let custodia = null;
-                        try {
-                            const { data: custodiaData } = await supabase
-                                .from('custodia_creditos')
-                                .select('*')
-                                .eq('intercambio_id', intercambio.id_intercambio)
-                                .limit(1); 
-
-if (custError) throw custError;
-if (custodiaData && custodiaData.length > 0) {
-                            custodia = custodiaData[0];
-                        }
-} catch (custodiaError) {
-                            console.log('ℹ️ No se pudo cargar custodia:', custodiaError.message);
-                        }
-
-                        // Cargar datos del comprador
-                        let comprador = null;
-                        if (intercambio.usuario_id) {
-                            const { data: userData } = await supabase
-                                .from('usuario')
-                                .select('nombre_completo')
-                                .eq('auth_id', intercambio.usuario_id)
-                                .single();
-                            comprador = userData;
-                        }
-
-                        return {
-                            ...intercambio,
-                            publicacion: publicacion,
-                            mensajes: mensajes || [],
-                            custodia: custodia,
-                            comprador: comprador
-                        };
-                    })
-                );
-
-                renderVentas(ventasCompletas);
-
-            } catch (error) {
-                console.error('❌ Error cargando ventas:', error);
-                document.getElementById('ventasList').innerHTML = `
-                    <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
-                        <h3>❌ Error al cargar las ventas</h3>
-                        <p>${error.message}</p>
-                        <button onclick="location.reload()" 
-                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            🔄 Reintentar
-                        </button>
-                    </div>
-                `;
-            }
+        if (testError) {
+            console.error('❌ Error de conexión:', testError);
+            throw new Error('Problema de conexión con la base de datos');
         }
 
+        // Obtener intercambios donde el usuario es el vendedor
+        const { data: intercambios, error } = await supabase
+            .from('Intercambio')
+            .select('*')
+            .eq('usuario_vendedor_id', currentUserId)
+            .order('fecha_creacion', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error cargando intercambios:', error);
+            
+            // Si es error 406, puede ser problema de RLS
+            if (error.code === '406' || error.status === 406) {
+                throw new Error('Problema de permisos. Contacta al administrador.');
+            }
+            throw error;
+        }
+
+        if (!intercambios || intercambios.length === 0) {
+            renderVentas([]);
+            return;
+        }
+
+        // Cargar datos relacionados con manejo de errores mejorado
+        const ventasCompletas = await Promise.all(
+            intercambios.map(async (intercambio) => {
+                let publicacion = null;
+                let mensajes = [];
+                let custodia = null;
+                let comprador = null;
+                let calificaciones = [];
+
+                try {
+                    // Cargar publicación
+                    if (intercambio.publicacion_id) {
+                        const { data: pubData, error: pubError } = await supabase
+                            .from('Publicacion')
+                            .select('*')
+                            .eq('id_publicacion', intercambio.publicacion_id)
+                            .single();
+                        if (!pubError) publicacion = pubData;
+                    }
+
+                    // Cargar mensajes
+                    const { data: msgsData, error: msgsError } = await supabase
+                        .from('Mensaje')
+                        .select('*')
+                        .eq('intercambio_id', intercambio.id_intercambio)
+                        .order('fecha_envio', { ascending: true });
+                    if (!msgsError) mensajes = msgsData || [];
+
+                    // Cargar custodia
+                    try {
+                        const { data: custodiaData, error: custodiaError } = await supabase
+                            .from('custodia_creditos')
+                            .select('*')
+                            .eq('intercambio_id', intercambio.id_intercambio)
+                            .single();
+                        
+                        if (!custodiaError && custodiaData && custodiaData.oferente_id === currentUserId) {
+                            custodia = custodiaData;
+                        }
+                    } catch (custodiaError) {
+                        console.log('ℹ️ No se pudo cargar custodia para intercambio', intercambio.id_intercambio);
+                    }
+
+                    // Cargar datos del comprador
+                    if (intercambio.usuario_id) {
+                        const { data: userData, error: userError } = await supabase
+                            .from('usuario')
+                            .select('nombre_completo')
+                            .eq('auth_id', intercambio.usuario_id)
+                            .single();
+                        if (!userError) comprador = userData;
+                    }
+
+                    // Cargar calificaciones
+                    const { data: calData, error: calError } = await supabase
+                        .from('calificacion')
+                        .select('*')
+                        .eq('calificado_id', currentUserId)
+                        .eq('intercambio_id', intercambio.id_intercambio);
+                    if (!calError) calificaciones = calData || [];
+
+                } catch (error) {
+                    console.error(`Error cargando datos para intercambio ${intercambio.id_intercambio}:`, error);
+                }
+
+                return {
+                    ...intercambio,
+                    publicacion: publicacion,
+                    mensajes: mensajes,
+                    custodia: custodia,
+                    comprador: comprador,
+                    calificaciones: calificaciones
+                };
+            })
+        );
+
+        renderVentas(ventasCompletas);
+
+    } catch (error) {
+        console.error('❌ Error cargando ventas:', error);
+        document.getElementById('ventasList').innerHTML = `
+            <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
+                <h3>❌ Error al cargar las ventas</h3>
+                <p>${error.message}</p>
+                <p style="font-size: 0.9rem; color: #888; margin-top: 10px;">
+                    Si el problema persiste, contacta al administrador del sistema.
+                </p>
+                <button onclick="location.reload()" 
+                        style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    🔄 Reintentar
+                </button>
+            </div>
+        `;
+    }
+}
         function renderVentas(ventas) {
             const ventasList = document.getElementById('ventasList');
             
@@ -359,9 +396,11 @@ if (custodiaData && custodiaData.length > 0) {
             }
 
             ventasList.innerHTML = ventas.map(venta => {
-const precio = convertirMoneyANumero(venta.creditos_verdes);
+                // 🆕 USAR FUNCIÓN CORREGIDA PARA CONVERTIR MONEY
+                const precio = convertirMoneyANumero(venta.creditos_verdes);
                 const tieneMensajes = venta.mensajes && venta.mensajes.length > 0;
                 const creditosRetenidos = venta.custodia && venta.custodia.estado === 'retenido';
+                const tieneCalificacion = venta.calificaciones && venta.calificaciones.length > 0;
                 
                 // Contar mensajes no leídos
                 let mensajesNoLeidos = 0;
@@ -411,6 +450,14 @@ const precio = convertirMoneyANumero(venta.creditos_verdes);
                             <p style="color: #17a2b8;">
                                 <i class="fas fa-comments"></i> 
                                 ${mensajesNoLeidos > 0 ? `<strong>${mensajesNoLeidos} mensaje(s) nuevo(s)</strong>` : 'Tienes mensajes'}
+                            </p>
+                        ` : ''}
+                        
+                        ${tieneCalificacion ? `
+                            <p style="color: #28a745;">
+                                <i class="fas fa-star"></i> 
+                                Calificación: ${venta.calificaciones[0].puntuacion}/5
+                                ${venta.calificaciones[0].comentario ? `<br><small>"${venta.calificaciones[0].comentario}"</small>` : ''}
                             </p>
                         ` : ''}
                         
