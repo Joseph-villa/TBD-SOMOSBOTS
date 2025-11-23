@@ -645,17 +645,18 @@
                     .update({
                         estado: 'vendido'
                     })
-                    .eq('id_publicacion', intercambio.publicacion_id);
+.eq('id_publicacion', publicacionId); // <-- USAMOS LA VARIABLE CORRECTA
 
-                if (updatePubError) throw updatePubError;
-
-                console.log('✅ Publicación marcada como vendida');
-
-            } catch (error) {
-                console.error('❌ Error marcando publicación como vendida:', error);
-                throw error;
-            }
+        if (updatePubError) {
+            console.error('Error al actualizar el estado de la publicación:', updatePubError);
+            throw updatePubError; // Lanza el error para que sea capturado por el try/catch principal
         }
+        console.log('✅ Publicación marcada como VENDIDA');
+    } catch (error) {
+        console.error('❌ Error marcando publicación como vendida:', error);
+        throw error;
+    }
+}
 
         async function reactivarPublicacion(intercambioId) {
             try {

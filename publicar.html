@@ -278,6 +278,24 @@
             <div style="margin-top:20px;">
                 <button type="submit" class="btn-publicar">Publicar</button>
             </div>
+
+            <label>Tipo de Oferta:</label>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="tipoOferta" id="tipoIntercambio" value="intercambio" checked>
+        <label class="form-check-label" for="tipoIntercambio">
+            Intercambio (Créditos por Bien/Servicio)
+        </label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="tipoOferta" id="tipoMonetizacion" value="monetizacion">
+        <label class="form-check-label" for="tipoMonetizacion">
+            Monetización (Solo para Emprendedores)
+        </label>
+    </div>
+</div>
+
+<button type="submit" onclick="enviarPublicacion(event)">Publicar</button>
+
         </form>
     </div>
 
