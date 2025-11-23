@@ -86,16 +86,33 @@
         // Consultar historial usando auth_id - FORMA CORRECTA
         const { data: transacciones, error: fetchError } = await supabase
             .from('historial') 
-            .select('fecha, tipo, total') 
-            .eq('auth_id', currentUserId) // ← Usar eq() correctamente
+.select(`
+                    fecha, 
+                    tipo, 
+                    total,
+                    Intercambio (
+                        estado, 
+                        creditos_verdes,
+                        fecha_cierre
+                    ) 
+                `)
+                .eq('auth_id', currentUserId)
             .order('fecha', { ascending: false }); 
 
         if (fetchError) {
-            console.error('Error de Supabase:', fetchError);
-            throw fetchError;
-        }
+                console.error('Error de Supabase:', fetchError);
+                historialBody.innerHTML = `
+                    <tr>
+                        <td colspan="3">
+                            ⚠️ Error al cargar: ${fetchError.message}
+                            <br><small>Si el error es "PGRST200", necesitas crear la **Foreign Key** entre 'historial.intercambio_id' y 'Intercambio.id_intercambio'.</small>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
 
-        historialBody.innerHTML = ''; 
+            historialBody.innerHTML = '';
 
         if (!transacciones || transacciones.length === 0) {
             historialBody.innerHTML = '<tr><td colspan="3">Aún no hay transacciones registradas para este usuario.</td></tr>';
@@ -103,20 +120,37 @@
         }
 
         transacciones.forEach(transaccion => {
-            const total = parseFloat(transaccion.total);
-            const esPositivo = total >= 0;
-            
-            const fila = `
-                <tr>
-                    <td>${formatDate(transaccion.fecha)}</td>
-                    <td>${transaccion.tipo}</td>
-                    <td class="credito ${esPositivo ? 'positivo' : 'negativo'}">
-                        💰 ${esPositivo ? '+' : ''}${total.toFixed(0)}
-                    </td>
-                </tr>
-            `;
-            historialBody.insertAdjacentHTML('beforeend', fila);
-        });
+                const inter = transaccion.Intercambio;
+                
+                // 1. Determinar qué valores mostrar
+                // Usamos los datos de Intercambio si existen, sino los de Historial
+                
+                const displayFecha = (inter && inter.fecha_cierre) ? inter.fecha_cierre : transaccion.fecha;
+                const displayTipo = (inter && inter.estado) ? inter.estado : transaccion.tipo;
+                // Usamos el total de Intercambio si existe, pero si es una compra,
+                // el total en historial ya tiene el signo correcto (negativo)
+                const displayTotal = (inter && inter.creditos_verdes) ? inter.creditos_verdes : transaccion.total;
+                
+                // 2. Determinar la clase de color (usamos el total de historial para el signo)
+                const totalForColor = parseFloat(transaccion.total); 
+                const esPositivo = totalForColor >= 0; 
+                
+                // 3. Formatear el total (usamos el total final)
+                const finalTotal = parseFloat(displayTotal);
+                const totalDisplay = `${esPositivo ? '+' : ''}${finalTotal.toFixed(0)}`; 
+                
+                
+                const fila = `
+                    <tr>
+                        <td>${formatDate(displayFecha)}</td>
+                        <td>${displayTipo}</td>
+                        <td class="credito ${esPositivo ? 'positivo' : 'negativo'}">
+                            💰 ${totalDisplay}
+                        </td>
+                    </tr>
+                `;
+                historialBody.insertAdjacentHTML('beforeend', fila);
+            });
 
     } catch (err) {
         console.error('Error al cargar transacciones:', err);

@@ -1,9 +1,7 @@
 // main.js (BACKEND - Node.js)
 
 import express from 'express';
-
 import cors from 'cors';
-
 import { supabase } from './db.js';
 
 
@@ -34,6 +32,66 @@ app.get("/api/categoria", async (req, res) => {
     res.json(data);
 });
 
+async function enviarPublicacion(event) {
+    event.preventDefault(); 
+    
+    // Asume que tienes acceso al cliente de Supabase aquí (para obtener el ID)
+    const { data: { user } } = await supabase.auth.getUser(); 
+    if (!user) {
+        alert("Debes iniciar sesión para publicar.");
+        return;
+    }
+    const usuarioIdActual = user.id;
+
+    // 1. Obtener el valor del radio button seleccionado
+    const tipoOfertaElement = document.querySelector('input[name="tipoOferta"]:checked');
+    if (!tipoOfertaElement) {
+        alert("Debes seleccionar un tipo de oferta.");
+        return;
+    }
+    const tipoOfertaSeleccionada = tipoOfertaElement.value; // Será 'intercambio' o 'monetizacion'
+
+    // 2. Construir el objeto de datos
+    const publicacionData = {
+        titulo: document.getElementById('titulo').value,
+        descripcion: document.getElementById('descripcion').value,
+        // ... Asegúrate de incluir todos los demás campos ...
+        precio: document.getElementById('precio').value,
+        categoria_nombre: document.getElementById('categoria').value,
+        usuario_id: usuarioIdActual, 
+        tipo_oferta: tipoOfertaSeleccionada // <-- DATO CLAVE ENVIADO AL BACKEND
+    };
+
+    // 3. Llamada al Backend (tu servidor Express)
+    try {
+        // mostrarLoading(); 
+        const response = await fetch('/api/publicar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(publicacionData),
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            // Manejar la respuesta 403 (Acceso denegado) del servidor
+            const errorMessage = result.error || 'Error desconocido al publicar.';
+            throw new Error(errorMessage);
+        }
+
+        // ocultarLoading();
+        alert('✅ Publicación creada con éxito!');
+        window.location.href = '/dashboard.html'; 
+        
+    } catch (error) {
+        // ocultarLoading();
+        console.error('Error al enviar publicación:', error);
+        alert('❌ Error al publicar: ' + error.message);
+    }
+}
+
+// Haz que la función sea accesible si usas onclick en tu botón HTML
+window.enviarPublicacion = enviarPublicacion;
 
 
 // Iniciar servidor
