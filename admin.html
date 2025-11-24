@@ -389,14 +389,28 @@
                         </div>
                     </div>
                     
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <div class="chart-title">Estadísticas Rápidas</div>
-                        </div>
-                        <div id="quickStats">
-                            <p>Cargando estadísticas...</p>
-                        </div>
-                    </div>
+
+                    <div class="col-span-1">
+    <h3 class="text-xl font-bold text-gray-800 mb-4">Estadísticas Rápidas</h3>
+    
+    <div id="quickStatsContainer" class="space-y-4">
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+            <p class="text-sm font-medium text-gray-500">Ingreso Total (Venta Créditos)</p>
+            <p class="text-3xl font-extrabold text-green-700 mt-1">
+                Bs <span id="totalIngresoBs">...</span>
+            </p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <p class="text-sm font-medium text-gray-500">Comisión Total (2% Intercambios)</p>
+            <p class="text-3xl font-extrabold text-yellow-700 mt-1">
+                <span id="totalComisionCreditos">...</span> ♻️
+            </p>
+        </div>
+    </div>
+</div>
+                    
+
                 </div>
 
                 <!-- Recent Activity -->
@@ -589,14 +603,18 @@ function isRecent(lastSignInDate) {
                 exchangesData,
                 creditsData,
                 recentActivity,
-                pendingRequestsData // <--- AÑADE ESTA LÍNEA
+                pendingRequestsData, // <--- AÑADE ESTA LÍNEA
+                ingresosBsData, // <--- NUEVO
+    comisionesCreditosData // <--- NUEVO
             ] = await Promise.all([
                 loadUsersData(),
                 loadPublicationsData(),
                 loadExchangesData(),
                 loadCreditsData(),
                 loadRecentActivity(),
-                loadPendingRequests() // <--- AÑADE ESTA LÍNEA
+                loadPendingRequests(), // <--- AÑADE ESTA LÍNEA
+                loadIngresosBs(),       // <--- AÑADIDO
+    loadComisionesCreditos() // <--- AÑADIDO
             ]);
 
             allData = {
@@ -605,7 +623,9 @@ function isRecent(lastSignInDate) {
                 exchanges: exchangesData,
                 credits: creditsData,
                 recentActivity: recentActivity,
-pendingRequests: pendingRequestsData // <--- Usamos los datos crudos
+pendingRequests: pendingRequestsData, // <--- Usamos los datos crudos
+totalIngresoBs: ingresosBsData,       // <--- NUEVO
+    totalComisionCreditos: comisionesCreditosData // <--- NUEVO
             };
 
             updateDashboardStats();
@@ -931,12 +951,48 @@ async function handleRejection(usuarioId) {
 }
 
 
+// --- NUEVAS FUNCIONES: Cargar Datos de Monetización ---
+
+// Cargar Ingresos en Dinero Real (Bs)
+async function loadIngresosBs() {
+    try {
+        const { data, error } = await supabase.rpc('get_total_ingreso_bs');
+
+        if (error) throw error;
+        
+        // Retorna el monto total en Bs (o 0 si es nulo)
+        return data !== null ? parseFloat(data) : 0;
+    } catch (e) {
+        console.error('❌ Error al cargar ingresos en Bs:', e);
+        return 0;
+    }
+}
+
+// Cargar Comisiones en Créditos (♻️)
+async function loadComisionesCreditos() {
+    try {
+        const { data, error } = await supabase.rpc('get_total_comisiones_creditos');
+
+        if (error) throw error;
+        
+        // Retorna el total de créditos retenidos (o 0 si es nulo)
+        return data !== null ? parseFloat(data) : 0;
+    } catch (e) {
+        console.error('❌ Error al cargar comisiones en créditos:', e);
+        return 0;
+    }
+}
+
+
     // Actualizar estadísticas del dashboard
     function updateDashboardStats() {
         const users = allData.users || [];
         const publications = allData.publications || [];
         const exchanges = allData.exchanges || [];
         const credits = allData.credits || [];
+
+        const ingresoBs = allData.totalIngresoBs || 0;
+    const comisionesCreditos = allData.totalComisionCreditos || 0;
 
         document.getElementById('totalUsers').textContent = users.length;
         document.getElementById('totalPublications').textContent = publications.length;
@@ -949,10 +1005,27 @@ async function handleRejection(usuarioId) {
         
         document.getElementById('totalCredits').textContent = totalCredits.toFixed(0);
 
-        // Actualizar gráfico de actividad
-        updateActivityChart();
+     // Actualizar gráfico de actividad
+    updateActivityChart();
+
+    // --- NUEVAS ACTUALIZACIONES DE MONETIZACIÓN ---
+    const totalIngresoBsEl = document.getElementById('totalIngresoBs');
+    if (totalIngresoBsEl) {
+        // Muestra en formato de moneda (ej. 1,234.50)
+        totalIngresoBsEl.textContent = ingresoBs.toLocaleString('es-BO', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     }
 
+    const totalComisionCreditosEl = document.getElementById('totalComisionCreditos');
+    if (totalComisionCreditosEl) {
+        // Muestra en formato numérico (ej. 1,234.50)
+        totalComisionCreditosEl.textContent = comisionesCreditos.toLocaleString('es-BO', {
+            maximumFractionDigits: 2
+        });
+    }
+}
     // Actualizar tabla de actividad reciente
     function updateRecentActivityTable() {
         const activity = allData.recentActivity || [];

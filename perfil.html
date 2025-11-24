@@ -202,7 +202,7 @@
                 <div class="mb-4">
                     <label for="nombreNegocio" class="block text-sm font-medium text-gray-700">Nombre del Negocio / Marca <span class="text-red-500">*</span></label>
                     <input type="text" id="nombreNegocio" required
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                 </div>
 
                 <div class="mb-4">
@@ -375,6 +375,43 @@
             }
         }
 
+
+
+// ... (Tus funciones: mostrarFormularioEmprendedor, cerrarFormularioEmprendedor, verificarEstadoEmprendedor, enviarSolicitudEmprendedor)
+
+// ---------------------------------------------------
+// --- FUNCIONES DE ESTADÍSTICAS (NUEVAS) ---
+// ---------------------------------------------------
+
+async function loadCreditosGenerados() {
+    if (!currentUserId) { // Solo verificamos que exista el ID
+        vendidosCount.textContent = '0';
+        return;
+    }
+
+    try {
+        // Llama a la función RPC de Supabase (asumiendo que ya la creaste con "Intercambio")
+        const { data, error } = await supabase.rpc('get_creditos_generados', {
+            p_usuario_id: currentUserId
+        });
+
+        if (error) {
+            console.error('Error al cargar créditos generados:', error);
+vendidosCount.textContent = 'Error';
+            return;
+        }
+
+        // 'data' contendrá la suma total de 'creditos_verd' del vendedor
+        const totalGenerado = data !== null ? data : 0;
+        
+        // Actualiza el elemento en el dashboard, formateado para mejor lectura
+        vendidosCount.textContent = totalGenerado.toLocaleString('es-BO', { maximumFractionDigits: 0 }); 
+
+    } catch (error) {
+        console.error('Error en loadCreditosGenerados:', error);
+        vendidosCount.textContent = 'Error';
+    }
+}
 
         // ---------------------------------------------------
         // --- FUNCIONES DE UTILIDAD (TU CÓDIGO ORIGINAL) ---
@@ -664,6 +701,8 @@
 
             await loadUserData(); 
             await fetchUserPosts();
+            // 📢 ¡NUEVA LLAMADA AÑADIDA AQUÍ!
+await loadCreditosGenerados();
         });
     </script>
 </body>

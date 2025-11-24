@@ -858,9 +858,8 @@
       modal.style.display = 'none';
     }
 
-    // ========== PROCESAR RECARGA ==========
-
-    async function processRecharge() {
+// ========== PROCESAR RECARGA (Versión Corregida) ==========
+async function processRecharge() {
     try {
         // Validar datos de la tarjeta
         if (!validateCardData()) {
@@ -873,40 +872,33 @@
         confirmButtonText.innerHTML = '<div class="loading"></div> Procesando...';
 
         console.log('🔄 Procesando recarga de créditos...');
-        console.log('📋 Detalles:', {
-            usuario: currentUserId,
-            creditos: selectedCredits,
-            precio: selectedPrice,
-            saldo_actual: currentBalance
+        
+        // **********************************************
+        // ********* PASO CRUCIAL: LLAMADA RPC  ********
+        // **********************************************
+        
+        console.log('💰 Llamando a la función RPC comprar_creditos...');
+
+        const { data, error: rpcError } = await supabase.rpc('comprar_creditos', {
+            p_usuario_id: currentUserId, // UUID del usuario
+            p_monto_bs: selectedPrice,   // Precio (dinero real)
+            p_creditos: selectedCredits  // Créditos entregados
         });
 
-        // 1. ACTUALIZAR BILLETERA PRIMERO (para que el trigger funcione)
-        console.log('💰 Paso 1: Actualizando billetera...');
-        await updateBilletera(selectedCredits);
-
-        // 2. Actualizar saldo en la tabla 'usuario'
-        console.log('👤 Paso 2: Actualizando tabla usuario...');
-        const nuevoSaldo = currentBalance + selectedCredits;
-        
-        const { error: updateError } = await supabase
-            .from('usuario')
-            .update({ 
-                saldo_creditos: nuevoSaldo
-            })
-            .eq('auth_id', currentUserId);
-
-        if (updateError) {
-            console.error('❌ Error actualizando usuario:', updateError);
-            throw updateError;
+        if (rpcError) {
+            console.error('❌ Error en RPC comprar_creditos:', rpcError);
+            throw rpcError;
         }
+        
+        // NOTA: La función RPC se encarga de:
+        // 1. INSERTAR en ingreso_monetario (Dinero real, ¡solucionado!)
+        // 2. ACTUALIZAR saldo_creditos en la tabla 'usuario' (o billetera)
+        // 3. (Opcional) Registrar en historial
 
-        // 3. Registrar en el historial
-        console.log('📝 Paso 3: Registrando en historial...');
-        await registrarEnHistorial(selectedCredits, selectedPrice);
-
-        console.log('✅ Recarga procesada exitosamente');
+        console.log('✅ Recarga procesada exitosamente por RPC');
 
         // Actualizar estado local
+        const nuevoSaldo = currentBalance + selectedCredits;
         currentBalance = nuevoSaldo;
         currentBalanceEl.textContent = nuevoSaldo;
         topCredits.textContent = nuevoSaldo;
