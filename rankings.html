@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de Reciclaje - Principal</title>
+  <link rel="stylesheet" href="styles/estilos.css">
+
+  <style>
+    /* [ESTILOS DE PERFIL/MENU] */
+    .profile-links {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 200px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+
+    .user-area {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: transparent;
+      border: none;
+      padding: 8px 12px;
+      font: inherit;
+      color: inherit;
+      position: relative;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+    }
+
+    .user-area:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Estilos para los enlaces del menú */
+    .profile-links a {
+      display: block;
+      padding: 8px 12px;
+      color: #333;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .profile-links a:hover {
+      background-color: #f5f5f5;
+    }
+
+    .logout-link {
+      color: #f44336 !important;
+    }
+
+    #rankings {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+
+    .ranking-controls {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+      gap: 10px;
+    }
+
+    .ranking-controls button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #2F9A34;
+      color: white;
+      font-weight: bold;
+    }
+
+    .ranking-controls button.active {
+      background: #036d19;
+    }
+
+    .ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ranking-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .ranking-list li .rank-icon {
+      width: 24px;
+      text-align: center;
+      margin-right: 10px;
+    }
+
+    .ranking-list li span {
+      font-weight: bold;
+    }
+
+
+    .custom-bar {
+      display: flex;
+      width: 100%;
+      justify-content: space-evenly;
+      align-items: center;
+    }
+
+    .back-button {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 16px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .back-button:hover {
+      background: var(--accent);
+      color: white;
+    }
+    
+    #update-ranks-btn:disabled{
+      background-color: gray;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .modal-content {
+        padding: 24px;
+      }
+
+      .modal-content h2 {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="logo-area">
+      <img src="" alt="Logo Plataforma" class="logo-img">
+      <h1>Plataforma de Trueque Digital</h1>
+    </div>
+
+    <div class="search-area">
+      <input type="search" class="search-bar" placeholder="Buscar producto..." aria-label="Buscar producto">
+    </div>
+
+    <div class="right-area">
+      <div class="credits-bubble" title="Créditos disponibles">
+        <span class="coin">♻️</span>
+        <span id="topCredits">0</span>
+      </div>
+
+      <div class="user-area" id="profileToggle">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
+        <span id="userName">Usuario</span>
+        <div id="profileLinks" class="profile-links">
+          <div style="padding: 10px; border-bottom: 1px solid #eee;">
+            <strong id="menuUserName">Usuario</strong>
+            <div style="font-size: 0.8rem; color: #666;" id="menuUserEmail">usuario@ejemplo.com</div>
+          </div>
+          <ul style="list-style: none; padding: 0; margin: 10px 0;">
+            <li><a href="perfil.html">👤 Ver perfil</a></li>
+            <li><a href="publicar.html">📤 Crear publicación</a></li>
+            <li><a href="mis-compras.html">🛒 Mis Compras</a></li>
+            <li><a href="mis-ventas.html">💰 Mis Ventas</a></li>
+            <li><a href="historial.html">💰 Ver historial</a></li>
+            <li><a href="#" id="logoutLink" class="logout-link">🚪 Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <a href="index2.html" class="back-button">← Volver al Inicio</a>
+    <div class="custom-bar">
+      <h1>Rankings</h1>
+    </div>
+
+    <div class="ranking-controls">
+      <button id="sortExchanges" class="active">♻️ Ordenar por Intercambios</button>
+      <button id="sortPublications">📝 Ordenar por Publicaciones</button>
+      <button id="update-ranks-btn">🔃 Actualizar</button>
+    </div>
+
+    <section id="rankings">
+      <ul class="ranking-list" id="rankingList"><li>Cargando...</li></ul>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from './config/db.js';
+
+    let currentUserId = null;
+
+    const rankingList = document.getElementById('rankingList');
+    const sortExchangesBtn = document.getElementById('sortExchanges');
+    const sortPublicationsBtn = document.getElementById('sortPublications');
+
+    let usersData = [];
+    let currentSort = 'exchanges';
+
+    // ========== INICIALIZACIÓN ==========
+
+    async function init() {
+      try {
+        console.log('=== INICIANDO APLICACIÓN ===');
+
+        // Verificar autenticación
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) {
+          console.log('Usuario no autenticado, redirigiendo al login');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        currentUserId = user.id;
+        console.log('Usuario autenticado ID:', currentUserId);
+
+        await loadUserData();
+        setupProfileMenu();
+        loadRanking();
+
+        document.getElementById("update-ranks-btn").addEventListener("click", loadRanking);
+
+        document.getElementById("update-ranks-btn").addEventListener("click", (e) => {
+          console.log("Update and disable")
+          e.target.disabled = true;
+
+          setTimeout(() => { console.log("enable updates"); e.target.disabled = false }, 3000);
+        });
+
+      } catch (error) {
+        console.error('Error en inicialización:', error);
+        window.location.href = 'index.html';
+      }
+    }
+
+    // ---------- Cargar datos del Ranking ----------
+    function loadStateDisplay() {
+      rankingList.innerHTML = '<li>Cargando...</li>';      
+    }
+
+    async function loadRanking() {
+      rankingList.innerHTML = '<li>Cargando...</li>';  
+      // Traer usuarios con total de publicaciones
+      const { data: publications, error: pubError } = await supabase
+        .from('Publicacion')
+        .select('usuario_id');
+
+      // Traer intercambios completados por usuario vendedor
+      const { data: exchanges, error: exchError } = await supabase
+        .from('Intercambio')
+        .select('usuario_vendedor_id')
+        .eq('estado', 'completado');
+
+      if (pubError || exchError) {
+        console.error('Error al cargar ranking:', pubError || exchError);
+        return;
+      }
+
+      // Contar publicaciones e intercambios
+      const counts = {};
+
+      publications.forEach(p => {
+        if (!counts[p.usuario_id]) counts[p.usuario_id] = { publications: 0, exchanges: 0 };
+        counts[p.usuario_id].publications++;
+      });
+
+      exchanges.forEach(e => {
+        if (!counts[e.usuario_vendedor_id]) counts[e.usuario_vendedor_id] = { publications: 0, exchanges: 0 };
+        counts[e.usuario_vendedor_id].exchanges++;
+      });
+
+      // Traer nombres de usuarios
+      const userIds = Object.keys(counts);
+      const { data: users, error: userError } = await supabase
+        .from('usuario')
+        .select('auth_id, nombre_completo')
+        .in('auth_id', userIds);
+
+      if (userError) {
+        console.error('Error al traer usuarios:', userError);
+        return;
+      }
+
+      usersData = userIds.map(uid => {
+        const user = users.find(u => u.auth_id === uid);
+        return {
+          id: uid,
+          name: user ? user.nombre_completo : 'Sin nombre',
+          publications: counts[uid].publications,
+          exchanges: counts[uid].exchanges
+        };
+      });
+
+      renderRanking();
+    }
+
+    function renderRanking() {
+      // Ordenar
+      usersData.sort((a, b) => b[currentSort] - a[currentSort]);
+
+      rankingList.innerHTML = '';
+
+      usersData.slice(0, 10).forEach((u, i) => {
+        const li = document.createElement('li');
+
+        let icon = '';
+        if (i === 0) icon = '🥇';
+        else if (i === 1) icon = '🥈';
+        else if (i === 2) icon = '🥉';
+        else icon = i + 1;
+
+        li.innerHTML = `
+          <span class="rank-icon">${icon}</span>
+          <span>${u.name}</span>
+          <span>♻️ ${u.exchanges} | 📝 ${u.publications}</span>
+        `;
+        rankingList.appendChild(li);
+      });
+    }
+
+    sortExchangesBtn.addEventListener('click', () => {
+      currentSort = 'exchanges';
+      sortExchangesBtn.classList.add('active');
+      sortPublicationsBtn.classList.remove('active');
+      renderRanking();
+    });
+
+    sortPublicationsBtn.addEventListener('click', () => {
+      currentSort = 'publications';
+      sortPublicationsBtn.classList.add('active');
+      sortExchangesBtn.classList.remove('active');
+      renderRanking();
+    });
+
+    // ========== CONFIGURACIÓN DEL PERFIL ==========
+
+    function setupProfileMenu() {
+      console.log('Configurando menú de perfil...');
+
+      const profileToggle = document.getElementById('profileToggle');
+      const profileLinks = document.getElementById('profileLinks');
+      const logoutLink = document.getElementById('logoutLink');
+
+      // Toggle del menú
+      profileToggle.addEventListener('click', function (e) {
+        console.log('Click en profileToggle');
+        e.stopPropagation();
+        const isVisible = profileLinks.style.display === 'block';
+        profileLinks.style.display = isVisible ? 'none' : 'block';
+      });
+
+      // Cerrar menú al hacer click fuera
+      document.addEventListener('click', function (e) {
+        if (!profileToggle.contains(e.target)) {
+          profileLinks.style.display = 'none';
+        }
+      });
+
+      // Cerrar sesión
+      logoutLink.addEventListener('click', async function (e) {
+        e.preventDefault();
+        console.log('Click en cerrar sesión');
+        await handleLogout();
+      });
+
+      // Prevenir que los clicks en el menú lo cierren
+      profileLinks.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+    }
+
+    // ========== CARGA DE DATOS DEL USUARIO ==========
+
+    async function loadUserData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: usuario, error } = await supabase
+            .from('usuario')
+            .select('*')
+            .eq('auth_id', user.id)
+            .single();
+
+          if (!error && usuario) {
+            document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+            document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+            document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+            document.getElementById('topCredits').textContent = usuario.saldo_creditos || 0;
+
+            localStorage.setItem('user_id', user.id);
+            localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+            localStorage.setItem('user_name', usuario.nombre_completo);
+            localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+      }
+    }
+
+    // ========== CERRAR SESIÓN ==========
+
+    async function handleLogout() {
+      try {
+        console.log('Cerrando sesión...');
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+
+        localStorage.clear();
+        window.location.href = 'index.html?logout=true';
+
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        alert('Error al cerrar sesión');
+      }
+    }
+
+    // ========== INICIALIZAR APLICACIÓN ==========
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+</body>
+
+</html>
