@@ -150,12 +150,36 @@
             margin-bottom: 30px;
         }
 
-        .chart-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
+        /* --- Modificación/Adición de Reglas CSS --- */
+
+/* 1. Contenedor de Gráficos (Para Layout) */
+.charts-container {
+    display: grid;
+    /* Mantén tu layout de 2 columnas */
+    grid-template-columns: 1fr 1fr;
+    gap: 20px; /* Ya tienes 20px, lo mantengo */
+    margin-bottom: 30px;
+}
+
+/* 2. Tarjeta del Gráfico (¡CRUCIAL: Define la ALTURA del área!) */
+.chart-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    /* 👇 AÑADE ESTA ALTURA FIJA PARA EL CONTENEDOR DE CADA GRÁFICO */
+    height: 350px; /* Una altura estándar para visualización */
+    /* 👆 CRUCIAL */
+}
+
+/* 3. Asegurar que el Canvas ocupe el espacio del contenedor */
+/* Añade esta regla si tienes problemas, pero no debería ser estrictamente necesaria */
+/* si el contenedor tiene una altura y anchura explícitas. */
+#ingresosChart, #creditosChart {
+    /* Ocupar el 100% del espacio de la tarjeta (.chart-card) */
+    width: 100% !important;
+    height: 100% !important; 
+}
 
         .chart-header {
             display: flex;
@@ -501,8 +525,36 @@
                     </div>
                 </div>
             </div>
+
+            <main class="main-content">
+
+    <div id="reports-tab" class="tab-content" style="display: none;">
+        <h2>📊 Reportes de Monetización</h2>
+        
+        <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+            
+            <div class="chart-card">
+                <h3>Ingresos Semanales (Bs)</h3>
+                <canvas id="ingresosChart"></canvas> 
+            </div>
+
+            <div class="chart-card">
+                <h3>Créditos Vendidos Semanales (♻️)</h3>
+                <canvas id="creditosChart"></canvas>
+            </div>
+
+        </div>
+
+        </div>
+
+    </main>
+
         </div>
     </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="/scripts/reportes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
 <script type="module">
     import { supabase } from './config/db.js';
@@ -636,7 +688,7 @@ console.log('Datos de Solicitudes Recibidos:', allData.pendingRequests); // <-- 
 // Carga y renderiza solicitudes
         if (document.getElementById('requests-tab').style.display !== 'none') {
              // Si esta línea falla, la consola debería mostrar un error aquí
-             renderRequestsTable(allData.pendingRequests); 
+            renderRequestsTable(allData.pendingRequests); 
         }
 
     }catch (error) {
@@ -826,7 +878,7 @@ async function loadExchangesData() {
 // --- NUEVA FUNCIÓN: Cargar Solicitudes Pendientes ---
 async function loadPendingRequests() {
     try {
-       const { data: requests, error } = await supabase
+        const { data: requests, error } = await supabase
             .from('perfil_emprendedor')
             .select(`*`)
             .eq('estado_solicitud', 'pendiente')
@@ -1371,6 +1423,158 @@ function renderRequestsTable(requests) {
 }
 
 
+
+// Función para renderizar un gráfico de área (simula el estilo de tu captura)
+function renderChart(ctx, labels, data, labelText, color) {
+    if (window.myCharts && window.myCharts[ctx.canvas.id]) {
+        window.myCharts[ctx.canvas.id].destroy(); // Destruye el gráfico anterior
+    }
+    
+    // Configuración para simular tu gráfico de área
+    window.myCharts = window.myCharts || {};
+    window.myCharts[ctx.canvas.id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelText,
+                data: data,
+                backgroundColor: color + '33', // Color con transparencia
+                borderColor: color,
+                borderWidth: 2,
+                fill: true, // Relleno de área
+                tension: 0.4, // Suaviza la línea (curvas)
+                pointRadius: 4 
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // Oculta la leyenda del dataset, si está en el título
+                }
+            }
+        }
+    });
+}
+
+// --- Funciones para obtener los datos de la DB (necesitas la importación de Supabase) ---
+
+// NOTA: Asegúrate de tener la variable 'supabase' importada o definida globalmente.
+
+async function fetchIngresosBsSemanal() {
+    try {
+        const { data, error } = await supabase.rpc('get_ingresos_bs_semanal');
+        if (error) {
+            console.error("❌ Error de Supabase (get_ingresos_bs_semanal):", error.message);
+            // Si hay un error, devolvemos un array vacío para no detener Promise.all
+            return [];
+        }
+        
+        console.log("✅ Datos de Ingresos RPC:", data); // <-- ¡NUEVO LOG!
+        
+        // Es crucial que el tipo de retorno sea un array, aunque esté vacío.
+        return data || []; 
+
+    } catch (e) {
+        // Esto captura errores de red (timeout, etc.)
+        console.error("❌ Error de Red/RPC al cargar Ingresos Bs Semanal:", e); 
+        return [];
+    }
+}
+async function fetchCreditosVendidosSemanal() {
+    try {
+        const { data, error } = await supabase.rpc('get_creditos_vendidos_semanal');
+        if (error) throw error;
+        return data; 
+    } catch (e) {
+        console.error("Error al cargar Créditos Vendidos Semanal:", e);
+        return [];
+    }
+}
+
+
+// --- FUNCIÓN PRINCIPAL DE CARGA ---
+
+async function loadMonetizationCharts() {
+    console.log('🔄 Cargando datos de monetización semanal...');
+    
+    const [ingresosData, creditosData] = await Promise.all([
+        fetchIngresosBsSemanal(),
+        fetchCreditosVendidosSemanal()
+    ]);
+
+    // ----------------------------------------------------
+    // GRÁFICO 1: INGRESOS BS - LÓGICA COMPLETA Y SEGURA
+    // ----------------------------------------------------
+    const ctxIngresosEl = document.getElementById('ingresosChart'); 
+    
+    if (!ctxIngresosEl) {
+        console.error("❌ Error: Elemento 'ingresosChart' no encontrado en el DOM.");
+    } else if (ingresosData && ingresosData.length > 0) {
+        
+        // 1. Declaración y Asignación de variables (dentro del IF)
+        ingresosData.sort((a, b) => (a.semana > b.semana) ? 1 : -1); 
+        const labelsBs = ingresosData.map(d => d.semana.split('-')[1]); 
+        const dataBs = ingresosData.map(d => parseFloat(d.total_bs));
+        
+        // 2. Dibujo del gráfico (ahora labelsBs y dataBs están en scope)
+        const ctxIngresos = ctxIngresosEl.getContext('2d');
+        if (ctxIngresos) {
+            renderChart(
+                ctxIngresos, 
+                labelsBs, 
+                dataBs, 
+                'Ingresos por compra de Paquetes (Bs)', 
+                '#007bff'
+            );
+        }
+        
+    } else {
+        console.warn("No hay datos de ingresos disponibles para mostrar.");
+        // Opcional: Mostrar mensaje en el div contenedor si está vacío
+        // ctxIngresosEl.parentNode.innerHTML = '<h3>No hay datos de ingresos recientes.</h3>'; 
+    }
+
+
+    // ----------------------------------------------------
+    // GRÁFICO 2: CRÉDITOS VENDIDOS - LÓGICA COMPLETA Y SEGURA
+    // ----------------------------------------------------
+    const ctxCreditosEl = document.getElementById('creditosChart');
+
+    if (!ctxCreditosEl) {
+        console.error("❌ Error: Elemento 'creditosChart' no encontrado en el DOM.");
+    } else if (creditosData && creditosData.length > 0) {
+        
+        // 1. Declaración y Asignación de variables
+        creditosData.sort((a, b) => (a.semana > b.semana) ? 1 : -1); 
+        const labelsCreditos = creditosData.map(d => d.semana.split('-')[1]);
+        const dataCreditos = creditosData.map(d => parseFloat(d.total_creditos));
+        
+        // 2. Dibujo del gráfico
+        const ctxCreditos = ctxCreditosEl.getContext('2d');
+        if (ctxCreditos) {
+            renderChart(
+                ctxCreditos, 
+                labelsCreditos, 
+                dataCreditos, 
+                'Créditos verdes vendidos', 
+                '#ff9500'
+            );
+        }
+        
+    } else {
+        console.warn("No hay datos de créditos disponibles para mostrar.");
+        // ctxCreditosEl.parentNode.innerHTML = '<h3>No hay datos de créditos recientes.</h3>';
+    }
+}
+
     // Configurar logout
     function setupLogout() {
         document.getElementById('logoutAdmin').addEventListener('click', async function() {
@@ -1389,7 +1593,6 @@ function renderRequestsTable(requests) {
     // Inicializar dashboard
     async function initAdminDashboard() {
         await loadDashboardData();
-        setupTabNavigation();
         setupLogout();
         
         // Configurar actualización automática cada 30 segundos
@@ -1402,6 +1605,50 @@ function renderRequestsTable(requests) {
         if (isAdmin) {
             await initAdminDashboard();
         }
+
+
+const menuItems = document.querySelectorAll('.sidebar .menu-item');
+    const tabs = document.querySelectorAll('.tab-content');
+    
+    menuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const tabName = item.dataset.tab;
+            
+            // 1. Ocultar todas las pestañas y desactivar todos los ítems del menú
+            tabs.forEach(tab => tab.style.display = 'none');
+            menuItems.forEach(m => m.classList.remove('active'));
+            
+            // 2. Mostrar la pestaña seleccionada y activar el ítem
+            const selectedTab = document.getElementById(`${tabName}-tab`);
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+                item.classList.add('active');
+            }
+            
+            // 3. ¡EJECUTAR LA FUNCIÓN DE GRÁFICOS CUANDO SE SELECCIONA LA PESTAÑA 'REPORTS'!
+            if (tabName === 'reports') {
+                loadMonetizationCharts();
+            }
+
+            // Agreguemos los otros casos por si necesitas recargar las tablas al cambiar de pestaña
+            switch(tabName) {
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'exchanges':
+                    loadExchangesData();
+                    break;
+                case 'publications':
+                    loadPublicationsData();
+                    break;
+                case 'requests':
+                    loadPendingRequests();
+                    break;
+            }
+        });
+    });
+
+
     });
 
     // Hacer funciones globales para los botones
@@ -1416,7 +1663,7 @@ window.handleRejection = handleRejection;         // <--- NUEVO
     window.generateExchangesReport = generateExchangesReport;
     window.generatePublicationsReport = generatePublicationsReport;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script type="module" src="/scripts/reportes.js"></script>
+
+
 </body>
 </html>

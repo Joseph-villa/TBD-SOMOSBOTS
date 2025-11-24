@@ -521,149 +521,163 @@ function convertForLine(grouped) {
   };
 }
 
-// Consulta para Ganancias
+const CURRENT_DATE = new Date(); // Debe estar en las variables globales
+
+const MOCK_DATA = {
+    cost: mockMoneyGains, // Usa tu mock de ingresos (costo)
+    points: mockCreditsGenerated // Usa tu mock de créditos (puntos)
+};
+// Consulta para Ganancias - ¡USANDO LAS RPC DE SUPABASE!
 async function getUnifiedPackageData() {
-  try {
-    const { data, error } = await supabase
-      .from('Compra_Paquete')
-      .select(`
-        fecha_compra,
-        Paquete_Recarga!Compra_Paquete_paquete_recarga_id_fkey (
-          costo,
-          puntos
-        )
-      `)
-      .order('fecha_compra', { ascending: true });
+    try {
+        // Llamadas Semanales
+        const [w_ingresos, w_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_semanal'),
+            supabase.rpc('get_creditos_vendidos_semanal')
+        ]);
 
-    if (error) throw error;
+        // Llamadas Mensuales
+        const [m_ingresos, m_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_mensual'),
+            supabase.rpc('get_creditos_vendidos_mensual')
+        ]);
+        
+        // Llamadas Anuales
+        const [y_ingresos, y_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_anual'),
+            supabase.rpc('get_creditos_vendidos_anual')
+        ]);
 
-    if (!data || data.length === 0) {
-      return {
-        cost: mockMoneyGains,
-        points: mockCreditsGenerated
-      };
+        // Procesar y unir los resultados
+        const costData = {
+            weekly: processRpcData(w_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'weekly'),
+            monthly: processRpcData(m_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'monthly'),
+            yearly: processRpcData(y_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'yearly')
+        };
+        
+        const pointsData = {
+            weekly: processRpcData(w_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'weekly'),
+            monthly: processRpcData(m_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'monthly'),
+            yearly: processRpcData(y_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'yearly')
+        };
+
+        return {
+            cost: costData,
+            points: pointsData
+        };
+
+    } catch (error) {
+        console.error('Error obteniendo datos de monetización (RPC):', error);
+        return {
+            cost: mockMoneyGains, 
+            points: mockCreditsGenerated
+        };
     }
-
-    return {
-      rawData: data,
-      cost: processPackageData(data, 'cost'),
-      points: processPackageData(data, 'points')
-    };
-
-  } catch (error) {
-    console.error('Error obteniendo datos de paquetes:', error);
-    return {
-      cost: mockMoneyGains,
-      points: mockCreditsGenerated
-    };
-  }
 }
 
-// Procesar datos para costo o puntos
-function processPackageData(data, type = 'cost') {
-  const now = new Date();
 
-  // Inicializar estructuras para todos los períodos
-  const weekly = initializeDateRange('weekly', now);
-  const monthly = initializeDateRange('monthly', now);
-  const yearly = initializeDateRange('yearly', now);
-
-  data.forEach(compra => {
-    const fecha = new Date(compra.fecha_compra);
-    const valor = type === 'cost'
-      ? parseFloat(compra.Paquete_Recarga.costo.replace(/[^\d.-]/g, '')) // Convertir money a número
-      : compra.Paquete_Recarga.puntos;
-
-    // Agrupar por período
-    groupByPeriod(weekly, fecha, valor, 'weekly');
-    groupByPeriod(monthly, fecha, valor, 'monthly');
-    groupByPeriod(yearly, fecha, valor, 'yearly');
-  });
-
-  return {
-    weekly: convertPackageForChart(weekly, 'weekly'),
-    monthly: convertPackageForChart(monthly, 'monthly'),
-    yearly: convertPackageForChart(yearly, 'yearly')
-  };
-}
-
-// Inicializar rangos de fechas
-function initializeDateRange(period, baseDate) {
-  const data = {};
-  const count = period === 'weekly' ? 7 : period === 'monthly' ? 30 : 12;
-
-  for (let i = count - 1; i >= 0; i--) {
-    const date = new Date(baseDate);
-    let key;
-
-    switch (period) {
-      case 'weekly':
-        date.setDate(date.getDate() - i);
-        key = date.getDate().toString();
-        break;
-      case 'monthly':
-        date.setDate(date.getDate() - i);
-        key = date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-        break;
-      case 'yearly':
-        date.setMonth(date.getMonth() - i);
-        key = date.toLocaleDateString('es-ES', { month: 'short' });
-        break;
+// NUEVA FUNCIÓN AUXILIAR: Mapea y rellena la respuesta de la RPC
+function processRpcData(data, valueKey, title, period) {
+    if (!reportData) {
+        const mockType = valueKey === 'total_bs' ? 'cost' : 'points';
+        return MOCK_DATA[mockType][period]; 
+        // Esta línea asume que MOCK_DATA[type][period] existe y está bien formateado.
     }
+    
+    // 1. Crear una estructura base para todo el rango (con valor 0)
+    const baseRange = generateDateRange(period, CURRENT_DATE);
 
-    data[key] = 0;
-  }
+    // 2. Llenar la estructura base con los datos reales de la RPC
+    const groupedData = data.reduce((acc, item) => {
+        let rpcKey = item[Object.keys(item).find(k => k !== valueKey)]; // Obtiene la clave del período (semana, mes, anio)
 
-  return data;
+        // Formatear la clave de la RPC para que coincida con la clave del rango base
+        const formattedKey = formatKey(rpcKey, period); 
+
+        const value = parseFloat(item[valueKey] || 0);
+
+        // Si la clave existe en el rango base, le sumamos el valor
+        if (acc.hasOwnProperty(formattedKey)) {
+            acc[formattedKey] += value;
+        }
+
+        return acc;
+    }, baseRange); // Inicia el acumulador con el rango base
+
+    // 3. Devolver los datos listos para Chart.js
+    return {
+        labels: Object.keys(groupedData),
+        data: Object.values(groupedData),
+        title: title
+    };
 }
 
-// Agrupar datos por período
-function groupByPeriod(periodData, fecha, valor, periodType) {
-  let key;
 
-  switch (periodType) {
-    case 'weekly':
-      key = fecha.getDate().toString();
-      break;
-    case 'monthly':
-      key = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-      break;
-    case 'yearly':
-      key = fecha.toLocaleDateString('es-ES', { month: 'short' });
-      break;
-  }
+// NUEVA FUNCIÓN AUXILIAR: Genera un objeto con todas las etiquetas del rango y valor cero.
+function generateDateRange(period, today) {
+    const range = {};
+    let count; 
+    
+    if (period === 'weekly') {
+        count = 6; // Últimas 6 semanas
+        for (let i = count - 1; i >= 0; i--) {
+            const tempDate = new Date();
+            tempDate.setDate(today.getDate() - (i * 7)); // Retroceder semanas
 
-  if (periodData[key] !== undefined) {
-    periodData[key] += valor;
-  }
+            // Asumimos que la RPC nos da la semana actual (48) y las anteriores (47, 46, etc.)
+            const weekNumber = getWeekNumber(tempDate);
+            const key = `${weekNumber}`; // Solo el número de semana (ej: '47')
+            
+            if (!range.hasOwnProperty(key)) {
+              range[key] = 0;
+            }
+        }
+    } else if (period === 'monthly') {
+        count = 6; // Últimos 6 meses (para coincidir con tus mocks)
+        for (let i = count - 1; i >= 0; i--) {
+            const tempDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            // Usamos formato simple: 'Nov'
+            const key = tempDate.toLocaleDateString('es-ES', { month: 'short' }); 
+            range[key] = 0;
+        }
+    } else if (period === 'yearly') {
+        count = 5; // Últimos 5 años (para coincidir con tus mocks)
+        for (let i = count - 1; i >= 0; i--) {
+            const year = today.getFullYear() - i;
+            const key = year.toString(); // Ejemplo: '2025'
+            range[key] = 0;
+        }
+    }
+    
+    return range;
 }
 
-// Convertir para gráficos
-function convertPackageForChart(periodData, period) {
-  let labels = Object.keys(periodData);
-  let data = Object.values(periodData);
-
-  // Ordenar labels según el período
-  if (period === 'weekly') {
-    labels = labels.map(day => parseInt(day)).sort((a, b) => a - b).map(day => day.toString());
-  } else if (period === 'monthly') {
-    // Ordenar por fecha (DD/MM)
-    labels = labels.sort((a, b) => {
-      const [dayA, monthA] = a.split('/').map(Number);
-      const [dayB, monthB] = b.split('/').map(Number);
-      return monthA - monthB || dayA - dayB;
-    });
-  } else if (period === 'yearly') {
-    const monthOrder = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    labels = labels.sort((a, b) => monthOrder.indexOf(a.toLowerCase()) - monthOrder.indexOf(b.toLowerCase()));
-  }
-
-  return {
-    labels: labels,
-    data: labels.map(key => periodData[key] || 0)
-  };
+// Función auxiliar para obtener el número de semana (necesario para el relleno de datos)
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo.toString();
 }
 
+
+
+// NUEVA FUNCIÓN AUXILIAR: Estandariza el formato de la clave (key)
+function formatKey(rpcKey, period) {
+    if (period === 'weekly') {
+        // '2025-47' -> '47'
+        return rpcKey.split('-')[1]; 
+    } else if (period === 'monthly') {
+        // '2025-11' -> 'Nov'
+        const [year, month] = rpcKey.split('-');
+        const monthName = new Date(year, month - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
+        return monthName;
+    } else { 
+        // '2025' -> '2025'
+        return rpcKey;
+    }
+}
 
 // ----------------------- Report Control -------------------------------
 function changeReportType(type, event) {
