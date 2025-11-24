@@ -202,8 +202,8 @@
     </div>
 
     <div class="ranking-controls">
-      <button id="sortExchanges" class="active">Ordenar por Intercambios</button>
-      <button id="sortPublications">Ordenar por Publicaciones</button>
+      <button id="sortExchanges" class="active">♻️ Ordenar por Intercambios</button>
+      <button id="sortPublications">📝 Ordenar por Publicaciones</button>
       <button id="update-ranks-btn">🔃 Actualizar</button>
     </div>
 
@@ -340,7 +340,7 @@
         li.innerHTML = `
           <span class="rank-icon">${icon}</span>
           <span>${u.name}</span>
-          <span>📤 ${u.publications} | ♻️ ${u.exchanges}</span>
+          <span>♻️ ${u.exchanges} | 📝 ${u.publications}</span>
         `;
         rankingList.appendChild(li);
       });
