@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma de Reciclaje - Principal</title>
+    <title>Plataforma de Reciclaje - Mis Compras</title>
     <link rel="stylesheet" href="styles/estilos.css">
 
     <style>
@@ -63,7 +63,7 @@
 
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
             padding: 20px 0;
         }
@@ -192,6 +192,85 @@
             border: 1px solid #f5c6cb;
         }
 
+        /* 🆕 ESTILOS PARA CHAT Y CALIFICACIÓN */
+        .mensaje-propio {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 15px;
+        }
+
+        .mensaje-otro {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 15px;
+        }
+
+        .filtros-compras {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filtro-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filtro-btn.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .filtro-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .filtro-btn.active:hover {
+            background: #4CAF50;
+        }
+
+        .info-creditos {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #2196f3;
+            font-size: 0.8rem;
+        }
+
+        .info-completado {
+            background: #d4edda;
+            color: #155724;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+            font-size: 0.8rem;
+        }
+
+        .info-calificacion {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #ffc107;
+            font-size: 0.8rem;
+        }
+
         @media (max-width: 800px) {
             .layout {
                 flex-direction: column;
@@ -205,6 +284,10 @@
             .sidebar {
                 order: 1;
                 width: 100%;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
         }
 
@@ -438,26 +521,29 @@
 
     <main class="layout">
         <aside class="sidebar">
-            <h3>Categorías</h3>
+            <h3>Filtros</h3>
             <ul class="categories" id="categoriesList">
-                <li data-category="all" class="active">Todas las categorías</li>
-                <li data-category="Electrónica">Electrónica</li>
-                <li data-category="Hogar">Artículos para el hogar</li>
-                <li data-category="Ropa">Indumentaria</li>
-                <li data-category="Música">Instrumentos musicales</li>
-                <li data-category="Jardín">Jardín y aire libre</li>
-                <li data-category="Juguetes">Juguetes y juegos</li>
-                <li data-category="Libros">Libros</li>
-                <li data-category="Gratis">Artículos gratuitos</li>
-                <li data-category="Otros">Otros</li>
+                <li data-category="all" class="active">Todas las compras</li>
+                <li data-category="en_proceso">En proceso</li>
+                <li data-category="completado">Completadas</li>
+                <li data-category="cancelado">Canceladas</li>
             </ul>
         </aside>
 
         <section class="content">
-            <h2>Intercambios Destacados</h2>
+            <h2>🛒 Mis Compras</h2>
+            
+            <!-- 🆕 FILTROS MEJORADOS -->
+            <div class="filtros-compras">
+                <button class="filtro-btn active" data-estado="all">Todas</button>
+                <button class="filtro-btn" data-estado="en_proceso">En Proceso</button>
+                <button class="filtro-btn" data-estado="completado">Completadas</button>
+                <button class="filtro-btn" data-estado="cancelado">Canceladas</button>
+            </div>
+
             <div class="product-grid" id="productGrid">
                 <!-- Los productos se cargarán dinámicamente -->
-                <div>Cargando productos...</div>
+                <div>Cargando tus compras...</div>
             </div>
         </section>
     </main>
@@ -470,6 +556,7 @@
         let allPurchases = [];
         let currentCategory = 'all';
         let currentFilter = 'all';
+        let todasLasCompras = [];
 
         // ========== FUNCIONES DE UI MEJORADAS ==========
 
@@ -615,7 +702,7 @@ function actualizarCreditosUI(nuevoSaldo) {
                 const pageTitle = document.querySelector('h2')?.textContent || '';
 
                 if (isMisComprasPage || pageTitle.includes('Mis Compras')) {
-                    console.log('📦 Cargando página de Mis Compras');
+                    console.log('📦 Cargando página de Mis Compras MEJORADA');
                     await loadMisCompras();
                     setupPurchaseFilters();
                 } else {
@@ -818,233 +905,315 @@ function actualizarCreditosUI(nuevoSaldo) {
             }).join('');
         }
 
-        // ========== FUNCIÓN PARA CARGAR MIS COMPRAS ==========
+        // ========== 🆕 FUNCIÓN MEJORADA PARA CARGAR MIS COMPRAS ==========
 
         async function loadMisCompras() {
-    try {
-        console.log('🛒 Cargando mis compras...');
+            try {
+                console.log('🛒 Cargando mis compras con nuevo diseño...');
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
 
-        // PRIMERO: Cargar intercambios donde el usuario es el COMPRADOR
-        const { data: misCompras, error: intercambiosError } = await supabase
-            .from('Intercambio')
-            .select(`
-                *,
-                Publicacion (
-                    id_publicacion,
-                    titulo,
-                    descripcion,
-                    precio,
-                    imagen_url,
-                    nombre_categoria,
-                    usuario_id
-                )
-            `)
-            .eq('usuario_id', user.id) // El usuario es el COMPRADOR
-            .order('fecha_creacion', { ascending: false });
+                // Cargar intercambios como COMPRADOR con más datos
+                const { data: misCompras, error: intercambiosError } = await supabase
+                    .from('Intercambio')
+                    .select(`
+                        *,
+                        Publicacion (
+                            id_publicacion,
+                            titulo,
+                            descripcion,
+                            precio,
+                            imagen_url,
+                            nombre_categoria,
+                            usuario_id
+                        ),
+                        usuario_vendedor_id (
+                            nombre_completo
+                        )
+                    `)
+                    .eq('usuario_id', user.id)
+                    .order('fecha_creacion', { ascending: false });
 
-        if (intercambiosError) {
-            console.error('❌ Error cargando intercambios:', intercambiosError);
-            throw intercambiosError;
-        }
-
-        console.log('✅ Intercambios cargados:', misCompras);
-
-        if (!misCompras || misCompras.length === 0) {
-            allPurchases = [];
-            renderMisCompras(allPurchases);
-            return;
-        }
-
-        // SEGUNDO: Cargar información de custodia para cada intercambio
-        const comprasConCustodia = await Promise.all(
-            misCompras.map(async (compra) => {
-                try {
-                    // Buscar custodia por intercambio_id
-                    const { data: custodia, error: custodiaError } = await supabase
-                        .from('custodia_creditos')
-                        .select('*')
-                        .eq('intercambio_id', compra.id_intercambio)
-                        .maybeSingle(); // Usar maybeSingle para evitar errores si no existe
-
-                    if (custodiaError) {
-                        console.warn(`⚠️ Error cargando custodia para intercambio ${compra.id_intercambio}:`, custodiaError);
-                    }
-
-                    return {
-                        ...compra,
-                        custodia_creditos: custodia ? [custodia] : []
-                    };
-                } catch (error) {
-                    console.error(`💥 Error procesando compra ${compra.id_intercambio}:`, error);
-                    return {
-                        ...compra,
-                        custodia_creditos: []
-                    };
+                if (intercambiosError) {
+                    console.error('❌ Error cargando intercambios:', intercambiosError);
+                    throw intercambiosError;
                 }
-            })
-        );
 
-        console.log('✅ Compras con custodia cargadas:', comprasConCustodia);
-        allPurchases = comprasConCustodia || [];
-        renderMisCompras(allPurchases);
+                console.log('✅ Intercambios cargados:', misCompras);
 
-    } catch (error) {
-        console.error('💥 Error en loadMisCompras:', error);
-        document.getElementById('productGrid').innerHTML = `
-            <div class="no-products">
-                <p>Error al cargar tus compras: ${error.message}</p>
-                <p style="font-size: 0.9rem; color: #888; margin-top: 10px;">
-                    Detalles: ${error.details || 'Sin detalles adicionales'}
-                </p>
-                <button onclick="window.location.reload()" 
-                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    🔄 Reintentar
-                </button>
-            </div>
-        `;
-    }
-}
+                if (!misCompras || misCompras.length === 0) {
+                    todasLasCompras = [];
+                    allPurchases = [];
+                    renderMisCompras(todasLasCompras);
+                    return;
+                }
 
-        // ========== FUNCIÓN PARA RENDERIZAR MIS COMPRAS (SIN CUSTODIA) ==========
+                // Cargar datos adicionales
+                const comprasCompletas = await Promise.all(
+                    misCompras.map(async (compra) => {
+                        let mensajes = [];
+                        let custodia = null;
+                        let calificaciones = [];
 
-function renderMisCompras(compras) {
-    const productGrid = document.getElementById('productGrid');
+                        try {
+                            // Cargar mensajes
+                            const { data: msgsData, error: msgsError } = await supabase
+                                .from('Mensaje')
+                                .select('*')
+                                .eq('intercambio_id', compra.id_intercambio)
+                                .order('fecha_envio', { ascending: true });
+                            if (!msgsError) mensajes = msgsData || [];
 
-    if (!compras || compras.length === 0) {
-        productGrid.innerHTML = `
-            <div class="no-products">
-                <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
-                    📭 No tienes compras realizadas
-                </p>
-                <p style="color: #888; margin-bottom: 20px;">
-                    ¡Explora el marketplace y realiza tu primera compra!
-                </p>
-                <button onclick="window.location.href='principal.html'" 
-                        class="btn-intercambiar" 
-                        style="background: #4CAF50; color: white; border: none; 
-                               padding: 12px 24px; border-radius: 6px; cursor: pointer; 
-                               font-size: 1rem; font-weight: bold;">
-                    🛍️ Ir al Marketplace
-                </button>
-            </div>
-        `;
-        return;
-    }
+                            // Cargar custodia
+                            const { data: custodiaData, error: custodiaError } = await supabase
+                                .from('custodia_creditos')
+                                .select('*')
+                                .eq('intercambio_id', compra.id_intercambio)
+                                .maybeSingle();
+                            if (!custodiaError) custodia = custodiaData;
 
-    productGrid.innerHTML = compras.map(compra => {
-        const publicacion = compra.Publicacion;
-        // const custodia = compra.custodia_creditos?.[0]; // REMOVIDO
-        
-        const titulo = publicacion?.titulo || 'Producto no disponible';
-        const descripcion = publicacion?.descripcion || 'Sin descripción';
-        const precio = compra.creditos_verdes || publicacion?.precio || 0; // Usar créditos_verdes del intercambio
-        const imagen = publicacion?.imagen_url;
-        const estado = compra.estado;
-        const fechaCompra = new Date(compra.fecha_creacion).toLocaleDateString();
-        const idIntercambio = compra.id_intercambio;
-        
-        // Determinar el estado y botones
-        let estadoTexto = '';
-        let estadoClass = '';
-        let botones = '';
+                            // Cargar calificaciones
+                            const { data: calData, error: calError } = await supabase
+                                .from('calificacion')
+                                .select('*')
+                                .eq('intercambio_id', compra.id_intercambio)
+                                .eq('calificador_id', user.id);
+                            if (!calError) calificaciones = calData || [];
 
-        switch(estado) {
-            case 'en_proceso':
-                estadoTexto = '🟡 En proceso';
-                estadoClass = 'status-en_proceso';
-                botones = `
-                    <button class="btn-intercambiar" onclick="confirmarRecepcion(${idIntercambio})" 
-                            style="background: #4CAF50;">
-                        ✅ Confirmar Recepción
-                    </button>
-                    <button class="btn-intercambiar" onclick="cancelarIntercambio(${idIntercambio})" 
-                            style="background: #f44336; margin-top: 5px;">
-                        ❌ Cancelar Compra
-                    </button>
+                        } catch (error) {
+                            console.error(`Error cargando datos para compra ${compra.id_intercambio}:`, error);
+                        }
+
+                        return {
+                            ...compra,
+                            mensajes: mensajes,
+                            custodia: custodia,
+                            calificaciones: calificaciones
+                        };
+                    })
+                );
+
+                todasLasCompras = comprasCompletas;
+                allPurchases = comprasCompletas;
+                renderMisCompras(todasLasCompras);
+
+            } catch (error) {
+                console.error('💥 Error en loadMisCompras:', error);
+                document.getElementById('productGrid').innerHTML = `
+                    <div class="no-products">
+                        <p>Error al cargar tus compras: ${error.message}</p>
+                        <p style="font-size: 0.9rem; color: #888; margin-top: 10px;">
+                            Detalles: ${error.details || 'Sin detalles adicionales'}
+                        </p>
+                        <button onclick="window.location.reload()" 
+                                style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Reintentar
+                        </button>
+                    </div>
                 `;
-                break;
-            case 'completado':
-                estadoTexto = '✅ Completado';
-                estadoClass = 'status-completado';
-                botones = `
-                    <button class="btn-intercambiar" style="background: #2196F3; cursor: default;">
-                        🎉 Compra Finalizada
-                    </button>
-                `;
-                break;
-            case 'cancelado':
-                estadoTexto = '❌ Cancelado';
-                estadoClass = 'status-cancelado';
-                botones = `
-                    <button class="btn-intercambiar" style="background: #9E9E9E; cursor: default;">
-                        📄 Ver Detalles
-                    </button>
-                `;
-                break;
-            default:
-                estadoTexto = '⚪ ' + estado;
-                estadoClass = 'status-en_proceso';
+            }
         }
 
-        return `
-            <div class="product-card" data-compra-id="${idIntercambio}">
-                ${imagen ? `
-                    <img src="${imagen}" alt="${titulo}" 
-                         style="width: 100%; height: 150px; object-fit: cover;"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                ` : ''}
-                ${!imagen ? `
-                    <div style="width: 100%; height: 150px; background: #f0f0f0; 
-                               display: flex; align-items: center; justify-content: center;">
-                        <span style="color: #999;">Sin imagen</span>
+        // ========== 🆕 FUNCIÓN MEJORADA PARA RENDERIZAR MIS COMPRAS ==========
+
+        function renderMisCompras(compras) {
+            const productGrid = document.getElementById('productGrid');
+
+            if (!compras || compras.length === 0) {
+                let mensaje = '';
+                switch(currentFilter) {
+                    case 'en_proceso':
+                        mensaje = 'No tienes compras en proceso';
+                        break;
+                    case 'completado':
+                        mensaje = 'No tienes compras completadas';
+                        break;
+                    case 'cancelado':
+                        mensaje = 'No tienes compras canceladas';
+                        break;
+                    default:
+                        mensaje = 'No tienes compras realizadas';
+                }
+
+                productGrid.innerHTML = `
+                    <div class="no-products">
+                        <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
+                            📭 ${mensaje}
+                        </p>
+                        <p style="color: #888; margin-bottom: 20px;">
+                            ¡Explora el marketplace y realiza tu primera compra!
+                        </p>
+                        <button onclick="window.location.href='principal.html'" 
+                                class="btn-intercambiar" 
+                                style="background: #4CAF50; color: white; border: none; 
+                                       padding: 12px 24px; border-radius: 6px; cursor: pointer; 
+                                       font-size: 1rem; font-weight: bold;">
+                            🛍️ Ir al Marketplace
+                        </button>
                     </div>
-                ` : ''}
+                `;
+                return;
+            }
+
+            productGrid.innerHTML = compras.map(compra => {
+                const publicacion = compra.Publicacion;
+                const precio = compra.creditos_verdes || 0;
+                const tieneMensajes = compra.mensajes && compra.mensajes.length > 0;
+                const creditosRetenidos = compra.custodia && compra.custodia.estado === 'retenido';
+                const tieneCalificacion = compra.calificaciones && compra.calificaciones.length > 0;
                 
-                <div class="credits">${precio} ♻️</div>
-                
-                <div class="status-badge ${estadoClass}">${estadoTexto}</div>
-                
-                <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
-                <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; 
-                         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
-                         overflow: hidden;">
-                   ${descripcion}
-                </p>
-                
-                <!-- Información de la compra -->
-                <div style="padding: 0 10px; margin-bottom: 10px;">
-                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
-                        <strong>Fecha de compra:</strong> ${fechaCompra}
-                    </p>
-                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
-                        <strong>ID de intercambio:</strong> #${idIntercambio}
-                    </p>
-                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
-                        <strong>Créditos:</strong> ${precio} ♻️
-                    </p>
-                </div>
-                
-                ${botones}
-            </div>
-        `;
-    }).join('');
-}
+                // Contar mensajes no leídos
+                let mensajesNoLeidos = 0;
+                if (tieneMensajes) {
+                    mensajesNoLeidos = compra.mensajes.filter(m => 
+                        m.receptor_id === currentUserId && !m.leido
+                    ).length;
+                }
+
+                const estado = compra.estado || 'en_proceso';
+                const nombreVendedor = compra.usuario_vendedor_id?.nombre_completo || 'Vendedor';
+                const tituloProducto = publicacion?.titulo || 'Producto';
+                const imagenProducto = publicacion?.imagen_url;
+                const fechaCompra = new Date(compra.fecha_creacion).toLocaleDateString();
+                const idIntercambio = compra.id_intercambio;
+
+                // 🆕 BOTONES MEJORADOS CON MÁS OPCIONES
+                let botones = '';
+                switch(estado) {
+                    case 'en_proceso':
+                        botones = `
+                            <button class="btn-intercambiar" onclick="confirmarRecepcion(${idIntercambio})" 
+                                    style="background: #4CAF50; margin-bottom: 5px;">
+                                ✅ Confirmar Recepción
+                            </button>
+                            <button class="btn-intercambiar" onclick="cancelarIntercambio(${idIntercambio})" 
+                                    style="background: #f44336; margin-bottom: 5px;">
+                                ❌ Cancelar Compra
+                            </button>
+                            <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')"
+                                    style="background: #17a2b8;">
+                                💬 ${tieneMensajes ? 'Ver Chat' : 'Contactar Vendedor'}
+                                ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
+                            </button>
+                        `;
+                        break;
+                    case 'completado':
+                        botones = `
+                            ${!tieneCalificacion ? `
+                                <button class="btn-intercambiar" onclick="abrirModalCalificacion(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}')"
+                                        style="background: #ffc107; color: #000; margin-bottom: 5px;">
+                                    ⭐ Calificar Vendedor
+                                </button>
+                            ` : ''}
+                            <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')"
+                                    style="background: #17a2b8;">
+                                💬 Ver Chat
+                                ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
+                            </button>
+                        `;
+                        break;
+                    case 'cancelado':
+                        botones = `
+                            <button class="btn-intercambiar" style="background: #9E9E9E; cursor: default;">
+                                📄 Compra Cancelada
+                            </button>
+                        `;
+                        break;
+                }
+
+                // 🆕 TARJETA MEJORADA
+                return `
+                    <div class="product-card" data-compra-id="${idIntercambio}" style="text-align: left;">
+                        ${imagenProducto ? `
+                            <img src="${imagenProducto}" alt="${tituloProducto}" 
+                                 style="width: 100%; height: 150px; object-fit: cover;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        ` : ''}
+                        ${!imagenProducto ? `
+                            <div style="width: 100%; height: 150px; background: #f0f0f0; 
+                                       display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: #999;">Sin imagen</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="credits">${precio} ♻️</div>
+                        
+                        <div class="status-badge status-${estado}">
+                            ${estado === 'en_proceso' ? '🟡 En proceso' : 
+                              estado === 'completado' ? '✅ Completado' : 
+                              '❌ Cancelado'}
+                        </div>
+                        
+                        <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${tituloProducto}</p>
+                        
+                        <!-- 🆕 INFORMACIÓN ADICIONAL -->
+                        <div style="padding: 0 10px; margin-bottom: 10px;">
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>Vendedor:</strong> ${nombreVendedor}
+                            </p>
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>Fecha:</strong> ${fechaCompra}
+                            </p>
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>ID:</strong> #${idIntercambio}
+                            </p>
+                        </div>
+                        
+                        ${creditosRetenidos ? `
+                            <div class="info-creditos">
+                                <strong>${precio} créditos en custodia</strong>
+                                <br>
+                                <small>Esperando confirmación de recepción</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${compra.custodia && compra.custodia.estado === 'liberado' ? `
+                            <div class="info-completado">
+                                <strong>✅ Créditos liberados</strong>
+                                <br>
+                                <small>Recepción confirmada</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${tieneCalificacion ? `
+                            <div class="info-calificacion">
+                                <strong>⭐ Calificado: ${compra.calificaciones[0].puntuacion}/5</strong>
+                                ${compra.calificaciones[0].comentario ? `<br><em>"${compra.calificaciones[0].comentario}"</em>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        ${botones}
+                    </div>
+                `;
+            }).join('');
+        }
 
         // ========== FILTROS DE COMPRAS ==========
 
         function setupPurchaseFilters() {
             const filterItems = document.querySelectorAll('#categoriesList li');
+            const filtroBtns = document.querySelectorAll('.filtro-btn');
 
+            // Filtros de categoría (sidebar)
             filterItems.forEach(item => {
                 item.addEventListener('click', () => {
                     filterItems.forEach(li => li.classList.remove('active'));
                     item.classList.add('active');
 
-                    currentFilter = item.dataset.category;
-                    filterPurchasesByStatus(currentFilter);
+                    currentCategory = item.dataset.category;
+                    filterPurchasesByStatus(currentCategory);
+                });
+            });
+
+            // Filtros de estado (botones)
+            filtroBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filtroBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    currentFilter = btn.dataset.estado;
+                    aplicarFiltroCompras(currentFilter);
                 });
             });
         }
@@ -1059,6 +1228,21 @@ function renderMisCompras(compras) {
             }
             
             renderMisCompras(filteredPurchases);
+        }
+
+        // 🆕 FUNCIÓN PARA APLICAR FILTROS MEJORADA
+        function aplicarFiltroCompras(filtro) {
+            currentFilter = filtro;
+            
+            let comprasFiltradas = [];
+            
+            if (filtro === 'all') {
+                comprasFiltradas = todasLasCompras;
+            } else {
+                comprasFiltradas = todasLasCompras.filter(compra => compra.estado === filtro);
+            }
+            
+            renderMisCompras(comprasFiltradas);
         }
 
         // ========== FILTROS Y BÚSQUEDA (MARKETPLACE) ==========
@@ -1090,7 +1274,7 @@ function renderMisCompras(compras) {
                 // Dependiendo de la página actual, aplicar el filtro correspondiente
                 const isMisComprasPage = window.location.pathname.includes('mis-compras.html');
                 if (isMisComprasPage) {
-                    filterPurchasesByStatus(currentFilter);
+                    aplicarFiltroCompras(currentFilter);
                 } else {
                     filterProductsByCategory(currentCategory);
                 }
@@ -1100,9 +1284,10 @@ function renderMisCompras(compras) {
             // Buscar en la página actual
             const isMisComprasPage = window.location.pathname.includes('mis-compras.html');
             if (isMisComprasPage) {
-                const filteredPurchases = allPurchases.filter(p =>
+                const filteredPurchases = todasLasCompras.filter(p =>
                     (p.Publicacion?.titulo || '').toLowerCase().includes(searchTerm) ||
-                    (p.Publicacion?.descripcion || '').toLowerCase().includes(searchTerm)
+                    (p.Publicacion?.descripcion || '').toLowerCase().includes(searchTerm) ||
+                    (p.usuario_vendedor_id?.nombre_completo || '').toLowerCase().includes(searchTerm)
                 );
                 renderMisCompras(filteredPurchases);
             } else {
@@ -1721,6 +1906,255 @@ async function reactivarPublicacion(publicacionId) {
                 throw error;
             }
         }
+
+        // ========== 🆕 FUNCIONES NUEVAS PARA CHAT Y CALIFICACIÓN ==========
+
+        // 🆕 FUNCIÓN PARA ABRIR CHAT DESDE MIS COMPRAS
+        window.abrirChatCompra = async function(intercambioId, tituloProducto, vendedorId) {
+            try {
+                console.log('💬 Abriendo chat para compra:', intercambioId);
+                
+                // Crear modal de chat
+                const modal = document.createElement('div');
+                modal.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                               background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                               align-items: center; z-index: 9999;">
+                        <div style="background: white; width: 90%; max-width: 600px; max-height: 80vh; 
+                                   border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+                            <div style="background: #4CAF50; color: white; padding: 20px; 
+                                       display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0;">💬 Chat: ${tituloProducto}</h3>
+                                <button id="cerrar-chat-compra" 
+                                        style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+                            </div>
+                            <div id="cuerpo-chat-compra" style="padding: 20px; flex: 1; overflow-y: auto; max-height: 400px;">
+                                Cargando mensajes...
+                            </div>
+                            <div style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #e0e0e0;">
+                                <input type="text" id="input-mensaje-compra" placeholder="Escribe tu mensaje..." 
+                                       style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                <button id="enviar-mensaje-compra" 
+                                        style="background: #4CAF50; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer;">
+                                    Enviar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Cargar mensajes existentes
+                await cargarMensajesChat(intercambioId, 'cuerpo-chat-compra');
+
+                // Configurar eventos
+                modal.querySelector('#cerrar-chat-compra').onclick = () => {
+                    modal.remove();
+                };
+
+                modal.querySelector('#enviar-mensaje-compra').onclick = () => {
+                    enviarMensajeChat(intercambioId, vendedorId, 'input-mensaje-compra', 'cuerpo-chat-compra');
+                };
+
+                modal.querySelector('#input-mensaje-compra').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        enviarMensajeChat(intercambioId, vendedorId, 'input-mensaje-compra', 'cuerpo-chat-compra');
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error abriendo chat:', error);
+                alert('Error al abrir el chat: ' + error.message);
+            }
+        };
+
+        // 🆕 FUNCIÓN PARA CARGAR MENSAJES EN EL CHAT
+        async function cargarMensajesChat(intercambioId, contenedorId) {
+            try {
+                const { data: mensajes, error } = await supabase
+                    .from('Mensaje')
+                    .select('*')
+                    .eq('intercambio_id', intercambioId)
+                    .order('fecha_envio', { ascending: true });
+
+                if (error) throw error;
+
+                const cuerpoChat = document.getElementById(contenedorId);
+                cuerpoChat.innerHTML = '';
+
+                if (mensajes && mensajes.length > 0) {
+                    mensajes.forEach(mensaje => {
+                        const esPropio = mensaje.emisor_id === currentUserId;
+                        const mensajeDiv = document.createElement('div');
+                        mensajeDiv.className = esPropio ? 'mensaje-propio' : 'mensaje-otro';
+                        mensajeDiv.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                ${esPropio ? 'Tú' : 'Vendedor'}
+                            </div>
+                            <div>${mensaje.contenido}</div>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                                ${new Date(mensaje.fecha_envio).toLocaleString()}
+                            </div>
+                        `;
+                        cuerpoChat.appendChild(mensajeDiv);
+                    });
+                } else {
+                    cuerpoChat.innerHTML = '<p style="text-align: center; color: #666;">No hay mensajes aún. Sé el primero en escribir.</p>';
+                }
+
+                // Scroll al final
+                cuerpoChat.scrollTop = cuerpoChat.scrollHeight;
+
+            } catch (error) {
+                console.error('Error cargando mensajes:', error);
+                document.getElementById(contenedorId).innerHTML = '<p style="color: red;">Error cargando mensajes</p>';
+            }
+        }
+
+        // 🆕 FUNCIÓN PARA ENVIAR MENSAJE EN EL CHAT
+        async function enviarMensajeChat(intercambioId, vendedorId, inputId, contenedorId) {
+            const input = document.getElementById(inputId);
+            const mensaje = input.value.trim();
+
+            if (!mensaje) return;
+
+            try {
+                const { error: insertError } = await supabase
+                    .from('Mensaje')
+                    .insert([{
+                        contenido: mensaje,
+                        fecha_envio: new Date(),
+                        intercambio_id: intercambioId,
+                        emisor_id: currentUserId,
+                        receptor_id: vendedorId
+                    }]);
+
+                if (insertError) throw insertError;
+
+                input.value = '';
+                await cargarMensajesChat(intercambioId, contenedorId);
+
+            } catch (error) {
+                console.error('Error enviando mensaje:', error);
+                alert('Error al enviar el mensaje');
+            }
+        }
+
+        // 🆕 FUNCIÓN PARA ABRIR MODAL DE CALIFICACIÓN
+        window.abrirModalCalificacion = function(intercambioId, tituloProducto) {
+            // Crear modal de calificación
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                           background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                           align-items: center; z-index: 9999;">
+                    <div style="background: white; padding: 25px; border-radius: 15px; 
+                               text-align: center; max-width: 400px; width: 90%;">
+                        <h3 style="margin-top: 0; color: #333;">⭐ Calificar Vendedor</h3>
+                        <p style="color: #666; margin-bottom: 15px;">
+                            Producto: <strong>"${tituloProducto}"</strong>
+                        </p>
+                        
+                        <div style="display: flex; justify-content: center; gap: 10px; margin: 20px 0; font-size: 2rem; cursor: pointer;">
+                            <span class="estrella-cal" data-puntuacion="1">★</span>
+                            <span class="estrella-cal" data-puntuacion="2">★</span>
+                            <span class="estrella-cal" data-puntuacion="3">★</span>
+                            <span class="estrella-cal" data-puntuacion="4">★</span>
+                            <span class="estrella-cal" data-puntuacion="5">★</span>
+                        </div>
+                        
+                        <textarea id="comentarioCalificacion" 
+                                 placeholder="Escribe un comentario opcional..." 
+                                 style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px;"></textarea>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button id="cancelar-calificacion" 
+                                    style="background: #f44336; color: white; border: none; 
+                                           padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                ❌ Cancelar
+                            </button>
+                            <button id="enviar-calificacion" 
+                                    style="background: #4CAF50; color: white; border: none; 
+                                           padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                ✅ Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            let puntuacionSeleccionada = 0;
+            const estrellas = modal.querySelectorAll('.estrella-cal');
+
+            // Configurar estrellas
+            estrellas.forEach(estrella => {
+                estrella.style.color = '#ddd';
+                estrella.addEventListener('click', function() {
+                    const puntuacion = parseInt(this.dataset.puntuacion);
+                    puntuacionSeleccionada = puntuacion;
+                    
+                    // Actualizar visualización
+                    estrellas.forEach((est, index) => {
+                        est.style.color = index < puntuacion ? '#ffc107' : '#ddd';
+                    });
+                });
+            });
+
+            // Manejar envío
+            modal.querySelector('#enviar-calificacion').onclick = async () => {
+                if (puntuacionSeleccionada === 0) {
+                    alert('Por favor selecciona una puntuación');
+                    return;
+                }
+
+                try {
+                    mostrarLoadingCompra('Enviando calificación...');
+
+                    // Obtener datos del intercambio
+                    const { data: intercambio, error: intercambioError } = await supabase
+                        .from('Intercambio')
+                        .select('usuario_vendedor_id')
+                        .eq('id_intercambio', intercambioId)
+                        .single();
+
+                    if (intercambioError) throw intercambioError;
+
+                    const comentario = modal.querySelector('#comentarioCalificacion').value.trim();
+
+                    // Insertar calificación
+                    const { error: calificacionError } = await supabase
+                        .from('calificacion')
+                        .insert([{
+                            puntuacion: puntuacionSeleccionada,
+                            comentario: comentario || null,
+                            fecha_calificacion: new Date(),
+                            intercambio_id: intercambioId,
+                            calificador_id: currentUserId,
+                            calificado_id: intercambio.usuario_vendedor_id
+                        }]);
+
+                    if (calificacionError) throw calificacionError;
+
+                    modal.remove();
+                    ocultarLoadingCompra();
+                    mostrarNotificacion('✅ Calificación enviada correctamente', 'success');
+                    
+                    // Recargar compras
+                    await loadMisCompras();
+
+                } catch (error) {
+                    console.error('Error enviando calificación:', error);
+                    ocultarLoadingCompra();
+                    alert('Error al enviar la calificación: ' + error.message);
+                }
+            };
+
+            // Cancelar
+            modal.querySelector('#cancelar-calificacion').onclick = () => {
+                modal.remove();
+            };
+        };
 
         // ========== CERRAR SESIÓN ==========
 
