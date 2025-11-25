@@ -595,9 +595,10 @@
 
                 // Cargar TODAS las publicaciones
                 const { data: todasPublicaciones, error } = await supabase
-                    .from('Publicacion')
-                    .select('*')
-                    .order('id_publicacion', { ascending: false });
+    .from('Publicacion')
+    .select('*')
+    .eq('estado', 'activo') // Solo publicaciones activas
+    .order('id_publicacion', { ascending: false });
 
                 if (error) {
                     console.error('❌ Error:', error);
@@ -703,187 +704,162 @@
         // ========== FUNCIÓN REALIZAR COMPRA MEJORADA ==========
 
         window.realizarCompra = async function(producto) {
-            try {
-                console.log('🛒 1. Iniciando proceso de compra...', producto);
-                
-                // Mostrar loading inmediatamente
-                mostrarLoadingCompra("Verificando disponibilidad...");
-                console.log('🛒 2. Loading mostrado');
+    try {
+        console.log('🛒 Iniciando proceso de compra...', producto);
+        
+        mostrarLoadingCompra("Verificando disponibilidad...");
 
-                // 1. Obtener saldo REAL desde base de datos
-                console.log('🛒 3. Obteniendo saldo desde usuario...');
-                const { data: usuario, error: usuarioError } = await supabase
-                    .from('usuario')
-                    .select('saldo_creditos')
-                    .eq('auth_id', currentUserId)
-                    .single();
+        // 1. Obtener saldo REAL desde base de datos
+        const { data: usuario, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', currentUserId)
+            .single();
 
-                console.log('🛒 4. Resultado usuario:', usuario, usuarioError);
+        if (usuarioError) throw new Error('Error al verificar saldo: ' + usuarioError.message);
 
-                if (usuarioError) throw new Error('Error al verificar saldo: ' + usuarioError.message);
-
-                const saldoReal = usuario.saldo_creditos || 0;
-                const precio = producto.precio || 0;
-                
-                console.log('🛒 5. Saldo:', saldoReal, 'Precio:', precio);
-
-                // 2. Validaciones robustas
-                if (producto.usuario_id === currentUserId) {
-                    console.log('🛒 6. Es propia publicación');
-                    ocultarLoadingCompra();
-                    mostrarNotificacion('❌ No puedes comprar tu propia publicación', 'error');
-                    return;
-                }
-
-                if (saldoReal < precio) {
-                    console.log('🛒 7. Saldo insuficiente');
-                    ocultarLoadingCompra();
-                    mostrarNotificacion(`❌ Saldo insuficiente. Necesitas ${precio} créditos`, 'error');
-                    setTimeout(() => {
-                        window.location.href = 'compra.html';
-                    }, 2000);
-                    return;
-                }
-
-                console.log('🛒 8. Validaciones pasadas, mostrando confirmación...');
-
-                // 3. Confirmación de compra
-                ocultarLoadingCompra();
-                const titulo = producto.titulo || 'Producto';
-                const confirmacion = await new Promise((resolve) => {
-                    console.log('🛒 9. Creando modal de confirmación...');
-                    // Crear modal de confirmación personalizado
-                    const modal = document.createElement('div');
-                    modal.innerHTML = `
-                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                                   background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
-                                   align-items: center; z-index: 9999;">
-                            <div style="background: white; padding: 25px; border-radius: 15px; 
-                                       text-align: center; max-width: 400px; width: 90%;">
-                                <h3 style="margin-top: 0; color: #333;">¿Confirmar compra?</h3>
-                                <p style="color: #666; margin-bottom: 20px;">
-                                    <strong>"${titulo}"</strong><br>
-                                    Precio: <strong>${precio} créditos ♻️</strong><br><br>
-                                    Los créditos quedarán en custodia hasta que confirmes la recepción del producto.
-                                </p>
-                                <div style="display: flex; gap: 10px; justify-content: center;">
-                                    <button id="confirmar-compra" 
-                                            style="background: #4CAF50; color: white; border: none; 
-                                                   padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                                        ✅ Confirmar
-                                    </button>
-                                    <button id="cancelar-compra" 
-                                            style="background: #f44336; color: white; border: none; 
-                                                   padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                                        ❌ Cancelar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(modal);
-                    console.log('🛒 10. Modal agregado al DOM');
-
-                    // Manejar eventos de los botones
-                    document.getElementById('confirmar-compra').onclick = () => {
-                        console.log('🛒 11. Usuario confirmó la compra');
-                        modal.remove();
-                        resolve(true);
-                    };
-                    document.getElementById('cancelar-compra').onclick = () => {
-                        console.log('🛒 12. Usuario canceló la compra');
-                        modal.remove();
-                        resolve(false);
-                    };
-                });
-
-                if (!confirmacion) {
-                    console.log('🛒 13. Compra cancelada por el usuario');
-                    return;
-                }
-
-                console.log('🛒 14. Procediendo con compra...');
-                // 4. Proceder con compra
-                mostrarLoadingCompra("Procesando tu compra...");
-                await crearIntercambio(producto, precio);
-                
-                ocultarLoadingCompra();
-                mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos en custodia.`, 'success');
-                console.log('🛒 15. Compra completada exitosamente');
-
-                // 5. Recargar publicaciones después de 2 segundos
-                setTimeout(async () => {
-                    await loadAllProducts();
-                }, 2000);
-
-            } catch (error) {
-                console.error('❌ Error en la compra:', error);
-                ocultarLoadingCompra();
-                mostrarNotificacion('❌ Error al procesar la compra: ' + error.message, 'error');
-            }
+        const saldoReal = usuario.saldo_creditos || 0;
+        const precio = producto.precio || 0;
+        
+        // 2. Validaciones
+        if (producto.usuario_id === currentUserId) {
+            ocultarLoadingCompra();
+            mostrarNotificacion('❌ No puedes comprar tu propia publicación', 'error');
+            return;
         }
 
-        // ========== FUNCIÓN CREAR INTERCAMBIO COMPLETA ==========
-
-        window.crearIntercambio = async function(producto, precio) {
-            try {
-                console.log('🔄 Creando intercambio y custodia para producto:', producto.id_publicacion);
-                
-                // VERIFICAR que la publicación sigue activa
-                const { data: publicacion, error: pubError } = await supabase
-                    .from('Publicacion')
-                    .select('*')
-                    .eq('id_publicacion', producto.id_publicacion)
-                    .eq('estado', 'activo')
-                    .single();
-
-                if (pubError || !publicacion) {
-                    throw new Error('La publicación ya no está disponible');
-                }
-
-                // 1. CREAR INTERCAMBIO
-                const { data: intercambioData, error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .insert([{
-                        creditos_verdes: Number(precio),
-                        cantidad: 1,
-                        estado: 'en_proceso',
-                        fecha_creacion: new Date().toISOString(),
-                        fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                        publicacion_id: producto.id_publicacion,
-                        usuario_id: currentUserId,              // Comprador
-                        usuario_vendedor_id: producto.usuario_id // Vendedor
-                    }])
-                    .select();
-
-                if (intercambioError) {
-                    console.error('❌ Error creando intercambio:', intercambioError);
-                    throw intercambioError;
-                }
-
-                const intercambioId = intercambioData[0].id_intercambio;
-                console.log('✅ Intercambio creado:', intercambioId);
-
-                // 2. RETENER CRÉDITOS EN CUSTODIA
-                await retenerCreditosEnCustodia(
-                    intercambioId, 
-                    currentUserId,              // comprador_id
-                    precio, 
-                    producto.usuario_id         // oferente_id (vendedor)
-                );
-
-                // 3. ACTUALIZAR BILLETERA del comprador (reducir créditos disponibles)
-                await actualizarBilleteraCompra(currentUserId, precio);
-
-                console.log('✅ Proceso completo: Intercambio + Custodia + Billetera');
-
-                return intercambioId;
-
-            } catch (error) {
-                console.error('❌ Error en crearIntercambio:', error);
-                throw error;
-            }
+        if (saldoReal < precio) {
+            ocultarLoadingCompra();
+            mostrarNotificacion(`❌ Saldo insuficiente. Necesitas ${precio} créditos`, 'error');
+            setTimeout(() => {
+                window.location.href = 'compra.html';
+            }, 2000);
+            return;
         }
+
+        // 3. Confirmación de compra
+        ocultarLoadingCompra();
+        const confirmacion = await mostrarConfirmacionCompra(producto.titulo, precio);
+        
+        if (!confirmacion) {
+            console.log('Compra cancelada por el usuario');
+            return;
+        }
+
+        // 4. Proceder con compra (USANDO NUEVA FUNCIÓN)
+        mostrarLoadingCompra("Procesando tu compra...");
+        await crearIntercambio(producto, precio);
+        
+        ocultarLoadingCompra();
+        mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos descontados.`, 'success');
+
+        // 5. Recargar publicaciones
+        setTimeout(async () => {
+            await loadAllProducts();
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Error en la compra:', error);
+        ocultarLoadingCompra();
+        mostrarNotificacion('❌ Error al procesar la compra: ' + error.message, 'error');
+    }
+}
+
+        // ========== FUNCIÓN CREAR INTERCAMBIO SIMPLIFICADA ==========
+window.crearIntercambio = async function(producto, precio) {
+    try {
+        console.log('🔄 Creando intercambio simplificado para producto:', producto.id_publicacion);
+        
+        // VERIFICAR que la publicación sigue activa
+        const { data: publicacion, error: pubError } = await supabase
+            .from('Publicacion')
+            .select('*')
+            .eq('id_publicacion', producto.id_publicacion)
+            .eq('estado', 'activo')
+            .single();
+
+        if (pubError || !publicacion) {
+            throw new Error('La publicación ya no está disponible o fue vendida');
+        }
+
+        // USAR LA FUNCIÓN DE POSTGRESQL PARA TRANSACCIÓN SEGURA
+        const { data: resultado, error: transaccionError } = await supabase
+            .rpc('realizar_compra_transaccion', {
+                p_comprador_id: currentUserId,
+                p_vendedor_id: producto.usuario_id,
+                p_publicacion_id: producto.id_publicacion,
+                p_precio: Number(precio)
+            });
+
+        if (transaccionError) {
+            console.error('❌ Error en transacción:', transaccionError);
+            throw new Error(transaccionError.message);
+        }
+
+        console.log('✅ Transacción completada:', resultado);
+        
+        // ACTUALIZAR CUSTODIA (opcional - si decides mantenerla)
+        await retenerCreditosEnCustodia(
+            resultado.intercambio_id, 
+            currentUserId,
+            precio, 
+            producto.usuario_id
+        );
+
+        return resultado.intercambio_id;
+
+    } catch (error) {
+        console.error('❌ Error en crearIntercambio:', error);
+        throw error;
+    }
+}
+
+// ========== FUNCIÓN PARA ACTUALIZAR SALDO EN TABLA USUARIO ==========
+async function actualizarSaldoUsuario(usuarioId, monto) {
+    try {
+        console.log('💰 Actualizando saldo en tabla usuario:', { usuarioId, monto });
+        
+        // 1. Obtener saldo actual desde usuario
+        const { data: usuario, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', usuarioId)
+            .single();
+
+        if (usuarioError) {
+            console.error('❌ Error obteniendo saldo del usuario:', usuarioError);
+            throw usuarioError;
+        }
+
+        const saldoActual = parseFloat(usuario.saldo_creditos) || 0;
+        const montoNum = parseFloat(monto);
+        const nuevoSaldo = saldoActual + montoNum;
+
+        console.log('💰 Saldo usuario - Actual:', saldoActual, 'Cambio:', montoNum, 'Nuevo saldo:', nuevoSaldo);
+
+        // 2. Actualizar tabla usuario
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: nuevoSaldo
+            })
+            .eq('auth_id', usuarioId);
+
+        if (updateError) {
+            console.error('❌ Error actualizando saldo en usuario:', updateError);
+            throw updateError;
+        }
+
+        // 3. Actualizar UI
+        actualizarCreditosUI(nuevoSaldo);
+
+        console.log('✅ Saldo actualizado en tabla usuario:', nuevoSaldo);
+
+    } catch (error) {
+        console.error('❌ Error actualizando saldo usuario:', error);
+        throw error;
+    }
+}
 
         // ========== FUNCIÓN RETENER CRÉDITOS EN CUSTODIA ==========
 
@@ -950,61 +926,7 @@
 
         // ========== FUNCIÓN ACTUALIZAR BILLETERA COMPRA ==========
 
-        async function actualizarBilleteraCompra(usuarioId, monto) {
-            try {
-                console.log('🔄 Actualizando billetera después de compra:', { usuarioId, monto });
-                
-                // Obtener billetera actual del COMPRADOR
-                const { data: billetera, error: billeteraError } = await supabase
-                    .from('billetera')
-                    .select('*')
-                    .eq('usuario_id', usuarioId)
-                    .single();
-
-                if (billeteraError) throw billeteraError;
-
-                if (!billetera) {
-                    throw new Error('No se encontró la billetera del comprador');
-                }
-
-                // Calcular nuevos valores (asegurar que son números)
-                const creditoActual = parseFloat(billetera.credito_actual) || 0;
-                const creditoRetenido = parseFloat(billetera.credito_retenido) || 0;
-                const montoNum = parseFloat(monto) || 0;
-
-                const nuevoActual = creditoActual - montoNum;
-                const nuevoRetenido = creditoRetenido + montoNum;
-
-                console.log('📊 Actualizando billetera comprador:', {
-                    anterior_actual: creditoActual,
-                    anterior_retenido: creditoRetenido,
-                    nuevo_actual: nuevoActual,
-                    nuevo_retenido: nuevoRetenido
-                });
-
-                // Validar que tenga saldo suficiente
-                if (nuevoActual < 0) {
-                    throw new Error('Saldo insuficiente en la billetera');
-                }
-
-                // Actualizar billetera del COMPRADOR
-                const { error: updateError } = await supabase
-                    .from('billetera')
-                    .update({
-                        credito_actual: nuevoActual,
-                        credito_retenido: nuevoRetenido,
-                        ultima_actualizacion: new Date().toISOString()
-                    })
-                    .eq('usuario_id', usuarioId);
-
-                if (updateError) throw updateError;
-                console.log('✅ Billetera del comprador actualizada después de compra');
-
-            } catch (error) {
-                console.error('❌ Error actualizando billetera después de compra:', error);
-                throw error;
-            }
-        }
+        
 
         // ========== FUNCIONES DE CONFIRMACIÓN Y CANCELACIÓN ==========
 
@@ -1291,6 +1213,79 @@
                 throw error;
             }
         }
+
+        // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
+function actualizarCreditosUI(nuevoSaldo) {
+    try {
+        console.log('🔄 Actualizando UI de créditos:', nuevoSaldo);
+        
+        // Actualizar en la topbar
+        const topCreditsElement = document.getElementById('topCredits');
+        if (topCreditsElement) {
+            topCreditsElement.textContent = nuevoSaldo;
+        }
+        
+        // Actualizar en localStorage
+        localStorage.setItem('user_saldo', nuevoSaldo);
+        
+        console.log('✅ UI de créditos actualizada');
+        
+    } catch (error) {
+        console.error('❌ Error actualizando UI de créditos:', error);
+    }
+}
+
+// ========== FUNCIÓN PARA MOSTRAR CONFIRMACIÓN DE COMPRA ==========
+function mostrarConfirmacionCompra(titulo, precio) {
+    return new Promise((resolve) => {
+        console.log('🔄 Creando modal de confirmación...');
+        
+        // Crear modal de confirmación personalizado
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                       background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                       align-items: center; z-index: 9999;">
+                <div style="background: white; padding: 25px; border-radius: 15px; 
+                           text-align: center; max-width: 400px; width: 90%;">
+                    <h3 style="margin-top: 0; color: #333;">¿Confirmar compra?</h3>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        <strong>"${titulo}"</strong><br>
+                        Precio: <strong>${precio} créditos ♻️</strong><br><br>
+                        Los créditos quedarán en custodia hasta que confirmes la recepción del producto.
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="confirmar-compra" 
+                                style="background: #4CAF50; color: white; border: none; 
+                                       padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            ✅ Confirmar
+                        </button>
+                        <button id="cancelar-compra" 
+                                style="background: #f44336; color: white; border: none; 
+                                       padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            ❌ Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        console.log('✅ Modal agregado al DOM');
+
+        // Manejar eventos de los botones
+        document.getElementById('confirmar-compra').onclick = () => {
+            console.log('✅ Usuario confirmó la compra');
+            modal.remove();
+            resolve(true);
+        };
+        
+        document.getElementById('cancelar-compra').onclick = () => {
+            console.log('❌ Usuario canceló la compra');
+            modal.remove();
+            resolve(false);
+        };
+    });
+}
 
         // Función para crear mensaje automático al vendedor
         async function crearMensajeAutomatico(intercambioId, producto) {
