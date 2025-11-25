@@ -4,1275 +4,1817 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Compras - Plataforma de Trueque</title>
+    <title>Plataforma de Reciclaje - Principal</title>
     <link rel="stylesheet" href="styles/estilos.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        .compra-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        /* CORREGIDO: Clases de estado bien definidas */
-        .estado-en_proceso {
-            background: #fff3cd;
-            color: #856404;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-
-        .estado-completado {
-            background: #d4edda;
-            color: #155724;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-
-        .estado-cancelado {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-
-        .btn-confirmar {
-            background: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-confirmar:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-
-        .btn-cancelar {
-            background: #dc3545;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-cancelar:hover {
-            background: #c82333;
-            transform: translateY(-2px);
-        }
-
-        .btn-contactar {
-            background: #17a2b8;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-contactar:hover {
-            background: #138496;
-            transform: translateY(-2px);
-        }
-
-        .btn-calificar {
-            background: #ffc107;
-            color: #212529;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-calificar:hover {
-            background: #e0a800;
-            transform: translateY(-2px);
-        }
-
-        .acciones-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .creditos-retenidos {
-            background: #e3f2fd;
-            color: #1565c0;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border-left: 4px solid #2196f3;
-        }
-
-        /* Modal de mensajería */
-        .modal-mensajes {
+        /* [ESTILOS DE PERFIL/MENU] */
+        .profile-links {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content-mensajes {
+            position: absolute;
+            top: 100%;
+            right: 0;
             background: white;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header-mensajes {
-            background: var(--green);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body-mensajes {
-            padding: 20px;
-            flex: 1;
-            overflow-y: auto;
-            max-height: 400px;
-        }
-
-        .mensaje {
-            margin-bottom: 15px;
-            padding: 12px;
-            border-radius: 10px;
-            max-width: 80%;
-        }
-
-        .mensaje-propio {
-            background: #e3f2fd;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        .mensaje-otro {
-            background: #f5f5f5;
-        }
-
-        .input-mensaje {
-            display: flex;
-            gap: 10px;
-            padding: 20px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .input-mensaje input {
-            flex: 1;
-            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-
-        .btn-enviar {
-            background: var(--green);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        /* Modal de calificación */
-        .modal-calificacion {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            justify-content: center;
-            align-items: center;
         }
 
-        .estrellas {
-            display: flex;
-            gap: 5px;
-            margin: 15px 0;
-            justify-content: center;
-        }
-
-        .estrella {
-            font-size: 2rem;
-            color: #ddd;
+        .user-area {
             cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .estrella:hover,
-        .estrella.seleccionada {
-            color: #ffc107;
-        }
-
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 9999;
-            justify-content: center;
+            display: inline-flex;
             align-items: center;
-            color: white;
-            font-size: 1.2rem;
-        }
-
-        /* Estado por defecto */
-        .estado {
-            background: #e9ecef;
-            color: #495057;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-
-        .back-btn {
-            background: none;
+            gap: 0.5rem;
+            background: transparent;
             border: none;
             padding: 8px 12px;
-            cursor: pointer;
-            color: #007bff;
-            font-size: 16px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
+            font: inherit;
+            color: inherit;
+            position: relative;
             border-radius: 6px;
+            transition: background-color 0.2s;
         }
 
-        .back-btn:hover {
-            background-color: #f8f9fa;
+        .user-area:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* [ESTILOS PARA EL GRID DE PRODUCTOS] */
+        .layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .content {
+            order: 1;
+            flex: 1;
+            min-width: 0;
+            padding-left: 20px;
+        }
+
+        .sidebar {
+            order: 2;
+            width: 240px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: white;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .credits {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .categories {
+            list-style: none;
+            padding: 0;
+        }
+
+        .categories li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .categories li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .categories li.active {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-intercambiar {
+            background-color: #FF5722;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            width: calc(100% - 20px);
+            transition: background-color 0.2s;
+        }
+
+        .btn-intercambiar:hover {
+            background-color: #e64a19;
+        }
+
+        .btn-intercambiar:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .no-products {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .credits-bubble {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .status-en_proceso {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-completado {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                order: 0;
+                padding-left: 0;
+            }
+
+            .sidebar {
+                order: 1;
+                width: 100%;
+            }
+        }
+
+        /* Estilos para los enlaces del menú */
+        .profile-links a {
+            display: block;
+            padding: 8px 12px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .profile-links a:hover {
+            background-color: #f5f5f5;
+        }
+
+        .logout-link {
+            color: #f44336 !important;
+        }
+
+        /* Botón Admin en topbar */
+        .admin-btn {
+            padding: 8px 14px;
+            background-color: #2F9A34;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .admin-btn:hover {
+            background-color: #036d19;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .admin-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        /* Contenido del Modal */
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #2F9A34;
+            font-size: 1.4rem;
+            margin: 0 0 12px 0;
+        }
+
+        .modal-content p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0 0 18px 0;
+        }
+
+        /* Formulario Admin */
+        #adminForm {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        #adminCode {
+            padding: 12px;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 4px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: border-color 0.2s ease;
+        }
+
+        #adminCode:focus {
+            border-color: #2F9A34;
+            box-shadow: 0 0 0 3px rgba(47, 154, 52, 0.2);
+            outline: none;
+        }
+
+        /* Botón Enviar */
+        .btn-admin-submit {
+            padding: 12px;
+            background-color: #2F9A34;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-admin-submit:hover {
+            background-color: #036d19;
+        }
+
+        .btn-admin-submit:active {
+            background-color: #025a14;
+        }
+
+        /* Mensaje de Error */
+        .admin-error {
+            color: #f44336;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin: 0 !important;
+            min-height: 20px;
+        }
+
+        /* Botón Cancelar */
+        .btn-admin-close {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-admin-close:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .modal-content {
+                padding: 24px;
+            }
+
+            .modal-content h2 {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
 
-<body class="perfil-body">
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div style="text-align: center;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 15px;"></i>
-            <div id="loadingText">Procesando...</div>
+<body>
+    <header class="topbar">
+        <div class="logo-area">
+            <img src="" alt="Logo Plataforma" class="logo-img">
+            <h1>Plataforma de Trueque Digital</h1>
+        </div>
+
+        <div class="search-area">
+            <input type="search" class="search-bar" placeholder="Buscar producto..." aria-label="Buscar producto">
+        </div>
+
+        <div class="right-area">
+            <div class="credits-bubble" title="Créditos disponibles">
+                <span class="coin">♻️</span>
+                <span id="topCredits">0</span>
+            </div>
+
+            <div class="user-area" id="profileToggle">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
+                <span id="userName">Usuario</span>
+                <div id="profileLinks" class="profile-links">
+                    <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <strong id="menuUserName">Usuario</strong>
+                        <div style="font-size: 0.8rem; color: #666;" id="menuUserEmail">usuario@ejemplo.com</div>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 10px 0;">
+                        <li><a href="perfil.html">👤 Ver perfil</a></li>
+                        <li><a href="publicar.html">📤 Crear publicación</a></li>
+                        <li><a href="mis-compras.html">🛒 Mis Compras</a></li>
+                        <li><a href="mis-ventas.html">💰 Mis Ventas</a></li>
+                        <li><a href="historial.html">📊 Ver historial</a></li>
+                        <li><a href="#" id="logoutLink" class="logout-link">🚪 Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        </div>
+    </header>
+
+    <!-- 🚨 NUEVO: Botón Admin -->
+    <button id="adminBtn" class="admin-btn" title="Acceso de Administrador">🔐 Admin</button>
+
+    <a class="admin-btn" title="Acceso de Administrador" href="/rankings.html">📊 Rankings</a>
+
+    <!-- 🚨 NUEVO: Modal Admin -->
+    <div id="adminModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🔐 Acceso de Administrador</h2>
+            <p>Ingresa el código de seguridad (6 dígitos)</p>
+
+            <form id="adminForm">
+                <input type="text" id="adminCode" maxlength="6" inputmode="numeric" placeholder="000000" pattern="[0-9]{6}"
+                    required autocomplete="off">
+                <button type="submit" class="btn-admin-submit">Ingresar</button>
+            </form>
+
+            <p id="adminError" class="admin-error"></p>
+            <button id="closeAdminModal" class="btn-admin-close">Cancelar</button>
         </div>
     </div>
 
-    <section class="perfil-container">
-        <button class="back-btn" onclick="window.location.href='index2.html'">← Volver al Marketplace</button>
+    <main class="layout">
+        <aside class="sidebar">
+            <h3>Categorías</h3>
+            <ul class="categories" id="categoriesList">
+                <li data-category="all" class="active">Todas las categorías</li>
+                <li data-category="Electrónica">Electrónica</li>
+                <li data-category="Hogar">Artículos para el hogar</li>
+                <li data-category="Ropa">Indumentaria</li>
+                <li data-category="Música">Instrumentos musicales</li>
+                <li data-category="Jardín">Jardín y aire libre</li>
+                <li data-category="Juguetes">Juguetes y juegos</li>
+                <li data-category="Libros">Libros</li>
+                <li data-category="Gratis">Artículos gratuitos</li>
+                <li data-category="Otros">Otros</li>
+            </ul>
+        </aside>
 
-        <h2>🛒 Mis Compras</h2>
-
-        <div id="comprasList">
-            <div>Cargando tus compras...</div>
-        </div>
-    </section>
-
-    <!-- Modal de Mensajería -->
-    <div class="modal-mensajes" id="modalMensajes">
-        <div class="modal-content-mensajes">
-            <div class="modal-header-mensajes">
-                <h3 id="tituloChat">Chat con Vendedor</h3>
-                <button onclick="cerrarModalMensajes()"
-                    style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+        <section class="content">
+            <h2>Intercambios Destacados</h2>
+            <div class="product-grid" id="productGrid">
+                <!-- Los productos se cargarán dinámicamente -->
+                <div>Cargando productos...</div>
             </div>
-            <div class="modal-body-mensajes" id="cuerpoMensajes">
-                <!-- Los mensajes se cargarán aquí -->
-            </div>
-            <div class="input-mensaje">
-                <input type="text" id="inputMensaje" placeholder="Escribe tu mensaje..."
-                    onkeypress="if(event.key=='Enter')enviarMensaje()">
-                <button class="btn-enviar" onclick="enviarMensaje()">Enviar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Calificación -->
-    <div class="modal-calificacion" id="modalCalificacion">
-        <div style="background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px;">
-            <h3>Calificar Transacción</h3>
-            <p id="productoCalificar"></p>
-
-            <div class="estrellas" id="estrellasCalificacion">
-                <span class="estrella" data-puntuacion="1">★</span>
-                <span class="estrella" data-puntuacion="2">★</span>
-                <span class="estrella" data-puntuacion="3">★</span>
-                <span class="estrella" data-puntuacion="4">★</span>
-                <span class="estrella" data-puntuacion="5">★</span>
-            </div>
-
-            <textarea id="comentarioCalificacion" placeholder="Comentario opcional..."
-                style="width: 100%; height: 100px; margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 6px;"></textarea>
-
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="btn-confirmar" onclick="enviarCalificacion()">Enviar Calificación</button>
-                <button class="btn-cancelar" onclick="cerrarModalCalificacion()">Cancelar</button>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script type="module">
         import { supabase } from './config/db.js';
 
         let currentUserId = null;
-        let intercambioActual = null;
-        let puntuacionSeleccionada = 0;
+        let allProducts = [];
+        let allPurchases = [];
+        let currentCategory = 'all';
+        let currentFilter = 'all';
 
-        // Función para convertir money a número
-        function convertirMoneyANumero(valorMoney) {
-            if (typeof valorMoney === 'number') return valorMoney;
-            if (typeof valorMoney === 'string') {
-                // Manejar formato money de PostgreSQL: "$1,234.56"
-                const cleaned = valorMoney.replace(/[^\d.-]/g, '');
-                return parseFloat(cleaned) || 0;
-            }
-            return 0;
+        // ========== FUNCIONES DE UI MEJORADAS ==========
+
+        // Mostrar loading durante compra
+        window.mostrarLoadingCompra = function(mensaje = "🔄 Procesando...") {
+            const loading = document.createElement('div');
+            loading.id = 'loading-compra';
+            loading.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                           background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                           align-items: center; z-index: 9999;">
+                    <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
+                        <p style="margin: 0; font-weight: bold; color: #333;">${mensaje}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loading);
         }
 
-        // Funciones de loading
-        function mostrarLoading(mensaje = 'Procesando...') {
-            document.getElementById('loadingText').textContent = mensaje;
-            document.getElementById('loadingOverlay').style.display = 'flex';
+        window.ocultarLoadingCompra = function() {
+            const loading = document.getElementById('loading-compra');
+            if (loading) loading.remove();
         }
 
-        function ocultarLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
+        // Mostrar notificación de éxito/error
+        window.mostrarNotificacion = function(mensaje, tipo = 'success') {
+            const notificacion = document.createElement('div');
+            notificacion.id = 'notificacion-compra';
+            notificacion.innerHTML = `
+                <div style="position: fixed; top: 20px; right: 20px; background: ${tipo === 'success' ? '#4CAF50' : '#f44336'}; 
+                           color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+                           z-index: 1000; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">${tipo === 'success' ? '✅' : '❌'}</span>
+                    <span>${mensaje}</span>
+                </div>
+            `;
+            document.body.appendChild(notificacion);
+            
+            setTimeout(() => {
+                notificacion.remove();
+            }, 4000);
         }
 
-        // Cargar compras del usuario
-        async function cargarMisCompras() {
+       // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
+function actualizarCreditosUI(nuevoSaldo) {
+    try {
+        console.log('🔄 Actualizando UI de créditos:', nuevoSaldo);
+        
+        // Actualizar en la topbar
+        const topCreditsElement = document.getElementById('topCredits');
+        if (topCreditsElement) {
+            topCreditsElement.textContent = nuevoSaldo;
+        }
+        
+        // Actualizar en localStorage
+        localStorage.setItem('user_saldo', nuevoSaldo);
+        
+        console.log('✅ UI de créditos actualizada');
+        
+    } catch (error) {
+        console.error('❌ Error actualizando UI de créditos:', error);
+    }
+}
+        // Función para actualizar saldo en tabla usuario
+        async function actualizarSaldoUsuario(usuarioId, monto) {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    console.error('Usuario no autenticado');
-                    document.getElementById('comprasList').innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #666;">
-                            <h3>🔒 Debes iniciar sesión</h3>
-                            <p>Por favor inicia sesión para ver tus compras.</p>
-                        </div>
-                    `;
+                console.log('💰 Actualizando saldo en tabla usuario:', { usuarioId, monto });
+                
+                // 1. Obtener saldo actual desde usuario
+                const { data: usuario, error: usuarioError } = await supabase
+                    .from('usuario')
+                    .select('saldo_creditos')
+                    .eq('auth_id', usuarioId)
+                    .single();
+
+                if (usuarioError) {
+                    console.error('❌ Error obteniendo saldo del usuario:', usuarioError);
+                    throw usuarioError;
+                }
+
+                const saldoActual = parseFloat(usuario.saldo_creditos) || 0;
+                const montoNum = parseFloat(monto);
+                let nuevoSaldo = saldoActual + montoNum;
+
+                // Validar que no quede saldo negativo
+                if (nuevoSaldo < 0) {
+                    console.warn('⚠️ Intento de dejar saldo negativo, ajustando a 0');
+                    nuevoSaldo = 0;
+                }
+
+                console.log('💰 Saldo usuario - Actual:', saldoActual, 'Cambio:', montoNum, 'Nuevo saldo:', nuevoSaldo);
+
+                // 2. Actualizar tabla usuario
+                const { error: updateError } = await supabase
+                    .from('usuario')
+                    .update({
+                        saldo_creditos: nuevoSaldo
+                    })
+                    .eq('auth_id', usuarioId);
+
+                if (updateError) {
+                    console.error('❌ Error actualizando saldo en usuario:', updateError);
+                    throw updateError;
+                }
+
+                // 3. Actualizar UI si es el usuario actual
+                if (usuarioId === currentUserId) {
+                    actualizarCreditosUI(nuevoSaldo);
+                }
+
+                console.log('✅ Saldo actualizado en tabla usuario:', nuevoSaldo);
+
+            } catch (error) {
+                console.error('❌ Error actualizando saldo usuario:', error);
+                throw error;
+            }
+        }
+
+        // ========== INICIALIZACIÓN ==========
+
+        async function init() {
+            try {
+                console.log('=== INICIANDO APLICACIÓN ===');
+
+                // Verificar autenticación
+                const { data: { user }, error } = await supabase.auth.getUser();
+
+                if (error || !user) {
+                    console.log('Usuario no autenticado, redirigiendo al login');
+                    window.location.href = 'index.html';
                     return;
                 }
-                
-                currentUserId = user.id;
-                console.log('🔄 Cargando compras para usuario:', currentUserId);
 
-                // Obtener intercambios básicos
-                const { data: intercambios, error } = await supabase
-                    .from('Intercambio')
+                currentUserId = user.id;
+                console.log('Usuario autenticado ID:', currentUserId);
+
+                await loadUserData();
+                setupProfileMenu();
+
+                // DETECTAR SI ESTAMOS EN LA PÁGINA DE MIS COMPRAS
+                const isMisComprasPage = window.location.pathname.includes('mis-compras.html');
+                const pageTitle = document.querySelector('h2')?.textContent || '';
+
+                if (isMisComprasPage || pageTitle.includes('Mis Compras')) {
+                    console.log('📦 Cargando página de Mis Compras');
+                    await loadMisCompras();
+                    setupPurchaseFilters();
+                } else {
+                    console.log('🏪 Cargando página principal (Marketplace)');
+                    await loadAllProducts();
+                    setupCategoryFilters();
+                }
+
+            } catch (error) {
+                console.error('Error en inicialización:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ========== CONFIGURACIÓN DEL PERFIL ==========
+
+        function setupProfileMenu() {
+            console.log('Configurando menú de perfil...');
+
+            const profileToggle = document.getElementById('profileToggle');
+            const profileLinks = document.getElementById('profileLinks');
+            const logoutLink = document.getElementById('logoutLink');
+
+            // Toggle del menú
+            profileToggle.addEventListener('click', function (e) {
+                console.log('Click en profileToggle');
+                e.stopPropagation();
+                const isVisible = profileLinks.style.display === 'block';
+                profileLinks.style.display = isVisible ? 'none' : 'block';
+            });
+
+            // Cerrar menú al hacer click fuera
+            document.addEventListener('click', function (e) {
+                if (!profileToggle.contains(e.target)) {
+                    profileLinks.style.display = 'none';
+                }
+            });
+
+            // Cerrar sesión
+            logoutLink.addEventListener('click', async function (e) {
+                e.preventDefault();
+                console.log('Click en cerrar sesión');
+                await handleLogout();
+            });
+
+            // Prevenir que los clicks en el menú lo cierren
+            profileLinks.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        // ========== CARGA DE DATOS DEL USUARIO ==========
+
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    const { data: usuario, error } = await supabase
+                        .from('usuario')
+                        .select('*')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (!error && usuario) {
+                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+                        
+                        actualizarCreditosUI(usuario.saldo_creditos || 0);
+
+                        localStorage.setItem('user_id', user.id);
+                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                        localStorage.setItem('user_name', usuario.nombre_completo);
+                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al cargar datos del usuario:', error);
+            }
+        }
+
+        // ========== CARGA DE PUBLICACIONES (MARKETPLACE) ==========
+
+        async function loadAllProducts() {
+            try {
+                console.log('🔄 Cargando publicaciones de OTROS usuarios...');
+
+                // Obtener usuario logueado
+                const { data: { user } } = await supabase.auth.getUser();
+                currentUserId = user.id;
+                console.log('👤 Usuario actual:', currentUserId);
+
+                // Cargar TODAS las publicaciones ACTIVAS
+                const { data: todasPublicaciones, error } = await supabase
+                    .from('Publicacion')
                     .select('*')
-                    .eq('usuario_id', currentUserId)
-                    .order('fecha_creacion', { ascending: false });
+                    .eq('estado', 'activo')
+                    .order('id_publicacion', { ascending: false });
 
                 if (error) {
-                    console.error('Error al cargar intercambios:', error);
+                    console.error('❌ Error:', error);
                     throw error;
                 }
 
-                console.log('📦 Intercambios encontrados:', intercambios);
+                console.log('📦 Todas las publicaciones activas:', todasPublicaciones);
 
-                if (!intercambios || intercambios.length === 0) {
-                    renderCompras([]);
-                    return;
-                }
+                // FILTRAR: mostrar solo publicaciones de OTROS usuarios
+                const publicacionesFiltradas = todasPublicaciones.filter(p => {
+                    const esMiPublicacion = p.usuario_id === currentUserId;
+                    console.log(`🔍 Publicación "${p.titulo}": ${esMiPublicacion ? 'MI PUBLICACIÓN' : 'OTRO USUARIO'}`);
+                    return !esMiPublicacion;
+                });
 
-                // Cargar datos relacionados
-                const intercambiosCompletos = await Promise.all(
-                    intercambios.map(async (intercambio) => {
-                        console.log('🔄 Procesando intercambio:', intercambio.id_intercambio);
+                console.log('✅ Publicaciones de otros usuarios:', publicacionesFiltradas);
+                console.log(`📊 Estadísticas: ${publicacionesFiltradas.length} de otros usuarios de ${todasPublicaciones.length} totales`);
 
-                        // Cargar publicación
-                        let publicacion = null;
-                        if (intercambio.publicacion_id) {
-                            const { data: pubData } = await supabase
-                                .from('Publicacion')
-                                .select('*')
-                                .eq('id_publicacion', intercambio.publicacion_id)
-                                .single();
-                            publicacion = pubData;
-                        }
-
-                        // Cargar mensajes
-                        const { data: mensajes } = await supabase
-                            .from('Mensaje')
-                            .select('*')
-                            .eq('intercambio_id', intercambio.id_intercambio)
-                            .order('fecha_envio', { ascending: true });
-
-                        // Cargar custodia (si existe) - VERSIÓN MEJORADA
-                        let custodia = null;
-                        try {
-                            const { data: custodiaData, error: custodiaError } = await supabase
-                                .from('custodia_creditos')
-                                .select('*')
-                                .eq('intercambio_id', intercambio.id_intercambio)
-                                .single();
-                            
-                            if (custodiaError) {
-                                console.log('❌ Error cargando custodia:', {
-                                    code: custodiaError.code,
-                                    message: custodiaError.message,
-                                    details: custodiaError.details,
-                                    hint: custodiaError.hint
-                                });
-                                
-                                if (custodiaError.code === 'PGRST116') {
-                                    console.log('ℹ️ No hay registro de custodia para este intercambio');
-                                } else if (custodiaError.code === '406') {
-                                    console.log('⚠️ Error 406 - Problema de permisos RLS en custodia_creditos');
-                                }
-                            } else if (custodiaData) {
-                                // Verificar que la custodia pertenece al usuario actual
-                                if (custodiaData.comprador_id === currentUserId || custodiaData.oferente_id === currentUserId) {
-                                    custodia = custodiaData;
-                                    console.log('✅ Custodia cargada:', custodia);
-                                } else {
-                                    console.log('🚫 Custodia no pertenece al usuario actual');
-                                }
-                            }
-                        } catch (custodiaError) {
-                            console.log('💥 Error inesperado en custodia:', custodiaError);
-                        }
-
-                        // Cargar calificaciones
-                        const { data: calificaciones } = await supabase
-                            .from('calificacion')
-                            .select('*')
-                            .eq('intercambio_id', intercambio.id_intercambio);
-
-                        // Cargar datos del vendedor
-                        let vendedor = null;
-                        if (intercambio.usuario_vendedor_id) {
-                            const { data: userData } = await supabase
-                                .from('usuario')
-                                .select('nombre_completo')
-                                .eq('auth_id', intercambio.usuario_vendedor_id)
-                                .single();
-                            vendedor = userData;
-                        }
-
-                        return {
-                            ...intercambio,
-                            publicacion: publicacion,
-                            mensajes: mensajes || [],
-                            custodia: custodia,
-                            calificaciones: calificaciones || [],
-                            vendedor: vendedor
-                        };
-                    })
-                );
-
-                console.log('✅ Intercambios completos cargados:', intercambiosCompletos);
-                renderCompras(intercambiosCompletos);
+                // Mostrar solo publicaciones filtradas
+                allProducts = publicacionesFiltradas;
+                renderProducts(publicacionesFiltradas);
 
             } catch (error) {
-                console.error('❌ Error cargando compras:', error);
-                document.getElementById('comprasList').innerHTML = `
-                    <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
-                        <h3>❌ Error al cargar las compras</h3>
-                        <p>${error.message}</p>
-                        <button onclick="location.reload()" 
-                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            🔄 Reintentar
+                console.error('💥 Error:', error);
+                document.getElementById('productGrid').innerHTML = `
+                    <div class="no-products">
+                        <p>Error al cargar publicaciones: ${error.message}</p>
+                        <button onclick="window.location.href='publicar.html'" 
+                                style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Crear Publicación
                         </button>
                     </div>
                 `;
             }
         }
 
-        // CORREGIDO: Función renderCompras bien definida
-        function renderCompras(compras) {
-            const comprasList = document.getElementById('comprasList');
-            
-            if (!compras || compras.length === 0) {
-                comprasList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <h3>📭 No tienes compras realizadas</h3>
-                        <p>Cuando realices compras, aparecerán aquí.</p>
-                        <button onclick="window.location.href='index2.html'" 
-                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            🛍️ Ir al Marketplace
+        // ========== RENDERIZADO DE PRODUCTOS (MARKETPLACE) ==========
+
+        function renderProducts(products) {
+            const productGrid = document.getElementById('productGrid');
+
+            if (!products || products.length === 0) {
+                productGrid.innerHTML = `
+                    <div class="no-products">
+                        <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
+                            No hay publicaciones disponibles de otros usuarios en este momento
+                        </p>
+                        <p style="color: #888; margin-bottom: 20px;">
+                            ¡Sé el primero en crear una publicación!
+                        </p>
+                        <button onclick="window.location.href='publicar.html'" 
+                                class="btn-intercambiar" 
+                                style="background: #4CAF50; color: white; border: none; 
+                                       padding: 12px 24px; border-radius: 6px; cursor: pointer; 
+                                       font-size: 1rem; font-weight: bold;">
+                            ➕ Crear Mi Primera Publicación
                         </button>
                     </div>
                 `;
                 return;
             }
 
-            comprasList.innerHTML = compras.map(compra => {
-                const precio = convertirMoneyANumero(compra.creditos_verdes);
-                const tieneMensajes = compra.mensajes && compra.mensajes.length > 0;
-                const tieneCalificacion = compra.calificaciones && compra.calificaciones.length > 0;
-                const creditosRetenidos = compra.custodia && compra.custodia.estado === 'retenido';
-                
-                // Contar mensajes no leídos de forma segura
-                let mensajesNoLeidos = 0;
-                if (tieneMensajes) {
-                    mensajesNoLeidos = compra.mensajes.filter(m => 
-                        m.receptor_id === currentUserId && !m.leido
-                    ).length;
-                }
-
-                // Manejar datos de publicación de forma segura
-                const tituloProducto = compra.publicacion?.titulo || 'Producto';
-                const nombreVendedor = compra.vendedor?.nombre_completo || 'Vendedor';
-
-                // CORREGIDO: Manejo seguro del estado
-                const estado = compra.estado || 'en_proceso';
-                const estadoClass = `estado-${estado}`;
-                const estadoTexto = estado.replace('_', ' ');
+            productGrid.innerHTML = products.map(producto => {
+                const titulo = producto.titulo || 'Sin título';
+                const descripcion = producto.descripcion || 'Sin descripción';
+                const precio = producto.precio || 0;
+                const categoria = producto.nombre_categoria || 'General';
+                const imagen = producto.imagen_url || null;
 
                 return `
-                    <div class="compra-card">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <h3 style="margin: 0; flex: 1;">${tituloProducto}</h3>
-                            <span class="${estadoClass}">${estadoTexto.toUpperCase()}</span>
-                        </div>
-                        
-                        <p><strong>Precio:</strong> ${precio} ♻️</p>
-                        <p><strong>Fecha:</strong> ${new Date(compra.fecha_creacion).toLocaleDateString()}</p>
-                        <p><strong>Vendedor:</strong> ${nombreVendedor}</p>
-                        
-                        ${creditosRetenidos ? `
-                            <div class="creditos-retenidos">
-                                <i class="fas fa-lock"></i> 
-                                <strong>${precio} créditos en custodia</strong>
-                                <br>
-                                <small>Confirma la recepción para liberar los créditos al vendedor</small>
+                    <div class="product-card" data-producto-id="${producto.id_publicacion}">
+                        ${imagen ? `
+                            <img src="${imagen}" alt="${titulo}" 
+                                 style="width: 100%; height: 150px; object-fit: cover;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        ` : ''}
+                        ${!imagen ? `
+                            <div style="width: 100%; height: 150px; background: #f0f0f0; 
+                                       display: flex; align-items: center; justify-content: center;">
+                                <span style="color: #999;">Sin imagen</span>
                             </div>
                         ` : ''}
                         
-                        ${compra.custodia && compra.custodia.estado === 'liberado' ? `
-                            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">
-                                <i class="fas fa-check-circle"></i> 
-                                <strong>Créditos liberados</strong>
-                                <br>
-                                <small>Has confirmado la recepción del producto</small>
-                            </div>
-                        ` : ''}
+                        <div class="credits">${precio} ♻️</div>
+                        <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
+                        <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; 
+                                 display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
+                                 overflow: hidden;">
+                           ${descripcion}
+                        </p>
+                        <p style="font-size: 0.7rem; color: #888; padding: 0 10px; margin: 0 0 5px 0;">
+                            Categoría: ${categoria}
+                        </p>
                         
-                        ${tieneMensajes ? `
-                            <p style="color: #17a2b8;">
-                                <i class="fas fa-comments"></i> 
-                                ${mensajesNoLeidos > 0 ? `<strong>${mensajesNoLeidos} mensaje(s) nuevo(s)</strong>` : 'Tienes mensajes'}
-                            </p>
-                        ` : ''}
-                        
-                        ${tieneCalificacion ? `
-                            <p style="color: #28a745;">
-                                <i class="fas fa-star"></i> Ya calificaste esta transacción
-                            </p>
-                        ` : ''}
-                        
-                        <div class="acciones-container">
-                            ${estado === 'en_proceso' ? `
-                                <button class="btn-confirmar" onclick="confirmarRecepcion(${compra.id_intercambio})">
-                                    <i class="fas fa-check"></i> Confirmar Recepción
-                                </button>
-                                <button class="btn-cancelar" onclick="cancelarCompra(${compra.id_intercambio})">
-                                    <i class="fas fa-times"></i> Cancelar Compra
-                                </button>
-                            ` : ''}
-                            
-                            ${estado === 'completado' && !tieneCalificacion ? `
-                                <button class="btn-calificar" onclick="abrirModalCalificacion(${compra.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}')">
-                                    <i class="fas fa-star"></i> Calificar
-                                </button>
-                            ` : ''}
-                            
-                            <button class="btn-contactar" onclick="abrirChat(${compra.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')">
-                                <i class="fas fa-comment"></i> 
-                                ${tieneMensajes ? 'Ver Chat' : 'Contactar Vendedor'}
-                            </button>
-                        </div>
+                        <button class="btn-intercambiar" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">
+                            Comprar
+                        </button>
                     </div>
                 `;
             }).join('');
         }
 
-        // ========== FUNCIONES PARA ACTUALIZAR PUBLICACIONES ==========
+        // ========== FUNCIÓN PARA CARGAR MIS COMPRAS ==========
 
-        async function marcarPublicacionComoVendida(intercambioId) {
-            try {
-                console.log('🏷️ Marcando publicación como vendida para intercambio:', intercambioId);
-                
-                // 1. Obtener el publicacion_id del intercambio
-                const { data: intercambio, error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .select('publicacion_id')
-                    .eq('id_intercambio', intercambioId)
-                    .single();
+        async function loadMisCompras() {
+    try {
+        console.log('🛒 Cargando mis compras...');
 
-                if (intercambioError) throw intercambioError;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-                console.log('📦 Publicación a marcar como vendida:', intercambio.publicacion_id);
+        // PRIMERO: Cargar intercambios donde el usuario es el COMPRADOR
+        const { data: misCompras, error: intercambiosError } = await supabase
+            .from('Intercambio')
+            .select(`
+                *,
+                Publicacion (
+                    id_publicacion,
+                    titulo,
+                    descripcion,
+                    precio,
+                    imagen_url,
+                    nombre_categoria,
+                    usuario_id
+                )
+            `)
+            .eq('usuario_id', user.id) // El usuario es el COMPRADOR
+            .order('fecha_creacion', { ascending: false });
 
-                // 2. Marcar publicación como vendida/inactiva
-                const { error: updatePubError } = await supabase
-                    .from('Publicacion')
-                    .update({
-                        estado: 'vendido'
-                    })
-.eq('id_publicacion', publicacionId); // <-- USAMOS LA VARIABLE CORRECTA
-
-        if (updatePubError) {
-            console.error('Error al actualizar el estado de la publicación:', updatePubError);
-            throw updatePubError; // Lanza el error para que sea capturado por el try/catch principal
-        }
-        console.log('✅ Publicación marcada como VENDIDA');
-    } catch (error) {
-        console.error('❌ Error marcando publicación como vendida:', error);
-        throw error;
-    }
-}
-
-        async function reactivarPublicacion(intercambioId) {
-            try {
-                console.log('🔄 Reactivando publicación para intercambio:', intercambioId);
-                
-                // 1. Obtener el publicacion_id del intercambio
-                const { data: intercambio, error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .select('publicacion_id')
-                    .eq('id_intercambio', intercambioId)
-                    .single();
-
-                if (intercambioError) throw intercambioError;
-
-                // 2. Reactivar publicación (volver a estado activo)
-                const { error: updatePubError } = await supabase
-                    .from('Publicacion')
-                    .update({
-                        estado: 'activo'
-                    })
-                    .eq('id_publicacion', intercambio.publicacion_id);
-
-                if (updatePubError) throw updatePubError;
-
-                console.log('✅ Publicación reactivada');
-
-            } catch (error) {
-                console.error('❌ Error reactivando publicación:', error);
-                throw error;
-            }
+        if (intercambiosError) {
+            console.error('❌ Error cargando intercambios:', intercambiosError);
+            throw intercambiosError;
         }
 
-        // ========== SISTEMA DE CUSTODIA ==========
+        console.log('✅ Intercambios cargados:', misCompras);
 
-        window.confirmarRecepcion = async function (intercambioId) {
-            if (!confirm('¿Confirmas que has recibido el producto correctamente?\n\nLos créditos serán liberados al vendedor y la publicación se marcará como vendida.')) return;
+        if (!misCompras || misCompras.length === 0) {
+            allPurchases = [];
+            renderMisCompras(allPurchases);
+            return;
+        }
 
-            try {
-                mostrarLoading('Confirmando recepción y actualizando estado...');
-
-                // 1. Actualizar estado del intercambio
-                const { error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .update({
-                        estado: 'completado',
-                        fecha_cierre: new Date()
-                    })
-                    .eq('id_intercambio', intercambioId);
-
-                if (intercambioError) throw intercambioError;
-
-                // 2. Liberar créditos al vendedor
-                await liberarCreditosVendedor(intercambioId);
-
-                // 3. Marcar publicación como VENDIDA
-                await marcarPublicacionComoVendida(intercambioId);
-
-                // 4. Actualizar custodia si existe
+        // SEGUNDO: Cargar información de custodia para cada intercambio
+        const comprasConCustodia = await Promise.all(
+            misCompras.map(async (compra) => {
                 try {
-                    const { error: custodiaError } = await supabase
+                    // Buscar custodia por intercambio_id
+                    const { data: custodia, error: custodiaError } = await supabase
                         .from('custodia_creditos')
-                        .update({
-                            estado: 'liberado',
-                            fecha_liberacion: new Date()
-                        })
-                        .eq('intercambio_id', intercambioId);
+                        .select('*')
+                        .eq('intercambio_id', compra.id_intercambio)
+                        .maybeSingle(); // Usar maybeSingle para evitar errores si no existe
 
-                    if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
-                } catch (custodiaError) {
-                    console.log('ℹ️ No se pudo actualizar custodia:', custodiaError.message);
+                    if (custodiaError) {
+                        console.warn(`⚠️ Error cargando custodia para intercambio ${compra.id_intercambio}:`, custodiaError);
+                    }
+
+                    return {
+                        ...compra,
+                        custodia_creditos: custodia ? [custodia] : []
+                    };
+                } catch (error) {
+                    console.error(`💥 Error procesando compra ${compra.id_intercambio}:`, error);
+                    return {
+                        ...compra,
+                        custodia_creditos: []
+                    };
+                }
+            })
+        );
+
+        console.log('✅ Compras con custodia cargadas:', comprasConCustodia);
+        allPurchases = comprasConCustodia || [];
+        renderMisCompras(allPurchases);
+
+    } catch (error) {
+        console.error('💥 Error en loadMisCompras:', error);
+        document.getElementById('productGrid').innerHTML = `
+            <div class="no-products">
+                <p>Error al cargar tus compras: ${error.message}</p>
+                <p style="font-size: 0.9rem; color: #888; margin-top: 10px;">
+                    Detalles: ${error.details || 'Sin detalles adicionales'}
+                </p>
+                <button onclick="window.location.reload()" 
+                        style="margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    🔄 Reintentar
+                </button>
+            </div>
+        `;
+    }
+}
+
+        // ========== FUNCIÓN PARA RENDERIZAR MIS COMPRAS (SIN CUSTODIA) ==========
+
+function renderMisCompras(compras) {
+    const productGrid = document.getElementById('productGrid');
+
+    if (!compras || compras.length === 0) {
+        productGrid.innerHTML = `
+            <div class="no-products">
+                <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
+                    📭 No tienes compras realizadas
+                </p>
+                <p style="color: #888; margin-bottom: 20px;">
+                    ¡Explora el marketplace y realiza tu primera compra!
+                </p>
+                <button onclick="window.location.href='principal.html'" 
+                        class="btn-intercambiar" 
+                        style="background: #4CAF50; color: white; border: none; 
+                               padding: 12px 24px; border-radius: 6px; cursor: pointer; 
+                               font-size: 1rem; font-weight: bold;">
+                    🛍️ Ir al Marketplace
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    productGrid.innerHTML = compras.map(compra => {
+        const publicacion = compra.Publicacion;
+        // const custodia = compra.custodia_creditos?.[0]; // REMOVIDO
+        
+        const titulo = publicacion?.titulo || 'Producto no disponible';
+        const descripcion = publicacion?.descripcion || 'Sin descripción';
+        const precio = compra.creditos_verdes || publicacion?.precio || 0; // Usar créditos_verdes del intercambio
+        const imagen = publicacion?.imagen_url;
+        const estado = compra.estado;
+        const fechaCompra = new Date(compra.fecha_creacion).toLocaleDateString();
+        const idIntercambio = compra.id_intercambio;
+        
+        // Determinar el estado y botones
+        let estadoTexto = '';
+        let estadoClass = '';
+        let botones = '';
+
+        switch(estado) {
+            case 'en_proceso':
+                estadoTexto = '🟡 En proceso';
+                estadoClass = 'status-en_proceso';
+                botones = `
+                    <button class="btn-intercambiar" onclick="confirmarRecepcion(${idIntercambio})" 
+                            style="background: #4CAF50;">
+                        ✅ Confirmar Recepción
+                    </button>
+                    <button class="btn-intercambiar" onclick="cancelarIntercambio(${idIntercambio})" 
+                            style="background: #f44336; margin-top: 5px;">
+                        ❌ Cancelar Compra
+                    </button>
+                `;
+                break;
+            case 'completado':
+                estadoTexto = '✅ Completado';
+                estadoClass = 'status-completado';
+                botones = `
+                    <button class="btn-intercambiar" style="background: #2196F3; cursor: default;">
+                        🎉 Compra Finalizada
+                    </button>
+                `;
+                break;
+            case 'cancelado':
+                estadoTexto = '❌ Cancelado';
+                estadoClass = 'status-cancelado';
+                botones = `
+                    <button class="btn-intercambiar" style="background: #9E9E9E; cursor: default;">
+                        📄 Ver Detalles
+                    </button>
+                `;
+                break;
+            default:
+                estadoTexto = '⚪ ' + estado;
+                estadoClass = 'status-en_proceso';
+        }
+
+        return `
+            <div class="product-card" data-compra-id="${idIntercambio}">
+                ${imagen ? `
+                    <img src="${imagen}" alt="${titulo}" 
+                         style="width: 100%; height: 150px; object-fit: cover;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                ` : ''}
+                ${!imagen ? `
+                    <div style="width: 100%; height: 150px; background: #f0f0f0; 
+                               display: flex; align-items: center; justify-content: center;">
+                        <span style="color: #999;">Sin imagen</span>
+                    </div>
+                ` : ''}
+                
+                <div class="credits">${precio} ♻️</div>
+                
+                <div class="status-badge ${estadoClass}">${estadoTexto}</div>
+                
+                <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
+                <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; 
+                         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
+                         overflow: hidden;">
+                   ${descripcion}
+                </p>
+                
+                <!-- Información de la compra -->
+                <div style="padding: 0 10px; margin-bottom: 10px;">
+                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
+                        <strong>Fecha de compra:</strong> ${fechaCompra}
+                    </p>
+                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
+                        <strong>ID de intercambio:</strong> #${idIntercambio}
+                    </p>
+                    <p style="font-size: 0.7rem; color: #666; margin: 2px 0;">
+                        <strong>Créditos:</strong> ${precio} ♻️
+                    </p>
+                </div>
+                
+                ${botones}
+            </div>
+        `;
+    }).join('');
+}
+
+        // ========== FILTROS DE COMPRAS ==========
+
+        function setupPurchaseFilters() {
+            const filterItems = document.querySelectorAll('#categoriesList li');
+
+            filterItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    filterItems.forEach(li => li.classList.remove('active'));
+                    item.classList.add('active');
+
+                    currentFilter = item.dataset.category;
+                    filterPurchasesByStatus(currentFilter);
+                });
+            });
+        }
+
+        function filterPurchasesByStatus(filter) {
+            let filteredPurchases = [];
+            
+            if (filter === 'all') {
+                filteredPurchases = allPurchases;
+            } else {
+                filteredPurchases = allPurchases.filter(compra => compra.estado === filter);
+            }
+            
+            renderMisCompras(filteredPurchases);
+        }
+
+        // ========== FILTROS Y BÚSQUEDA (MARKETPLACE) ==========
+
+        function setupCategoryFilters() {
+            const categoryItems = document.querySelectorAll('#categoriesList li');
+
+            categoryItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    categoryItems.forEach(li => li.classList.remove('active'));
+                    item.classList.add('active');
+
+                    currentCategory = item.dataset.category;
+                    filterProductsByCategory(currentCategory);
+                });
+            });
+        }
+
+        function filterProductsByCategory(category) {
+            let filteredProducts = category === 'all' ? allProducts :
+                allProducts.filter(p => (p.nombre_categoria || '').toLowerCase().includes(category.toLowerCase()));
+            renderProducts(filteredProducts);
+        }
+
+        // Búsqueda
+        document.querySelector('.search-bar').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            if (!searchTerm) {
+                // Dependiendo de la página actual, aplicar el filtro correspondiente
+                const isMisComprasPage = window.location.pathname.includes('mis-compras.html');
+                if (isMisComprasPage) {
+                    filterPurchasesByStatus(currentFilter);
+                } else {
+                    filterProductsByCategory(currentCategory);
+                }
+                return;
+            }
+
+            // Buscar en la página actual
+            const isMisComprasPage = window.location.pathname.includes('mis-compras.html');
+            if (isMisComprasPage) {
+                const filteredPurchases = allPurchases.filter(p =>
+                    (p.Publicacion?.titulo || '').toLowerCase().includes(searchTerm) ||
+                    (p.Publicacion?.descripcion || '').toLowerCase().includes(searchTerm)
+                );
+                renderMisCompras(filteredPurchases);
+            } else {
+                const filteredProducts = allProducts.filter(p =>
+                    (p.titulo || '').toLowerCase().includes(searchTerm) ||
+                    (p.descripcion || '').toLowerCase().includes(searchTerm) ||
+                    (p.nombre_categoria || '').toLowerCase().includes(searchTerm)
+                );
+                renderProducts(filteredProducts);
+            }
+        });
+
+        // ========== FUNCIONES DE COMPRA (MARKETPLACE) ==========
+
+        window.realizarCompra = async function(producto) {
+            try {
+                console.log('🛒 1. Iniciando proceso de compra...', producto);
+                
+                // Mostrar loading inmediatamente
+                mostrarLoadingCompra("Verificando disponibilidad...");
+                console.log('🛒 2. Loading mostrado');
+
+                // 1. Obtener saldo REAL desde base de datos
+                console.log('🛒 3. Obteniendo saldo desde usuario...');
+                const { data: usuario, error: usuarioError } = await supabase
+                    .from('usuario')
+                    .select('saldo_creditos')
+                    .eq('auth_id', currentUserId)
+                    .single();
+
+                console.log('🛒 4. Resultado usuario:', usuario, usuarioError);
+
+                if (usuarioError) throw new Error('Error al verificar saldo: ' + usuarioError.message);
+
+                const saldoReal = usuario.saldo_creditos || 0;
+                const precio = producto.precio || 0;
+                
+                console.log('🛒 5. Saldo:', saldoReal, 'Precio:', precio);
+
+                // 2. Validaciones robustas
+                if (producto.usuario_id === currentUserId) {
+                    console.log('🛒 6. Es propia publicación');
+                    ocultarLoadingCompra();
+                    mostrarNotificacion('❌ No puedes comprar tu propia publicación', 'error');
+                    return;
                 }
 
-                ocultarLoading();
-                alert('✅ ¡Gracias por confirmar! Los créditos han sido liberados al vendedor y la publicación se ha marcado como vendida.');
+                if (saldoReal < precio) {
+                    console.log('🛒 7. Saldo insuficiente');
+                    ocultarLoadingCompra();
+                    mostrarNotificacion(`❌ Saldo insuficiente. Necesitas ${precio} créditos`, 'error');
+                    setTimeout(() => {
+                        window.location.href = 'compra.html';
+                    }, 2000);
+                    return;
+                }
 
-                // Recargar compras
-                cargarMisCompras();
+                console.log('🛒 8. Validaciones pasadas, mostrando confirmación...');
+
+                // 3. Confirmación de compra
+                ocultarLoadingCompra();
+                const titulo = producto.titulo || 'Producto';
+                const confirmacion = await new Promise((resolve) => {
+                    console.log('🛒 9. Creando modal de confirmación...');
+                    // Crear modal de confirmación personalizado
+                    const modal = document.createElement('div');
+                    modal.innerHTML = `
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                                   background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                                   align-items: center; z-index: 9999;">
+                            <div style="background: white; padding: 25px; border-radius: 15px; 
+                                       text-align: center; max-width: 400px; width: 90%;">
+                                <h3 style="margin-top: 0; color: #333;">¿Confirmar compra?</h3>
+                                <p style="color: #666; margin-bottom: 20px;">
+                                    <strong>"${titulo}"</strong><br>
+                                    Precio: <strong>${precio} créditos ♻️</strong><br><br>
+                                    Los créditos quedarán en custodia hasta que confirmes la recepción del producto.
+                                </p>
+                                <div style="display: flex; gap: 10px; justify-content: center;">
+                                    <button id="confirmar-compra" 
+                                            style="background: #4CAF50; color: white; border: none; 
+                                                   padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                        ✅ Confirmar
+                                    </button>
+                                    <button id="cancelar-compra" 
+                                            style="background: #f44336; color: white; border: none; 
+                                                   padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    console.log('🛒 10. Modal agregado al DOM');
+
+                    // Manejar eventos de los botones
+                    document.getElementById('confirmar-compra').onclick = () => {
+                        console.log('🛒 11. Usuario confirmó la compra');
+                        modal.remove();
+                        resolve(true);
+                    };
+                    document.getElementById('cancelar-compra').onclick = () => {
+                        console.log('🛒 12. Usuario canceló la compra');
+                        modal.remove();
+                        resolve(false);
+                    };
+                });
+
+                if (!confirmacion) {
+                    console.log('🛒 13. Compra cancelada por el usuario');
+                    return;
+                }
+
+                console.log('🛒 14. Procediendo con compra...');
+                // 4. Proceder con compra
+                mostrarLoadingCompra("Procesando tu compra...");
+                await crearIntercambio(producto, precio);
+                
+                ocultarLoadingCompra();
+                mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos en custodia.`, 'success');
+                console.log('🛒 15. Compra completada exitosamente');
+
+                // 5. Recargar publicaciones después de 2 segundos
+                setTimeout(async () => {
+                    await loadAllProducts();
+                }, 2000);
 
             } catch (error) {
-                ocultarLoading();
-                console.error('Error confirmando recepción:', error);
-                alert('❌ Error al confirmar la recepción: ' + error.message);
+                console.error('❌ Error en la compra:', error);
+                ocultarLoadingCompra();
+                mostrarNotificacion('❌ Error al procesar la compra: ' + error.message, 'error');
             }
         }
 
-        // Liberar créditos al vendedor
-        async function liberarCreditosVendedor(intercambioId) {
+        // ========== FUNCIÓN CREAR INTERCAMBIO COMPLETA ==========
+
+        window.crearIntercambio = async function(producto, precio) {
             try {
-                console.log('💰 Liberando créditos al vendedor para intercambio:', intercambioId);
+                console.log('🔄 Creando intercambio y custodia para producto:', producto.id_publicacion);
                 
-                // 1. Obtener datos del intercambio
-                const { data: intercambio, error: intercambioError } = await supabase
-                    .from('Intercambio')
+                // VERIFICAR que la publicación sigue activa y NO está vendida
+                const { data: publicacion, error: pubError } = await supabase
+                    .from('Publicacion')
                     .select('*')
-                    .eq('id_intercambio', intercambioId)
+                    .eq('id_publicacion', producto.id_publicacion)
+                    .eq('estado', 'activo')
                     .single();
 
-                if (intercambioError) throw intercambioError;
-
-                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
-                const vendedorId = intercambio.usuario_vendedor_id;
-
-                console.log('📊 Datos intercambio:', { monto, vendedorId });
-
-                // 2. Buscar billetera del vendedor
-                const { data: billeteraVendedor, error: billeteraError } = await supabase
-                    .from('billetera')
-                    .select('*')
-                    .eq('usuario_id', vendedorId)
-                    .single();
-
-                // Si no existe billetera, CREARLA
-                if (billeteraError && billeteraError.code === 'PGRST116') {
-                    console.log('🆕 Creando nueva billetera para vendedor:', vendedorId);
-                    
-                    const { data: nuevaBilletera, error: createError } = await supabase
-                        .from('billetera')
-                        .insert([{
-                            usuario_id: vendedorId,
-                            credito_total: parseFloat(monto),
-                            credito_actual: parseFloat(monto),
-                            credito_retenido: 0,
-                            ultima_actualizacion: new Date().toISOString()
-                        }])
-                        .select();
-
-                    if (createError) {
-                        console.error('❌ Error creando billetera vendedor:', createError);
-                        throw createError;
-                    }
-                    
-                    console.log('✅ Nueva billetera creada para vendedor:', nuevaBilletera);
-                    
-                } else if (billeteraError) {
-                    console.error('❌ Error buscando billetera vendedor:', billeteraError);
-                    throw billeteraError;
-                    
-                } else {
-                    // Billetera existe - ACTUALIZAR
-                    console.log('📊 Billetera vendedor encontrada:', billeteraVendedor);
-                    
-                    const creditoActual = parseFloat(billeteraVendedor.credito_actual) || 0;
-                    const creditoTotal = parseFloat(billeteraVendedor.credito_total) || 0;
-                    const montoNum = parseFloat(monto);
-
-                    const nuevoActual = creditoActual + montoNum;
-                    const nuevoTotal = creditoTotal + montoNum;
-
-                    console.log('🔄 Actualizando billetera vendedor:', {
-                        anterior: { actual: creditoActual, total: creditoTotal },
-                        nuevo: { actual: nuevoActual, total: nuevoTotal }
-                    });
-
-                    const { data: billeteraActualizada, error: updateError } = await supabase
-                        .from('billetera')
-                        .update({
-                            credito_actual: nuevoActual,
-                            credito_total: nuevoTotal,
-                            ultima_actualizacion: new Date().toISOString()
-                        })
-                        .eq('usuario_id', vendedorId)
-                        .select();
-
-                    if (updateError) {
-                        console.error('❌ Error actualizando billetera vendedor:', updateError);
-                        throw updateError;
-                    }
-                    
-                    console.log('✅ Billetera vendedor actualizada:', billeteraActualizada);
+                if (pubError || !publicacion) {
+                    throw new Error('La publicación ya no está disponible o fue vendida');
                 }
 
-                // 3. Actualizar saldo del vendedor en tabla usuario
-                await actualizarSaldoVendedor(vendedorId, monto);
+                // 1. CREAR INTERCAMBIO
+                const { data: intercambioData, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .insert([{
+                        creditos_verdes: Number(precio),
+                        cantidad: 1,
+                        estado: 'en_proceso',
+                        fecha_creacion: new Date().toISOString(),
+                        fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        publicacion_id: producto.id_publicacion,
+                        usuario_id: currentUserId,              // Comprador
+                        usuario_vendedor_id: producto.usuario_id // Vendedor
+                    }])
+                    .select();
 
-                console.log('✅ Créditos liberados al vendedor en billetera y usuario');
+                if (intercambioError) {
+                    console.error('❌ Error creando intercambio:', intercambioError);
+                    throw intercambioError;
+                }
+
+                const intercambioId = intercambioData[0].id_intercambio;
+                console.log('✅ Intercambio creado:', intercambioId);
+
+                // 2. MARCAR PUBLICACIÓN COMO EN PROCESO (no vendida aún)
+                const { error: updatePubError } = await supabase
+                    .from('Publicacion')
+                    .update({
+                        estado: 'en_proceso'
+                    })
+                    .eq('id_publicacion', producto.id_publicacion);
+
+                if (updatePubError) {
+                    console.error('❌ Error actualizando estado de publicación:', updatePubError);
+                }
+
+                // 3. RETENER CRÉDITOS EN CUSTODIA
+                await retenerCreditosEnCustodia(
+                    intercambioId, 
+                    currentUserId,
+                    precio, 
+                    producto.usuario_id
+                );
+
+                // 4. ACTUALIZAR BILLETERA del comprador (reducir créditos disponibles)
+                await actualizarBilleteraCompra(currentUserId, precio);
+
+                // 5. ACTUALIZAR SALDO EN TABLA USUARIO del comprador
+                await actualizarSaldoUsuario(currentUserId, -precio);
+
+                console.log('✅ Proceso completo: Intercambio + Publicación + Custodia + Billetera + Usuario');
+
+                return intercambioId;
 
             } catch (error) {
-                console.error('❌ Error liberando créditos:', error);
+                console.error('❌ Error en crearIntercambio:', error);
                 throw error;
             }
         }
 
-        async function actualizarSaldoVendedor(vendedorId, monto) {
-    try {
-        console.log('💰 Actualizando saldo del vendedor en tabla usuario:', { vendedorId, monto });
-        
-        // 1. Obtener saldo actual del vendedor desde la tabla usuario
-        const { data: vendedor, error: vendedorError } = await supabase
-            .from('usuario')
-            .select('saldo_creditos')
-            .eq('auth_id', vendedorId)
-            .single();
+        // ========== FUNCIÓN RETENER CRÉDITOS EN CUSTODIA ==========
 
-        if (vendedorError) {
-            console.error('❌ Error obteniendo saldo del vendedor:', vendedorError);
-            throw vendedorError;
-        }
-
-        const saldoActual = parseFloat(vendedor.saldo_creditos) || 0;
-        const montoNum = parseFloat(monto);
-        const nuevoSaldo = saldoActual + montoNum;
-
-        console.log('💰 Saldo vendedor - Actual:', saldoActual, 'Monto a agregar:', montoNum, 'Nuevo saldo:', nuevoSaldo);
-
-        // 2. Actualizar tabla usuario del vendedor
-        const { error: updateError } = await supabase
-            .from('usuario')
-            .update({
-                saldo_creditos: nuevoSaldo
-            })
-            .eq('auth_id', vendedorId);
-
-        if (updateError) {
-            console.error('❌ Error actualizando saldo en usuario:', updateError);
-            throw updateError;
-        }
-
-        console.log('✅ Saldo vendedor actualizado en tabla usuario:', nuevoSaldo);
-
-    } catch (error) {
-        console.error('❌ Error actualizando saldo vendedor:', error);
-        throw error;
-    }
-}
-
-        window.cancelarCompra = async function (intercambioId) {
-            if (!confirm('¿Estás seguro de que quieres cancelar esta compra?\n\nLos créditos retenidos serán devueltos a tu cuenta y la publicación volverá a estar disponible.')) return;
-
+        async function retenerCreditosEnCustodia(intercambioId, compradorId, monto, oferenteId) {
             try {
-                mostrarLoading('Cancelando compra y devolviendo créditos...');
-
-                // 1. Obtener datos del intercambio PRIMERO
-                const { data: intercambio, error: getError } = await supabase
-                    .from('Intercambio')
-                    .select('creditos_verdes')
-                    .eq('id_intercambio', intercambioId)
+                console.log('💰 Reteniendo créditos en custodia:', { 
+                    intercambioId, 
+                    compradorId, 
+                    monto, 
+                    oferenteId 
+                });
+                
+                // Obtener los IDs de billetera del comprador y vendedor
+                const { data: billeteraComprador, error: errorComprador } = await supabase
+                    .from('billetera')
+                    .select('id_billetera')
+                    .eq('usuario_id', compradorId)
                     .single();
 
-                if (getError) throw getError;
+                const { data: billeteraVendedor, error: errorVendedor } = await supabase
+                    .from('billetera')
+                    .select('id_billetera')
+                    .eq('usuario_id', oferenteId)
+                    .single();
 
-                const monto = convertirMoneyANumero(intercambio.creditos_verdes);
+                if (errorComprador || errorVendedor) {
+                    console.error('❌ Error obteniendo billeteras:', { errorComprador, errorVendedor });
+                    throw new Error('No se pudieron obtener las billeteras');
+                }
 
-                // 2. Actualizar estado del intercambio
-                const { error: intercambioError } = await supabase
-                    .from('Intercambio')
-                    .update({
-                        estado: 'cancelado',
-                        fecha_cierre: new Date()
-                    })
-                    .eq('id_intercambio', intercambioId);
+                console.log('📊 Billeteras encontradas:', {
+                    billeteraComprador: billeteraComprador?.id_billetera,
+                    billeteraVendedor: billeteraVendedor?.id_billetera
+                });
 
-                if (intercambioError) throw intercambioError;
-
-                // 3. Devolver créditos al comprador
-                await devolverCreditosComprador(currentUserId, monto);
-
-                // 4. Reactivar publicación
-                await reactivarPublicacion(intercambioId);
-
-                // 5. Actualizar custodia
-                const { error: custodiaError } = await supabase
+                // Crear registro en custodia_creditos
+                const { data: nuevaCustodia, error: insertError } = await supabase
                     .from('custodia_creditos')
-                    .update({
-                        estado: 'cancelado',
-                        fecha_liberacion: new Date().toISOString()
-                    })
-                    .eq('intercambio_id', intercambioId);
+                    .insert([{
+                        intercambio_id: intercambioId,
+                        oferente_id: oferenteId,
+                        comprador_id: compradorId,
+                        monto: monto,
+                        billetera_vendedor: billeteraVendedor.id_billetera,
+                        billetera_comprador: billeteraComprador.id_billetera,
+                        fecha_retenido: new Date().toISOString(),
+                        estado: 'retenido'
+                    }])
+                    .select();
 
-                if (custodiaError) console.warn('Advertencia custodia:', custodiaError);
-
-                ocultarLoading();
-                alert('✅ Compra cancelada. Los créditos han sido devueltos a tu cuenta y la publicación está disponible nuevamente.');
-
-                // Recargar compras
-                cargarMisCompras();
+                if (insertError) {
+                    console.error('❌ Error creando custodia:', insertError);
+                    throw insertError;
+                }
+                
+                console.log('✅ Custodia creada:', nuevaCustodia);
+                return nuevaCustodia[0].id_custodia_creditos;
 
             } catch (error) {
-                ocultarLoading();
-                console.error('Error cancelando compra:', error);
-                alert('❌ Error al cancelar la compra: ' + error.message);
+                console.error('❌ Error en retenerCreditosEnCustodia:', error);
+                throw error;
             }
         }
 
-        // Devolver créditos al comprador
-        async function devolverCreditosComprador(usuarioId, monto) {
-    try {
-        console.log('💳 Devolviendo créditos al comprador:', { usuarioId, monto });
-        
-        // 1. Obtener saldo actual desde usuario
-        const { data: usuario, error: usuarioError } = await supabase
-            .from('usuario')
-            .select('saldo_creditos')
-            .eq('auth_id', usuarioId)
-            .single();
+        // ========== FUNCIÓN ACTUALIZAR BILLETERA COMPRA ==========
 
-        if (usuarioError) {
-            console.error('❌ Error obteniendo saldo del comprador:', usuarioError);
-            throw usuarioError;
-        }
-
-        const saldoActual = parseFloat(usuario.saldo_creditos) || 0;
-        const montoNum = parseFloat(monto);
-        const nuevoSaldo = saldoActual + montoNum;
-
-        console.log('💰 Saldo comprador - Actual:', saldoActual, 'Monto a devolver:', montoNum, 'Nuevo saldo:', nuevoSaldo);
-
-        // 2. Actualizar tabla usuario
-        const { error: updateError } = await supabase
-            .from('usuario')
-            .update({
-                saldo_creditos: nuevoSaldo
-            })
-            .eq('auth_id', usuarioId);
-
-        if (updateError) {
-            console.error('❌ Error actualizando saldo en usuario:', updateError);
-            throw updateError;
-        }
-
-        // 3. Actualizar billetera
-        await actualizarBilleteraDevolucion(usuarioId, monto);
-
-        // 4. Actualizar UI de forma segura
-        actualizarCreditosUI(nuevoSaldo);
-
-        console.log('✅ Créditos devueltos al comprador en tabla usuario y billetera');
-
-    } catch (error) {
-        console.error('❌ Error devolviendo créditos:', error);
-        throw error;
-    }
-}
-
-        async function actualizarBilleteraDevolucion(usuarioId, monto) {
+        async function actualizarBilleteraCompra(usuarioId, monto) {
             try {
-                console.log('🔄 Actualizando billetera para devolución:', { usuarioId, monto });
+                console.log('🔄 Actualizando billetera después de compra:', { usuarioId, monto });
                 
-                // Buscar billetera del usuario
+                // Obtener billetera actual del COMPRADOR
                 const { data: billetera, error: billeteraError } = await supabase
                     .from('billetera')
                     .select('*')
                     .eq('usuario_id', usuarioId)
                     .single();
 
-                // Si no existe billetera, CREARLA
-                if (billeteraError && billeteraError.code === 'PGRST116') {
-                    console.log('🆕 Creando nueva billetera para usuario:', usuarioId);
-                    
-                    const { data: nuevaBilletera, error: createError } = await supabase
-                        .from('billetera')
-                        .insert([{
-                            usuario_id: usuarioId,
-                            credito_total: parseFloat(monto),
-                            credito_actual: parseFloat(monto),
-                            credito_retenido: 0,
-                            ultima_actualizacion: new Date().toISOString()
-                        }])
-                        .select();
+                if (billeteraError) throw billeteraError;
 
-                    if (createError) {
-                        console.error('❌ Error creando billetera:', createError);
-                        throw createError;
-                    }
-                    
-                    console.log('✅ Nueva billetera creada:', nuevaBilletera);
-                    
-                } else if (billeteraError) {
-                    console.error('❌ Error buscando billetera:', billeteraError);
-                    throw billeteraError;
-                    
-                } else {
-                    // Billetera existe - ACTUALIZAR
-                    console.log('📊 Billetera actual encontrada:', billetera);
-                    
-                    const creditoActual = parseFloat(billetera.credito_actual) || 0;
-                    const creditoTotal = parseFloat(billetera.credito_total) || 0;
-                    const creditoRetenido = parseFloat(billetera.credito_retenido) || 0;
-                    const montoNum = parseFloat(monto);
-
-                    const nuevoActual = creditoActual + montoNum;
-                    const nuevoTotal = creditoTotal + montoNum;
-                    // Reducir créditos retenidos (si los hay)
-                    const nuevoRetenido = Math.max(0, creditoRetenido - montoNum);
-
-                    console.log('🔄 Actualizando billetera:', {
-                        anterior: { actual: creditoActual, total: creditoTotal, retenido: creditoRetenido },
-                        nuevo: { actual: nuevoActual, total: nuevoTotal, retenido: nuevoRetenido }
-                    });
-
-                    const { data: billeteraActualizada, error: updateError } = await supabase
-                        .from('billetera')
-                        .update({
-                            credito_actual: nuevoActual,
-                            credito_total: nuevoTotal,
-                            credito_retenido: nuevoRetenido,
-                            ultima_actualizacion: new Date().toISOString()
-                        })
-                        .eq('usuario_id', usuarioId)
-                        .select();
-
-                    if (updateError) {
-                        console.error('❌ Error actualizando billetera:', updateError);
-                        throw updateError;
-                    }
-                    
-                    console.log('✅ Billetera actualizada:', billeteraActualizada);
+                if (!billetera) {
+                    throw new Error('No se encontró la billetera del comprador');
                 }
 
+                // Calcular nuevos valores (asegurar que son números)
+                const creditoActual = parseFloat(billetera.credito_actual) || 0;
+                const creditoRetenido = parseFloat(billetera.credito_retenido) || 0;
+                const montoNum = parseFloat(monto) || 0;
+
+                const nuevoActual = creditoActual - montoNum;
+                const nuevoRetenido = creditoRetenido + montoNum;
+
+                console.log('📊 Actualizando billetera comprador:', {
+                    anterior_actual: creditoActual,
+                    anterior_retenido: creditoRetenido,
+                    nuevo_actual: nuevoActual,
+                    nuevo_retenido: nuevoRetenido
+                });
+
+                // Validar que tenga saldo suficiente
+                if (nuevoActual < 0) {
+                    throw new Error('Saldo insuficiente en la billetera');
+                }
+
+                // Actualizar billetera del COMPRADOR
+                const { error: updateError } = await supabase
+                    .from('billetera')
+                    .update({
+                        credito_actual: nuevoActual,
+                        credito_retenido: nuevoRetenido,
+                        ultima_actualizacion: new Date().toISOString()
+                    })
+                    .eq('usuario_id', usuarioId);
+
+                if (updateError) throw updateError;
+                console.log('✅ Billetera del comprador actualizada después de compra');
+
             } catch (error) {
-                console.error('❌ Error en actualizarBilleteraDevolucion:', error);
+                console.error('❌ Error actualizando billetera después de compra:', error);
                 throw error;
             }
         }
 
-        function actualizarCreditosUI(nuevoSaldo) {
-            console.log('🔄 Actualizando UI con nuevo saldo:', nuevoSaldo);
-            
-            // Lista de todos los elementos que pueden mostrar créditos
-            const creditElements = [
-                'topCredits', 'currentBalance', 'saldoBadge', 
-                'userCredits', 'creditos-disponibles'
-            ];
-            
-            let elementosActualizados = 0;
-            
-            creditElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = nuevoSaldo;
-                    elementosActualizados++;
-                    console.log(`✅ Actualizado elemento: ${id}`);
-                }
-            });
-            
-            // Actualizar localStorage
-            localStorage.setItem('user_saldo', nuevoSaldo);
-            
-            console.log(`📊 Elementos actualizados: ${elementosActualizados}`);
-            
-            // Si no se actualizó ningún elemento, mostrar advertencia
-            if (elementosActualizados === 0) {
-                console.warn('⚠️ No se encontraron elementos de créditos para actualizar');
+        // ========== FUNCIONES DE CONFIRMACIÓN Y CANCELACIÓN ==========
+
+        // Función para confirmar recepción (ejecutar desde botón en interfaz)
+        window.confirmarRecepcion = async function(intercambioId) {
+            try {
+                console.log('✅ Confirmando recepción para intercambio:', intercambioId);
+                mostrarLoadingCompra("Confirmando recepción...");
+
+                // 1. Liberar créditos al VENDEDOR
+                await liberarCreditosAlVendedor(intercambioId);
+
+                // 2. Marcar publicación como VENDIDA
+                await marcarPublicacionComoVendida(intercambioId);
+
+                // 3. Completar el intercambio
+                await completarIntercambio(intercambioId);
+
+                ocultarLoadingCompra();
+                mostrarNotificacion('✅ Recepción confirmada. Créditos transferidos al vendedor.', 'success');
+
+                // Recargar las compras después de 2 segundos
+                setTimeout(async () => {
+                    await loadMisCompras();
+                }, 2000);
+
+            } catch (error) {
+                console.error('❌ Error confirmando recepción:', error);
+                ocultarLoadingCompra();
+                mostrarNotificacion('❌ Error al confirmar recepción: ' + error.message, 'error');
             }
         }
 
-        // ========== SISTEMA DE MENSAJERÍA ==========
-
-        window.abrirChat = async function (intercambioId, tituloProducto, vendedorId) {
-            intercambioActual = intercambioId;
-            document.getElementById('tituloChat').textContent = `Chat: ${tituloProducto}`;
-            document.getElementById('modalMensajes').style.display = 'flex';
-
-            await cargarMensajes(intercambioId);
-        }
-
-        window.cerrarModalMensajes = function () {
-            document.getElementById('modalMensajes').style.display = 'none';
-            intercambioActual = null;
-        }
-
-        async function cargarMensajes(intercambioId) {
+        async function liberarCreditosAlVendedor(intercambioId) {
             try {
-                const { data: mensajes, error } = await supabase
-                    .from('Mensaje')
+                console.log('💰 Liberando créditos al vendedor para intercambio:', intercambioId);
+                
+                // 1. Obtener datos de la custodia
+                const { data: custodia, error: custodiaError } = await supabase
+                    .from('custodia_creditos')
                     .select('*')
                     .eq('intercambio_id', intercambioId)
-                    .order('fecha_envio', { ascending: true });
+                    .single();
 
+                if (custodiaError) throw custodiaError;
+
+                // 2. Actualizar custodia_creditos (marcar como liberado)
+                const { error: updateCustodiaError } = await supabase
+                    .from('custodia_creditos')
+                    .update({
+                        fecha_liberacion: new Date().toISOString(),
+                        estado: 'liberado'
+                    })
+                    .eq('intercambio_id', intercambioId);
+
+                if (updateCustodiaError) throw updateCustodiaError;
+
+                // 3. Transferir créditos al VENDEDOR
+                const { data: billeteraVendedor, error: billeteraError } = await supabase
+                    .from('billetera')
+                    .select('*')
+                    .eq('id_billetera', custodia.billetera_vendedor)
+                    .single();
+
+                if (billeteraError) throw billeteraError;
+
+                const nuevoActualVendedor = (parseFloat(billeteraVendedor.credito_actual) || 0) + parseFloat(custodia.monto);
+                const nuevoRetenidoVendedor = (parseFloat(billeteraVendedor.credito_retenido) || 0) - parseFloat(custodia.monto);
+
+                const { error: updateVendedorError } = await supabase
+                    .from('billetera')
+                    .update({
+                        credito_actual: nuevoActualVendedor,
+                        credito_retenido: Math.max(0, nuevoRetenidoVendedor),
+                        ultima_actualizacion: new Date().toISOString()
+                    })
+                    .eq('id_billetera', custodia.billetera_vendedor);
+
+                if (updateVendedorError) throw updateVendedorError;
+
+                console.log('✅ Créditos liberados al vendedor');
+
+            } catch (error) {
+                console.error('❌ Error liberando créditos al vendedor:', error);
+                throw error;
+            }
+        }
+
+        async function marcarPublicacionComoVendida(intercambioId) {
+            try {
+                console.log('🏷️ Marcando publicación como vendida para intercambio:', intercambioId);
+                
+                // Obtener el publicacion_id del intercambio
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('publicacion_id')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                // Marcar publicación como vendida/inactiva
+                const { error: updatePubError } = await supabase
+                    .from('Publicacion')
+                    .update({
+                        estado: 'vendido'
+                    })
+                    .eq('id_publicacion', intercambio.publicacion_id);
+
+                if (updatePubError) throw updatePubError;
+
+                console.log('✅ Publicación marcada como vendida');
+
+            } catch (error) {
+                console.error('❌ Error marcando publicación como vendida:', error);
+                throw error;
+            }
+        }
+
+        // Función para cancelar intercambio (devolver créditos al comprador)
+        window.cancelarIntercambio = async function(intercambioId) {
+    try {
+        console.log('❌ Cancelando intercambio:', intercambioId);
+        mostrarLoadingCompra("Cancelando intercambio...");
+
+        // 1. Obtener información del intercambio
+        const { data: intercambio, error: intercambioError } = await supabase
+            .from('Intercambio')
+            .select('publicacion_id, creditos_verdes')
+            .eq('id_intercambio', intercambioId)
+            .single();
+
+        if (intercambioError) throw intercambioError;
+
+        // 2. Devolver créditos al COMPRADOR (usando transacción)
+        const { data: resultado, error: devolucionError } = await supabase
+            .rpc('devolver_creditos_compra', {
+                p_intercambio_id: intercambioId,
+                p_comprador_id: currentUserId,
+                p_creditos: intercambio.creditos_verdes
+            });
+
+        if (devolucionError) throw devolucionError;
+
+        // 3. Reactivar publicación
+        await reactivarPublicacion(intercambio.publicacion_id);
+
+        ocultarLoadingCompra();
+        mostrarNotificacion('✅ Intercambio cancelado. Créditos devueltos a tu cuenta.', 'success');
+
+        // Recargar compras
+        setTimeout(async () => {
+            await loadMisCompras();
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Error cancelando intercambio:', error);
+        ocultarLoadingCompra();
+        mostrarNotificacion('❌ Error al cancelar intercambio: ' + error.message, 'error');
+    }
+}
+
+// ========== NUEVA FUNCIÓN PARA REACTIVAR PUBLICACIÓN ==========
+
+async function reactivarPublicacion(publicacionId) {
+    try {
+        console.log('🔄 Reactivando publicación:', publicacionId);
+        
+        const { error: updateError } = await supabase
+            .from('Publicacion')
+            .update({
+                estado: 'activo' // Volver a estado activo para que aparezca en el marketplace
+            })
+            .eq('id_publicacion', publicacionId);
+
+        if (updateError) throw updateError;
+
+        console.log('✅ Publicación reactivada:', publicacionId);
+
+    } catch (error) {
+        console.error('❌ Error reactivando publicación:', error);
+        throw error;
+    }
+}
+
+        async function devolverCreditosAlComprador(intercambioId) {
+    try {
+        console.log('💳 Devolviendo créditos al comprador para intercambio:', intercambioId);
+        
+        // 1. Obtener datos de la custodia
+        const { data: custodia, error: custodiaError } = await supabase
+            .from('custodia_creditos')
+            .select('*')
+            .eq('intercambio_id', intercambioId)
+            .single();
+
+        if (custodiaError) {
+            console.warn('⚠️ No se encontró custodia, continuando sin ella:', custodiaError);
+            return; // Si no hay custodia, continuar sin error
+        }
+
+        // 2. Actualizar custodia_creditos (marcar como devuelto)
+        const { error: updateCustodiaError } = await supabase
+            .from('custodia_creditos')
+            .update({
+                fecha_liberacion: new Date().toISOString(),
+                estado: 'devuelto'
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (updateCustodiaError) throw updateCustodiaError;
+
+        // 3. Devolver créditos al COMPRADOR
+        const { data: billeteraComprador, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('*')
+            .eq('id_billetera', custodia.billetera_comprador)
+            .single();
+
+        if (billeteraError) throw billeteraError;
+
+        const nuevoActualComprador = (parseFloat(billeteraComprador.credito_actual) || 0) + parseFloat(custodia.monto);
+        const nuevoRetenidoComprador = (parseFloat(billeteraComprador.credito_retenido) || 0) - parseFloat(custodia.monto);
+
+        const { error: updateCompradorError } = await supabase
+            .from('billetera')
+            .update({
+                credito_actual: nuevoActualComprador,
+                credito_retenido: Math.max(0, nuevoRetenidoComprador),
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('id_billetera', custodia.billetera_comprador);
+
+        if (updateCompradorError) throw updateCompradorError;
+
+        console.log('✅ Créditos devueltos al comprador');
+
+    } catch (error) {
+        console.error('❌ Error devolviendo créditos al comprador:', error);
+        throw error;
+    }
+}
+
+        async function marcarIntercambioComoCancelado(intercambioId) {
+    try {
+        console.log('📝 Marcando intercambio como cancelado:', intercambioId);
+        
+        const { error: updateError } = await supabase
+            .from('Intercambio')
+            .update({
+                estado: 'cancelado',
+                fecha_cierre: new Date().toISOString() // Agregar fecha de cierre
+            })
+            .eq('id_intercambio', intercambioId);
+
+        if (updateError) throw updateError;
+
+        console.log('✅ Intercambio marcado como cancelado');
+
+    } catch (error) {
+        console.error('❌ Error marcando intercambio como cancelado:', error);
+        throw error;
+    }
+}
+
+        async function completarIntercambio(intercambioId) {
+            try {
+                console.log('🎯 Completando intercambio:', intercambioId);
+                
+                const { error: updateError } = await supabase
+                    .from('Intercambio')
+                    .update({
+                        estado: 'completado',
+                        fecha_cierre: new Date().toISOString()
+                    })
+                    .eq('id_intercambio', intercambioId);
+
+                if (updateError) throw updateError;
+
+                console.log('✅ Intercambio completado');
+
+            } catch (error) {
+                console.error('❌ Error completando intercambio:', error);
+                throw error;
+            }
+        }
+
+        // ========== CERRAR SESIÓN ==========
+
+        async function handleLogout() {
+            try {
+                console.log('Cerrando sesión...');
+                const { error } = await supabase.auth.signOut();
                 if (error) throw error;
 
-                const cuerpoMensajes = document.getElementById('cuerpoMensajes');
-                cuerpoMensajes.innerHTML = '';
+                localStorage.clear();
+                window.location.href = 'index.html?logout=true';
 
-                if (mensajes && mensajes.length > 0) {
-                    mensajes.forEach(mensaje => {
-                        const esPropio = mensaje.emisor_id === currentUserId;
-                        const mensajeDiv = document.createElement('div');
-                        mensajeDiv.className = `mensaje ${esPropio ? 'mensaje-propio' : 'mensaje-otro'}`;
-                        mensajeDiv.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 5px;">
-                        ${esPropio ? 'Tú' : 'Vendedor'}
-                    </div>
-                    <div>${mensaje.contenido}</div>
-                    <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
-                        ${new Date(mensaje.fecha_envio).toLocaleString()}
-                    </div>
-                `;
-                        cuerpoMensajes.appendChild(mensajeDiv);
-                    });
-                } else {
-                    cuerpoMensajes.innerHTML = '<p style="text-align: center; color: #666;">No hay mensajes aún. Sé el primero en escribir.</p>';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión');
+            }
+        }
+
+        // ========== INICIALIZAR APLICACIÓN ==========
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+    <!-- Script para manejar el Modal Admin -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminBtn = document.getElementById('adminBtn');
+            const adminModal = document.getElementById('adminModal');
+            const adminForm = document.getElementById('adminForm');
+            const adminCode = document.getElementById('adminCode');
+            const adminError = document.getElementById('adminError');
+            const closeAdminModal = document.getElementById('closeAdminModal');
+
+            const SECRET_CODE = '123456'; // 🚨 CAMBIAR EN PRODUCCIÓN
+
+            // Abrir modal
+            if (adminBtn) {
+                adminBtn.addEventListener('click', () => {
+                    adminModal.classList.add('show');
+                    adminCode.focus();
+                    adminError.textContent = '';
+                    adminCode.value = '';
+                });
+            }
+
+            // Cerrar modal (botón cancelar)
+            if (closeAdminModal) {
+                closeAdminModal.addEventListener('click', () => {
+                    adminModal.classList.remove('show');
+                });
+            }
+
+            // Cerrar modal al hacer clic fuera
+            if (adminModal) {
+                adminModal.addEventListener('click', (e) => {
+                    if (e.target === adminModal) {
+                        adminModal.classList.remove('show');
+                    }
+                });
+            }
+
+            // Manejar envío del formulario
+            if (adminForm) {
+                adminForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+
+                    const code = adminCode.value.trim();
+
+                    // Validar que sean exactamente 6 dígitos
+                    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+                        adminError.textContent = '❌ Debes ingresar exactamente 6 dígitos.';
+                        adminCode.focus();
+                        return;
+                    }
+
+                    // Verificar código
+                    if (code === SECRET_CODE) {
+                        adminModal.classList.remove('show');
+                        window.location.href = 'admin.html';
+                    } else {
+                        adminError.textContent = '❌ Código incorrecto. Intenta de nuevo.';
+                        adminCode.value = '';
+                        adminCode.focus();
+                    }
+                });
+            }
+
+            // Cerrar modal con ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && adminModal.classList.contains('show')) {
+                    adminModal.classList.remove('show');
                 }
-
-                // Scroll al final
-                cuerpoMensajes.scrollTop = cuerpoMensajes.scrollHeight;
-
-            } catch (error) {
-                console.error('Error cargando mensajes:', error);
-            }
-        }
-
-        window.enviarMensaje = async function () {
-            const input = document.getElementById('inputMensaje');
-            const mensaje = input.value.trim();
-
-            if (!mensaje || !intercambioActual) return;
-
-            try {
-                // Obtener el vendedor_id del intercambio
-                const { data: intercambio, error } = await supabase
-                    .from('Intercambio')
-                    .select('usuario_vendedor_id')
-                    .eq('id_intercambio', intercambioActual)
-                    .single();
-
-                if (error) throw error;
-
-                const { error: insertError } = await supabase
-                    .from('Mensaje')
-                    .insert([{
-                        contenido: mensaje,
-                        fecha_envio: new Date(),
-                        intercambio_id: intercambioActual,
-                        emisor_id: currentUserId,
-                        receptor_id: intercambio.usuario_vendedor_id
-                    }]);
-
-                if (insertError) throw insertError;
-
-                input.value = '';
-                await cargarMensajes(intercambioActual);
-
-            } catch (error) {
-                console.error('Error enviando mensaje:', error);
-                alert('Error al enviar el mensaje');
-            }
-        }
-
-        // ========== SISTEMA DE CALIFICACIONES ==========
-
-        window.abrirModalCalificacion = function (intercambioId, productoTitulo) {
-            intercambioActual = intercambioId;
-            puntuacionSeleccionada = 0;
-
-            document.getElementById('productoCalificar').textContent = productoTitulo;
-            document.getElementById('comentarioCalificacion').value = '';
-
-            // Resetear estrellas
-            document.querySelectorAll('.estrella').forEach(star => {
-                star.classList.remove('seleccionada');
             });
-
-            document.getElementById('modalCalificacion').style.display = 'flex';
-
-            // Configurar event listeners para estrellas
-            document.querySelectorAll('.estrella').forEach(star => {
-                star.onclick = function () {
-                    puntuacionSeleccionada = parseInt(this.dataset.puntuacion);
-
-                    // Actualizar visualización de estrellas
-                    document.querySelectorAll('.estrella').forEach(s => {
-                        s.classList.toggle('seleccionada', parseInt(s.dataset.puntuacion) <= puntuacionSeleccionada);
-                    });
-                };
-            });
-        }
-
-        window.cerrarModalCalificacion = function () {
-            document.getElementById('modalCalificacion').style.display = 'none';
-            intercambioActual = null;
-        }
-
-        window.enviarCalificacion = async function () {
-            if (puntuacionSeleccionada === 0) {
-                alert('Por favor selecciona una puntuación');
-                return;
-            }
-
-            try {
-                // Obtener datos del intercambio
-                const { data: intercambio, error } = await supabase
-                    .from('Intercambio')
-                    .select('usuario_vendedor_id')
-                    .eq('id_intercambio', intercambioActual)
-                    .single();
-
-                if (error) throw error;
-
-                const comentario = document.getElementById('comentarioCalificacion').value.trim();
-
-                // Insertar calificación
-                const { error: calificacionError } = await supabase
-                    .from('calificacion')
-                    .insert([{
-                        puntuacion: puntuacionSeleccionada,
-                        comentario: comentario || null,
-                        fecha_calificacion: new Date(),
-                        intercambio_id: intercambioActual,
-                        calificador_id: currentUserId,
-                        calificado_id: intercambio.usuario_vendedor_id
-                    }]);
-
-                if (calificacionError) throw calificacionError;
-
-                alert('✅ Calificación enviada correctamente');
-                cerrarModalCalificacion();
-                cargarMisCompras(); // Recargar para actualizar la UI
-
-            } catch (error) {
-                console.error('Error enviando calificación:', error);
-                alert('Error al enviar la calificación: ' + error.message);
-            }
-        }
-
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', cargarMisCompras);
+        });
     </script>
 </body>
 </html>
