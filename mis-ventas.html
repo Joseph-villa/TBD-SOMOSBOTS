@@ -7,59 +7,374 @@
     <link rel="stylesheet" href="styles/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .venta-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+        /* 🆕 ESTILOS CORREGIDOS PARA EL HEADER Y MENÚ DE PERFIL */
+        .topbar {
+            position: relative;
+            z-index: 100;
+            background: var(--green, #4CAF50);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 60px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .user-area {
+            position: relative;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            font: inherit;
+            color: inherit;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .user-area:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-links {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
             background: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .estado-en_proceso { background: #fff3cd; color: #856404; }
-        .estado-completado { background: #d4edda; color: #155724; }
-        .estado-cancelado { background: #f8d7da; color: #721c24; }
-        
-        .estado-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-
-        .creditos-retenidos {
-            background: #e3f2fd;
-            color: #1565c0;
-            padding: 10px;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            margin: 10px 0;
-            border-left: 4px solid #2196f3;
+            padding: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            margin-top: 5px;
         }
 
-        .acciones-container {
+        .right-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .profile-links a {
+            display: block;
+            padding: 8px 12px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .profile-links a:hover {
+            background-color: #f5f5f5;
+        }
+
+        .logout-link {
+            color: #f44336 !important;
+        }
+
+        .credits-bubble {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+        }
+
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* 🆕 ESTILOS COPIADOS DE MIS-COMPRAS PARA CONSISTENCIA */
+        .layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .content {
+            order: 1;
+            flex: 1;
+            min-width: 0;
+            padding-left: 20px;
+        }
+
+        .sidebar {
+            order: 2;
+            width: 240px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: left;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: white;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .credits {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .categories {
+            list-style: none;
+            padding: 0;
+        }
+
+        .categories li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .categories li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .categories li.active {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-intercambiar {
+            background-color: #FF5722;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            width: calc(100% - 20px);
+            transition: background-color 0.2s;
+        }
+
+        .btn-intercambiar:hover {
+            background-color: #e64a19;
+        }
+
+        .btn-intercambiar:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .no-products {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin: 5px 10px;
+        }
+
+        .status-en_proceso {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-completado {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* 🆕 ESTILOS PARA CHAT Y CALIFICACIÓN */
+        .mensaje-propio {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 15px;
+        }
+
+        .mensaje-otro {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 15px;
+        }
+
+        .filtros-ventas {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
+        .filtro-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filtro-btn.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .filtro-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .filtro-btn.active:hover {
+            background: #4CAF50;
+        }
+
+        .info-creditos {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #2196f3;
+            font-size: 0.8rem;
+        }
+
+        .info-completado {
+            background: #d4edda;
+            color: #155724;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+            font-size: 0.8rem;
+        }
+
+        .info-calificacion {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 10px;
+            margin: 0 10px 10px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #ffc107;
+            font-size: 0.8rem;
+        }
+
+        /* 🆕 ESTILOS PARA BOTONES DE ACCIÓN */
         .btn-contactar {
             background: #17a2b8;
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 6px;
+            padding: 10px 15px;
+            margin: 5px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
+            font-weight: bold;
+            border-radius: 4px;
+            width: calc(100% - 20px);
+            transition: background-color 0.2s;
         }
 
         .btn-contactar:hover {
             background: #138496;
-            transform: translateY(-2px);
         }
 
-        /* Modal de mensajería */
+        .btn-acciones-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin: 10px;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                order: 0;
+                padding-left: 0;
+            }
+
+            .sidebar {
+                order: 1;
+                width: 100%;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .topbar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .search-area {
+                width: 100%;
+            }
+            
+            .search-bar {
+                width: 100%;
+            }
+        }
+
+        /* 🆕 ESTILOS PARA EL MODAL DE CHAT */
         .modal-mensajes {
             display: none;
             position: fixed;
@@ -85,7 +400,7 @@
         }
 
         .modal-header-mensajes {
-            background: var(--green);
+            background: #4CAF50;
             color: white;
             padding: 20px;
             display: flex;
@@ -98,23 +413,6 @@
             flex: 1;
             overflow-y: auto;
             max-height: 400px;
-        }
-
-        .mensaje {
-            margin-bottom: 15px;
-            padding: 12px;
-            border-radius: 10px;
-            max-width: 80%;
-        }
-
-        .mensaje-propio {
-            background: #e3f2fd;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        .mensaje-otro {
-            background: #f5f5f5;
         }
 
         .input-mensaje {
@@ -132,7 +430,7 @@
         }
 
         .btn-enviar {
-            background: var(--green);
+            background: #4CAF50;
             color: white;
             border: none;
             padding: 12px 20px;
@@ -170,6 +468,32 @@
         .back-btn:hover {
             background-color: #f8f9fa;
         }
+        
+        /* Estilos para el logo y search */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+        
+        .search-area {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+        
+        .search-bar {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
     </style>
 </head>
 
@@ -182,15 +506,72 @@
         </div>
     </div>
 
-    <section class="perfil-container">
-        <button class="back-btn" onclick="window.location.href='index2.html'">← Volver al Marketplace</button>
-
-        <h2>💰 Mis Ventas</h2>
-
-        <div id="ventasList">
-            <div>Cargando tus ventas...</div>
+    <!-- 🆕 HEADER CORREGIDO -->
+    <header class="topbar">
+        <div class="logo-area">
+            <img src="" alt="Logo Plataforma" class="logo-img">
+            <h1>Plataforma de Trueque Digital</h1>
         </div>
-    </section>
+
+        <div class="search-area">
+            <input type="search" class="search-bar" placeholder="Buscar venta..." aria-label="Buscar venta">
+        </div>
+
+        <div class="right-area">
+            <div class="credits-bubble" title="Créditos disponibles">
+                <span class="coin">♻️</span>
+                <span id="topCredits">0</span>
+            </div>
+
+            <div class="user-area" id="profileToggle">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Usuario" class="user-icon">
+                <span id="userName">Usuario</span>
+                <div id="profileLinks" class="profile-links">
+                    <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <strong id="menuUserName">Usuario</strong>
+                        <div style="font-size: 0.8rem; color: #666;" id="menuUserEmail">usuario@ejemplo.com</div>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 10px 0;">
+                        <li><a href="perfil.html">👤 Ver perfil</a></li>
+                        <li><a href="publicar.html">📤 Crear publicación</a></li>
+                        <li><a href="mis-compras.html">🛒 Mis Compras</a></li>
+                        <li><a href="mis-ventas.html">💰 Mis Ventas</a></li>
+                        <li><a href="historial.html">📊 Ver historial</a></li>
+                        <li><a href="#" id="logoutLink" class="logout-link">🚪 Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="layout">
+        <aside class="sidebar">
+            <h3>Filtros</h3>
+            <ul class="categories" id="categoriesList">
+                <li data-category="all" class="active">Todas las ventas</li>
+                <li data-category="en_proceso">En proceso</li>
+                <li data-category="completado">Completadas</li>
+                <li data-category="cancelado">Canceladas</li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <h2>💰 Mis Ventas</h2>
+            
+            <!-- 🆕 FILTROS MEJORADOS -->
+            <div class="filtros-ventas">
+                <button class="filtro-btn active" data-estado="all">Todas</button>
+                <button class="filtro-btn" data-estado="en_proceso">En Proceso</button>
+                <button class="filtro-btn" data-estado="completado">Completadas</button>
+                <button class="filtro-btn" data-estado="cancelado">Canceladas</button>
+            </div>
+
+            <div class="product-grid" id="productGrid">
+                <!-- Las ventas se cargarán dinámicamente -->
+                <div>Cargando tus ventas...</div>
+            </div>
+        </section>
+    </main>
 
     <!-- Modal de Mensajería -->
     <div class="modal-mensajes" id="modalMensajes">
@@ -216,6 +597,19 @@
 
         let currentUserId = null;
         let intercambioActual = null;
+        let todasLasVentas = [];
+        let currentFilter = 'all';
+
+        // 🆕 FUNCIÓN PARA CONVERTIR MONEY A NÚMERO
+        function convertirMoneyANumero(valorMoney) {
+            if (typeof valorMoney === 'number') return valorMoney;
+            if (typeof valorMoney === 'string') {
+                // Manejar formato money de PostgreSQL: "$1,234.56"
+                const cleaned = valorMoney.replace(/[^\d.-]/g, '');
+                return parseFloat(cleaned) || 0;
+            }
+            return 0;
+        }
 
         // Funciones de loading
         function mostrarLoading(mensaje = 'Procesando...') {
@@ -227,114 +621,281 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
-        // Cargar ventas del usuario (como vendedor)
-        async function cargarMisVentas() {
+        // 🆕 INICIALIZACIÓN MEJORADA
+        async function init() {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
+                console.log('=== INICIANDO APLICACIÓN MIS VENTAS ===');
+
+                // Verificar autenticación
+                const { data: { user }, error } = await supabase.auth.getUser();
+
+                if (error || !user) {
+                    console.log('Usuario no autenticado, redirigiendo al login');
                     window.location.href = 'index.html';
                     return;
                 }
-                
+
                 currentUserId = user.id;
-                console.log('🔄 Cargando ventas para vendedor:', currentUserId);
+                console.log('Usuario autenticado ID:', currentUserId);
 
-                // Obtener intercambios donde el usuario es el vendedor
-                const { data: intercambios, error } = await supabase
-                    .from('Intercambio')
-                    .select('*')
-                    .eq('usuario_vendedor_id', currentUserId)
-                    .order('fecha_creacion', { ascending: false });
-
-                if (error) throw error;
-
-                if (!intercambios || intercambios.length === 0) {
-                    renderVentas([]);
-                    return;
-                }
-
-                // Cargar datos relacionados
-                const ventasCompletas = await Promise.all(
-                    intercambios.map(async (intercambio) => {
-                        // Cargar publicación
-                        let publicacion = null;
-                        if (intercambio.publicacion_id) {
-                            const { data: pubData } = await supabase
-                                .from('Publicacion')
-                                .select('*')
-                                .eq('id_publicacion', intercambio.publicacion_id)
-                                .single();
-                            publicacion = pubData;
-                        }
-
-                        // Cargar mensajes
-                        const { data: mensajes } = await supabase
-                            .from('Mensaje')
-                            .select('*')
-                            .eq('intercambio_id', intercambio.id_intercambio)
-                            .order('fecha_envio', { ascending: true });
-
-                        // Cargar custodia
-                        let custodia = null;
-                        try {
-                            const { data: custodiaData } = await supabase
-                                .from('custodia_creditos')
-                                .select('*')
-                                .eq('intercambio_id', intercambio.id_intercambio)
-                                .single();
-                            custodia = custodiaData;
-                        } catch (custodiaError) {
-                            console.log('ℹ️ No se pudo cargar custodia:', custodiaError.message);
-                        }
-
-                        // Cargar datos del comprador
-                        let comprador = null;
-                        if (intercambio.usuario_id) {
-                            const { data: userData } = await supabase
-                                .from('usuario')
-                                .select('nombre_completo')
-                                .eq('auth_id', intercambio.usuario_id)
-                                .single();
-                            comprador = userData;
-                        }
-
-                        return {
-                            ...intercambio,
-                            publicacion: publicacion,
-                            mensajes: mensajes || [],
-                            custodia: custodia,
-                            comprador: comprador
-                        };
-                    })
-                );
-
-                renderVentas(ventasCompletas);
+                await loadUserData();
+                setupProfileMenu();
+                await cargarMisVentas();
+                setupVentasFilters();
 
             } catch (error) {
-                console.error('❌ Error cargando ventas:', error);
-                document.getElementById('ventasList').innerHTML = `
-                    <div class="no-posts" style="text-align: center; padding: 40px; color: #666;">
-                        <h3>❌ Error al cargar las ventas</h3>
-                        <p>${error.message}</p>
-                        <button onclick="location.reload()" 
-                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            🔄 Reintentar
-                        </button>
-                    </div>
-                `;
+                console.error('Error en inicialización:', error);
+                window.location.href = 'index.html';
             }
         }
 
+        // 🆕 CONFIGURACIÓN DEL PERFIL CORREGIDA
+        function setupProfileMenu() {
+            console.log('Configurando menú de perfil...');
+
+            const profileToggle = document.getElementById('profileToggle');
+            const profileLinks = document.getElementById('profileLinks');
+            const logoutLink = document.getElementById('logoutLink');
+
+            // Toggle del menú
+            profileToggle.addEventListener('click', function (e) {
+                console.log('Click en profileToggle');
+                e.stopPropagation();
+                const isVisible = profileLinks.style.display === 'block';
+                profileLinks.style.display = isVisible ? 'none' : 'block';
+            });
+
+            // Cerrar menú al hacer click fuera
+            document.addEventListener('click', function (e) {
+                if (!profileToggle.contains(e.target) && !profileLinks.contains(e.target)) {
+                    profileLinks.style.display = 'none';
+                }
+            });
+
+            // Cerrar sesión
+            logoutLink.addEventListener('click', async function (e) {
+                e.preventDefault();
+                console.log('Click en cerrar sesión');
+                await handleLogout();
+            });
+
+            // Prevenir que los clicks en el menú lo cierren
+            profileLinks.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        // 🆕 CARGA DE DATOS DEL USUARIO (COMO EN MIS-COMPRAS)
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    const { data: usuario, error } = await supabase
+                        .from('usuario')
+                        .select('*')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (!error && usuario) {
+                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+                        
+                        // Actualizar créditos
+                        const topCreditsElement = document.getElementById('topCredits');
+                        if (topCreditsElement) {
+                            topCreditsElement.textContent = usuario.saldo_creditos || 0;
+                        }
+
+                        localStorage.setItem('user_id', user.id);
+                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                        localStorage.setItem('user_name', usuario.nombre_completo);
+                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al cargar datos del usuario:', error);
+            }
+        }
+
+        // Cargar ventas del usuario (como vendedor)
+        async function cargarMisVentas() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        currentUserId = user.id;
+        console.log('🔄 Cargando ventas para vendedor:', currentUserId);
+
+        // Verificar conexión primero
+        const { data: test, error: testError } = await supabase
+            .from('Intercambio')
+            .select('id_intercambio')
+            .limit(1);
+
+        if (testError) {
+            console.error('❌ Error de conexión:', testError);
+            throw new Error('Problema de conexión con la base de datos');
+        }
+
+        // Obtener intercambios donde el usuario es el vendedor
+        const { data: intercambios, error } = await supabase
+            .from('Intercambio')
+            .select('*')
+            .eq('usuario_vendedor_id', currentUserId)
+            .order('fecha_creacion', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error cargando intercambios:', error);
+            
+            // Si es error 406, puede ser problema de RLS
+            if (error.code === '406' || error.status === 406) {
+                throw new Error('Problema de permisos. Contacta al administrador.');
+            }
+            throw error;
+        }
+
+        if (!intercambios || intercambios.length === 0) {
+            todasLasVentas = [];
+            aplicarFiltroVentas(currentFilter);
+            return;
+        }
+
+        // Cargar datos relacionados con manejo de errores mejorado
+        const ventasCompletas = await Promise.all(
+            intercambios.map(async (intercambio) => {
+                let publicacion = null;
+                let mensajes = [];
+                let custodia = null;
+                let comprador = null;
+                let calificaciones = [];
+
+                try {
+                    // Cargar publicación
+                    if (intercambio.publicacion_id) {
+                        const { data: pubData, error: pubError } = await supabase
+                            .from('Publicacion')
+                            .select('*')
+                            .eq('id_publicacion', intercambio.publicacion_id)
+                            .single();
+                        if (!pubError) publicacion = pubData;
+                    }
+
+                    // Cargar mensajes
+                    const { data: msgsData, error: msgsError } = await supabase
+                        .from('Mensaje')
+                        .select('*')
+                        .eq('intercambio_id', intercambio.id_intercambio)
+                        .order('fecha_envio', { ascending: true });
+                    if (!msgsError) mensajes = msgsData || [];
+
+                    // Cargar custodia
+                    try {
+                        const { data: custodiaData, error: custodiaError } = await supabase
+                            .from('custodia_creditos')
+                            .select('*')
+                            .eq('intercambio_id', intercambio.id_intercambio)
+                            .single();
+                        
+                        if (!custodiaError && custodiaData && custodiaData.oferente_id === currentUserId) {
+                            custodia = custodiaData;
+                        }
+                    } catch (custodiaError) {
+                        console.log('ℹ️ No se pudo cargar custodia para intercambio', intercambio.id_intercambio);
+                    }
+
+                    // Cargar datos del comprador
+                    if (intercambio.usuario_id) {
+                        const { data: userData, error: userError } = await supabase
+                            .from('usuario')
+                            .select('nombre_completo')
+                            .eq('auth_id', intercambio.usuario_id)
+                            .single();
+                        if (!userError) comprador = userData;
+                    }
+
+                    // Cargar calificaciones
+                    const { data: calData, error: calError } = await supabase
+                        .from('calificacion')
+                        .select('*')
+                        .eq('calificado_id', currentUserId)
+                        .eq('intercambio_id', intercambio.id_intercambio);
+                    if (!calError) calificaciones = calData || [];
+
+                } catch (error) {
+                    console.error(`Error cargando datos para intercambio ${intercambio.id_intercambio}:`, error);
+                }
+
+                return {
+                    ...intercambio,
+                    publicacion: publicacion,
+                    mensajes: mensajes,
+                    custodia: custodia,
+                    comprador: comprador,
+                    calificaciones: calificaciones
+                };
+            })
+        );
+
+        todasLasVentas = ventasCompletas;
+        aplicarFiltroVentas(currentFilter);
+
+    } catch (error) {
+        console.error('❌ Error cargando ventas:', error);
+        document.getElementById('productGrid').innerHTML = `
+            <div class="no-products">
+                <h3>❌ Error al cargar las ventas</h3>
+                <p>${error.message}</p>
+                <p style="font-size: 0.9rem; color: #888; margin-top: 10px;">
+                    Si el problema persiste, contacta al administrador del sistema.
+                </p>
+                <button onclick="location.reload()" 
+                        style="margin-top: 15px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    🔄 Reintentar
+                </button>
+            </div>
+        `;
+    }
+}
+
+        // 🆕 FUNCIÓN PARA RENDERIZAR VENTAS EN GRID (COMO MIS-COMPRAS)
         function renderVentas(ventas) {
-            const ventasList = document.getElementById('ventasList');
+            const productGrid = document.getElementById('productGrid');
             
             if (!ventas || ventas.length === 0) {
-                ventasList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <h3>📭 No tienes ventas realizadas</h3>
-                        <p>Cuando realices ventas, aparecerán aquí.</p>
+                let mensaje = '';
+                switch(currentFilter) {
+                    case 'en_proceso':
+                        mensaje = 'No tienes ventas en proceso';
+                        break;
+                    case 'completado':
+                        mensaje = 'No tienes ventas completadas';
+                        break;
+                    case 'cancelado':
+                        mensaje = 'No tienes ventas canceladas';
+                        break;
+                    default:
+                        mensaje = 'No tienes ventas realizadas';
+                }
+
+                productGrid.innerHTML = `
+                    <div class="no-products">
+                        <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
+                            📭 ${mensaje}
+                        </p>
+                        <p style="color: #888; margin-bottom: 20px;">
+                            ¡Crea publicaciones para empezar a vender!
+                        </p>
                         <button onclick="window.location.href='publicar.html'" 
-                                style="margin-top: 15px; padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                class="btn-intercambiar" 
+                                style="background: #4CAF50; color: white; border: none; 
+                                       padding: 12px 24px; border-radius: 6px; cursor: pointer; 
+                                       font-size: 1rem; font-weight: bold;">
                             📤 Crear Publicación
                         </button>
                     </div>
@@ -342,10 +903,12 @@
                 return;
             }
 
-            ventasList.innerHTML = ventas.map(venta => {
-                const precio = parseFloat(venta.creditos_verdes.replace(/[^\d.-]/g, ''));
+            productGrid.innerHTML = ventas.map(venta => {
+                // 🆕 USAR FUNCIÓN CORREGIDA PARA CONVERTIR MONEY
+                const precio = convertirMoneyANumero(venta.creditos_verdes);
                 const tieneMensajes = venta.mensajes && venta.mensajes.length > 0;
                 const creditosRetenidos = venta.custodia && venta.custodia.estado === 'retenido';
+                const tieneCalificacion = venta.calificaciones && venta.calificaciones.length > 0;
                 
                 // Contar mensajes no leídos
                 let mensajesNoLeidos = 0;
@@ -356,26 +919,52 @@
                 }
 
                 const estado = venta.estado || 'en_proceso';
-                const estadoClass = `estado-${estado}`;
-                const estadoTexto = estado.replace('_', ' ');
-
                 const nombreComprador = venta.comprador?.nombre_completo || 'Comprador';
                 const tituloProducto = venta.publicacion?.titulo || 'Producto';
+                const imagenProducto = venta.publicacion?.imagen_url;
+                const fechaVenta = new Date(venta.fecha_creacion).toLocaleDateString();
+                const idIntercambio = venta.id_intercambio;
 
+                // 🆕 TARJETA MEJORADA EN GRID
                 return `
-                    <div class="venta-card">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <h3 style="margin: 0; flex: 1;">${tituloProducto}</h3>
-                            <span class="${estadoClass} estado-badge">${estadoTexto.toUpperCase()}</span>
+                    <div class="product-card" data-venta-id="${idIntercambio}">
+                        ${imagenProducto ? `
+                            <img src="${imagenProducto}" alt="${tituloProducto}" 
+                                 style="width: 100%; height: 150px; object-fit: cover;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        ` : ''}
+                        ${!imagenProducto ? `
+                            <div style="width: 100%; height: 150px; background: #f0f0f0; 
+                                       display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: #999;">Sin imagen</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="credits">${precio} ♻️</div>
+                        
+                        <div class="status-badge status-${estado}">
+                            ${estado === 'en_proceso' ? '🟡 En proceso' : 
+                              estado === 'completado' ? '✅ Completado' : 
+                              '❌ Cancelado'}
                         </div>
                         
-                        <p><strong>Precio:</strong> ${precio} ♻️</p>
-                        <p><strong>Comprador:</strong> ${nombreComprador}</p>
-                        <p><strong>Fecha:</strong> ${new Date(venta.fecha_creacion).toLocaleDateString()}</p>
+                        <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${tituloProducto}</p>
+                        
+                        <!-- 🆕 INFORMACIÓN ADICIONAL -->
+                        <div style="padding: 0 10px; margin-bottom: 10px;">
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>Comprador:</strong> ${nombreComprador}
+                            </p>
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>Fecha:</strong> ${fechaVenta}
+                            </p>
+                            <p style="font-size: 0.8rem; color: #666; margin: 2px 0;">
+                                <strong>ID:</strong> #${idIntercambio}
+                            </p>
+                        </div>
                         
                         ${creditosRetenidos ? `
-                            <div class="creditos-retenidos">
-                                <i class="fas fa-lock"></i> 
+                            <div class="info-creditos">
                                 <strong>${precio} créditos en custodia</strong>
                                 <br>
                                 <small>Esperando confirmación del comprador</small>
@@ -383,30 +972,89 @@
                         ` : ''}
                         
                         ${venta.custodia && venta.custodia.estado === 'liberado' ? `
-                            <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">
-                                <i class="fas fa-check-circle"></i> 
-                                <strong>Créditos liberados</strong>
+                            <div class="info-completado">
+                                <strong>✅ Créditos liberados</strong>
                                 <br>
-                                <small>El comprador confirmó la recepción</small>
+                                <small>Recepción confirmada por el comprador</small>
                             </div>
                         ` : ''}
                         
-                        ${tieneMensajes ? `
-                            <p style="color: #17a2b8;">
-                                <i class="fas fa-comments"></i> 
-                                ${mensajesNoLeidos > 0 ? `<strong>${mensajesNoLeidos} mensaje(s) nuevo(s)</strong>` : 'Tienes mensajes'}
-                            </p>
+                        ${tieneCalificacion ? `
+                            <div class="info-calificacion">
+                                <strong>⭐ Calificado: ${venta.calificaciones[0].puntuacion}/5</strong>
+                                ${venta.calificaciones[0].comentario ? `<br><em>"${venta.calificaciones[0].comentario}"</em>` : ''}
+                            </div>
                         ` : ''}
                         
-                        <div class="acciones-container">
-                            <button class="btn-contactar" onclick="abrirChat(${venta.id_intercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${venta.usuario_id}')">
+                        <div class="btn-acciones-container">
+                            <button class="btn-contactar" onclick="abrirChat(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${venta.usuario_id}')">
                                 <i class="fas fa-comment"></i> 
                                 ${tieneMensajes ? 'Ver Chat' : 'Contactar Comprador'}
+                                ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
                             </button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // 🆕 FILTROS DE VENTAS (COMO EN MIS-COMPRAS)
+        function setupVentasFilters() {
+            const filterItems = document.querySelectorAll('#categoriesList li');
+            const filtroBtns = document.querySelectorAll('.filtro-btn');
+
+            // Filtros de categoría (sidebar)
+            filterItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    filterItems.forEach(li => li.classList.remove('active'));
+                    item.classList.add('active');
+
+                    const filter = item.dataset.category;
+                    aplicarFiltroVentas(filter);
+                });
+            });
+
+            // Filtros de estado (botones)
+            filtroBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filtroBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    currentFilter = btn.dataset.estado;
+                    aplicarFiltroVentas(currentFilter);
+                });
+            });
+
+            // Búsqueda
+            document.querySelector('.search-bar').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                if (!searchTerm) {
+                    aplicarFiltroVentas(currentFilter);
+                    return;
+                }
+
+                const ventasFiltradas = todasLasVentas.filter(v =>
+                    (v.publicacion?.titulo || '').toLowerCase().includes(searchTerm) ||
+                    (v.publicacion?.descripcion || '').toLowerCase().includes(searchTerm) ||
+                    (v.comprador?.nombre_completo || '').toLowerCase().includes(searchTerm)
+                );
+                renderVentas(ventasFiltradas);
+            });
+        }
+
+        // 🆕 FUNCIÓN PARA APLICAR FILTROS
+        function aplicarFiltroVentas(filtro) {
+            currentFilter = filtro;
+            
+            let ventasFiltradas = [];
+            
+            if (filtro === 'all') {
+                ventasFiltradas = todasLasVentas;
+            } else {
+                ventasFiltradas = todasLasVentas.filter(venta => venta.estado === filtro);
+            }
+            
+            renderVentas(ventasFiltradas);
         }
 
         // ========== SISTEMA DE MENSAJERÍA ==========
@@ -502,8 +1150,24 @@
             }
         }
 
+        // 🆕 CERRAR SESIÓN (COMO EN MIS-COMPRAS)
+        async function handleLogout() {
+            try {
+                console.log('Cerrando sesión...');
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+
+                localStorage.clear();
+                window.location.href = 'index.html?logout=true';
+
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión');
+            }
+        }
+
         // Inicializar
-        document.addEventListener('DOMContentLoaded', cargarMisVentas);
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

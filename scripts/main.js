@@ -59,7 +59,7 @@ app.get('/publicar', (req, res) => {
 
 // ✅ Insertar publicación
 app.post("/api/publicar", async (req, res) => {
-  const { titulo, descripcion, foto, precio, categoria_nombre, usuario_id } = req.body;
+  const { titulo, descripcion, foto, precio, categoria_nombre, usuario_id,tipo_oferta } = req.body;
 
     try {
         // 🚨 VALIDACIÓN CLAVE: Si falta una variable, falla el insert.
@@ -67,6 +67,18 @@ app.post("/api/publicar", async (req, res) => {
              return res.status(400).json({ error: "Faltan datos obligatorios (usuario, categoría o título)." });
         }
         
+// --- 🔒 VERIFICACIÓN DE ROL PARA MONETIZACIÓN ---
+        if (tipo_oferta === 'monetizacion') {
+            const rolUsuario = await obtenerRolUsuario(usuario_id);
+            
+            if (rolUsuario !== 'Emprendedor') {
+                console.log(`❌ Publicación bloqueada. Usuario ${usuario_id} tiene rol: ${rolUsuario}`);
+                return res.status(403).json({ 
+                    error: "Acceso denegado. Solo los Emprendedores pueden crear publicaciones de monetización." 
+                });
+            }
+        }
+
         const { data, error } = await supabase.from("Publicacion").insert([
             {
                 titulo,
@@ -75,6 +87,7 @@ app.post("/api/publicar", async (req, res) => {
                 precio,
                 nombre_categoria: categoria_nombre, // OK, guarda el nombre
                 usuario_id: usuario_id,             // OK
+                tipo_oferta: tipo_oferta || 'intercambio', // Guardar el tipo de oferta
             },
         ]);
 
@@ -93,6 +106,105 @@ app.post("/api/publicar", async (req, res) => {
         res.status(500).json({ error: "Error interno del servidor al procesar la solicitud. Revisa la consola de Express." });
     }
 });
+// --- Función de Utilidad para obtener el Rol del Usuario ---
+
+async function obtenerRolUsuario(usuarioId) {
+    if (!usuarioId) return 'Desconocido';
+
+    try {
+        const { data, error } = await supabase
+            .from("usuario")
+            .select("rol")
+            .eq("auth_id", usuarioId) // Asume que 'auth_id' enlaza con auth.users(id)
+            .single();
+
+        if (error || !data) {
+            console.error("Error al obtener rol para el usuario:", usuarioId, error?.message);
+            return 'Usuario'; // Rol por defecto o de fallback
+        }
+
+        return data.rol; // Devolverá 'Usuario', 'Administrador', o 'Emprendedor'
+    } catch (e) {
+        console.error("Excepción al obtener rol:", e.message);
+        return 'Usuario';
+    }
+}
+
+// --- ENDPOINTS DE LA APLICACIÓN ---
+
+// Ruta para obtener las categorías
+app.get("/api/categoria", async (req, res) => {
+    const { data, error } = await supabase.from("categoria").select("id, nombre"); 
+    
+    if (error) {
+        console.error("❌ ERROR DE SUPABASE al obtener categorías:", error.message);
+        return res.status(500).json({ error: error.message });
+    }
+    
+    console.log("✅ Categorías enviadas:", data); 
+    res.json(data);
+});
+
+
+// Ruta para insertar una nueva publicación con VERIFICACIÓN DE ROL
+app.post("/api/publicar", async (req, res) => {
+    // 🚨 Asegúrate de que el frontend envíe 'tipo_oferta'
+    const { 
+        titulo, 
+        descripcion, 
+        foto, 
+        precio, 
+        categoria_nombre, 
+        usuario_id, 
+        tipo_oferta 
+    } = req.body;
+
+    try {
+        if (!usuario_id || !categoria_nombre || !titulo) {
+             return res.status(400).json({ error: "Faltan datos obligatorios (usuario, categoría o título)." });
+        }
+        
+        // --- 🔒 LÓGICA DE VERIFICACIÓN DE ROL PARA MONETIZACIÓN ---
+        if (tipo_oferta === 'monetizacion') {
+            const rolUsuario = await obtenerRolUsuario(usuario_id);
+            
+            if (rolUsuario !== 'Emprendedor') {
+                console.log(`❌ Publicación de monetización bloqueada. Usuario ${usuario_id} tiene rol: ${rolUsuario}`);
+                // Devolver error 403 (Prohibido)
+                return res.status(403).json({ 
+                    error: "Acceso denegado. Solo los Emprendedores pueden crear publicaciones de monetización." 
+                });
+            }
+        }
+        // ----------------------------------------------------
+
+        // 💡 NOTA: Agrega 'tipo_oferta' a tu inserción de Supabase
+        const { data, error } = await supabase.from("Publicacion").insert([
+            {
+                titulo,
+                descripcion,
+                imagen_url: foto,
+                precio,
+                nombre_categoria: categoria_nombre, 
+                usuario_id: usuario_id,
+                tipo_oferta: tipo_oferta || 'intercambio', // Asegurar que se guarda un valor por defecto
+            },
+        ]);
+
+        if (error) {
+            console.error("❌ ERROR DE INSERCIÓN EN BD:", error.message);
+            return res.status(500).json({ error: `Fallo en Supabase: ${error.message}` });
+        }
+        
+        res.json({ success: true, data });
+
+    } catch (e) {
+        console.error("❌ ERROR INESPERADO EN API /PUBLICAR:", e.message, e.stack);
+        res.status(500).json({ error: "Error interno del servidor. Revisa la consola de Express." });
+    }
+});
+
+
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`✅ Servidor corriendo en: http://localhost:${PORT}`));

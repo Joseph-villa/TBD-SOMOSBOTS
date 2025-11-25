@@ -150,12 +150,36 @@
             margin-bottom: 30px;
         }
 
-        .chart-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
+        /* --- Modificación/Adición de Reglas CSS --- */
+
+/* 1. Contenedor de Gráficos (Para Layout) */
+.charts-container {
+    display: grid;
+    /* Mantén tu layout de 2 columnas */
+    grid-template-columns: 1fr 1fr;
+    gap: 20px; /* Ya tienes 20px, lo mantengo */
+    margin-bottom: 30px;
+}
+
+/* 2. Tarjeta del Gráfico (¡CRUCIAL: Define la ALTURA del área!) */
+.chart-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    /* 👇 AÑADE ESTA ALTURA FIJA PARA EL CONTENEDOR DE CADA GRÁFICO */
+    height: 350px; /* Una altura estándar para visualización */
+    /* 👆 CRUCIAL */
+}
+
+/* 3. Asegurar que el Canvas ocupe el espacio del contenedor */
+/* Añade esta regla si tienes problemas, pero no debería ser estrictamente necesaria */
+/* si el contenedor tiene una altura y anchura explícitas. */
+#ingresosChart, #creditosChart {
+    /* Ocupar el 100% del espacio de la tarjeta (.chart-card) */
+    width: 100% !important;
+    height: 100% !important; 
+}
 
         .chart-header {
             display: flex;
@@ -272,6 +296,18 @@
             margin-left: 10px;
         }
 
+        .type-ctl-btn.active {
+            background-color: #2e7d32 !important;
+            color: white !important;
+            border-color: #3498db !important;
+        }
+
+        .period-ctl-btn.active {
+            background-color: #2e7d32 !important;
+            color: white !important;
+            border-color: #3498db !important;
+        }
+
         /* Responsive */
         @media (max-width: 992px) {
             .charts-section,
@@ -314,6 +350,13 @@
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </li>
+
+                <a href="#" class="menu-item" data-tab="requests">
+    <i class="fas fa-handshake"></i>
+    <span>Solicitudes Emprendedor</span>
+    <span id="requestCount" class="badge-count" style="display: none;">0</span>
+</a>
+
             </ul>
         </div>
 
@@ -370,14 +413,28 @@
                         </div>
                     </div>
                     
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <div class="chart-title">Estadísticas Rápidas</div>
-                        </div>
-                        <div id="quickStats">
-                            <p>Cargando estadísticas...</p>
-                        </div>
-                    </div>
+
+                    <div class="col-span-1">
+    <h3 class="text-xl font-bold text-gray-800 mb-4">Estadísticas Rápidas</h3>
+    
+    <div id="quickStatsContainer" class="space-y-4">
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+            <p class="text-sm font-medium text-gray-500">Ingreso Total (Venta Créditos)</p>
+            <p class="text-3xl font-extrabold text-green-700 mt-1">
+                Bs <span id="totalIngresoBs">...</span>
+            </p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <p class="text-sm font-medium text-gray-500">Comisión Total (2% Intercambios)</p>
+            <p class="text-3xl font-extrabold text-yellow-700 mt-1">
+                <span id="totalComisionCreditos">...</span> ♻️
+            </p>
+        </div>
+    </div>
+</div>
+                    
+
                 </div>
 
                 <!-- Recent Activity -->
@@ -436,6 +493,13 @@
                 </div>
             </div>
 
+<div id="requests-tab" class="tab-content" style="display:none;">
+    <h2>Gestión de Solicitudes de Emprendedores</h2>
+    <div id="requestsTable">
+        <p>Cargando solicitudes...</p>
+    </div>
+</div>
+
             <!-- Reports Tab -->
             <div id="reports-tab" class="tab-content" style="display: none;">
                 <!-- Elemento para reportes -->
@@ -461,14 +525,43 @@
                     </div>
                 </div>
             </div>
+
+            <main class="main-content">
+
+    <div id="reports-tab" class="tab-content" style="display: none;">
+        <h2>📊 Reportes de Monetización</h2>
+        
+        <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+            
+            <div class="chart-card">
+                <h3>Ingresos Semanales (Bs)</h3>
+                <canvas id="ingresosChart"></canvas> 
+            </div>
+
+            <div class="chart-card">
+                <h3>Créditos Vendidos Semanales (♻️)</h3>
+                <canvas id="creditosChart"></canvas>
+            </div>
+
+        </div>
+
+        </div>
+
+    </main>
+
         </div>
     </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="/scripts/reportes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
 <script type="module">
     import { supabase } from './config/db.js';
 
-    let adminData = {};
-    let allData = {};
+let adminData = {}; // <--- AQUÍ SE DECLARA
+    let allData = {};
+    let currentAdminAuthId = null; // Asumiendo que añadiste esta
 
     async function verifyAdminAccess() {
         try {
@@ -513,7 +606,8 @@
             }
 
             adminData = usuario;
-            console.log('🎉 Acceso de administrador confirmado');
+            currentAdminAuthId = user.id;
+            console.log('🎉 Acceso de administrador confirmado', currentAdminAuthId);
 
             document.getElementById('loadingAdmin').style.display = 'none';
             document.getElementById('adminContainer').style.display = 'flex';
@@ -560,13 +654,19 @@ function isRecent(lastSignInDate) {
                 publicationsData,
                 exchangesData,
                 creditsData,
-                recentActivity
+                recentActivity,
+                pendingRequestsData, // <--- AÑADE ESTA LÍNEA
+                ingresosBsData, // <--- NUEVO
+    comisionesCreditosData // <--- NUEVO
             ] = await Promise.all([
                 loadUsersData(),
                 loadPublicationsData(),
                 loadExchangesData(),
                 loadCreditsData(),
-                loadRecentActivity()
+                loadRecentActivity(),
+                loadPendingRequests(), // <--- AÑADE ESTA LÍNEA
+                loadIngresosBs(),       // <--- AÑADIDO
+    loadComisionesCreditos() // <--- AÑADIDO
             ]);
 
             allData = {
@@ -574,46 +674,75 @@ function isRecent(lastSignInDate) {
                 publications: publicationsData,
                 exchanges: exchangesData,
                 credits: creditsData,
-                recentActivity: recentActivity
+                recentActivity: recentActivity,
+pendingRequests: pendingRequestsData, // <--- Usamos los datos crudos
+totalIngresoBs: ingresosBsData,       // <--- NUEVO
+    totalComisionCreditos: comisionesCreditosData // <--- NUEVO
             };
 
             updateDashboardStats();
             updateRecentActivityTable();
 
-        } catch (error) {
+console.log('Datos de Solicitudes Recibidos:', allData.pendingRequests); // <-- ¡Añade esto!
+
+// Carga y renderiza solicitudes
+        if (document.getElementById('requests-tab').style.display !== 'none') {
+             // Si esta línea falla, la consola debería mostrar un error aquí
+            renderRequestsTable(allData.pendingRequests); 
+        }
+
+    }catch (error) {
             console.error('❌ Error cargando datos del dashboard:', error);
         }
     }
 
     // Cargar datos de usuarios
+// Cargar datos de usuarios CORREGIDO
 async function loadUsersData() {
     try {
+        // 1. Primero cargar usuarios básicos
         const { data: users, error } = await supabase
             .from('usuario')
-// admin.html - loadUsersData
-// admin.html - loadUsersData
-.select('*, ultima_sesion:registro_sesiones!auth_id(fecha_ultima_conec)')
-             .order('nombre_completo', { ascending: true });
+            .select('*')
+            .order('nombre_completo', { ascending: true });
 
         if (error) throw error;
 
-        // Necesitamos guardar los datos actualizados de usuarios en allData para renderizar
-        allData.users = users.map(user => {
-            
-            // 1. Extraer la fecha de la conexión (será null si nunca inició sesión)
-            const lastSignIn = user.ultima_sesion ? user.ultima_sesion[0]?.fecha_ultima_conec : null;
-            
-            // 2. Calcular el estado: Llama a la función isRecent
-            const calculatedState = (lastSignIn && isRecent(lastSignIn)) ? 'Activo' : 'Inactivo';
+        // 2. Cargar sesiones por separado y combinar
+        const { data: sesiones, error: sesionesError } = await supabase
+            .from('registro_sesiones')
+            .select('auth_id, fecha_ultima_conec')
+            .order('fecha_ultima_conec', { ascending: false });
 
-            return {
+        if (!sesionesError) {
+            // Crear mapa de últimas sesiones por usuario
+            const ultimasSesiones = {};
+            sesiones.forEach(sesion => {
+                if (!ultimasSesiones[sesion.auth_id] || 
+                    new Date(sesion.fecha_ultima_conec) > new Date(ultimasSesiones[sesion.auth_id])) {
+                    ultimasSesiones[sesion.auth_id] = sesion.fecha_ultima_conec;
+                }
+            });
+
+            // Combinar datos
+            allData.users = users.map(user => {
+                const lastSignIn = ultimasSesiones[user.auth_id] || null;
+                const calculatedState = (lastSignIn && isRecent(lastSignIn)) ? 'Activo' : 'Inactivo';
+
+                return {
+                    ...user,
+                    last_sign_in: lastSignIn,
+                    estado: calculatedState
+                };
+            });
+        } else {
+            // Si hay error en sesiones, usar solo datos básicos
+            allData.users = users.map(user => ({
                 ...user,
-                // Almacenar la fecha de inicio de sesión
-                last_sign_in: lastSignIn, 
-                // 🚨 CAMBIO CRÍTICO: Agregar la propiedad 'estado'
-                estado: calculatedState // <-- ¡El campo que la tabla lee!
-            };
-        });
+                last_sign_in: null,
+                estado: 'Desconocido'
+            }));
+        }
 
         if (document.getElementById('users-tab').style.display !== 'none') {
             renderUsersTable(allData.users);
@@ -625,6 +754,7 @@ async function loadUsersData() {
         return [];
     }
 }
+
 
     // Cargar datos de publicaciones
     async function loadPublicationsData() {
@@ -745,12 +875,176 @@ async function loadExchangesData() {
         }
     }
 
+// --- NUEVA FUNCIÓN: Cargar Solicitudes Pendientes ---
+async function loadPendingRequests() {
+    try {
+        const { data: requests, error } = await supabase
+            .from('perfil_emprendedor')
+            .select(`*`)
+            .eq('estado_solicitud', 'pendiente')
+            .order('fecha_solicitud', { ascending: true });
+
+        if (error) throw error;
+        
+        let pendingRequestsWithUsers = requests || []; // Inicializa el array a usar
+
+        const userIds = requests.map(req => req.usuario_id);
+
+        if (userIds.length > 0) {
+            // 2. Cargar datos de Usuarios
+            const { data: users, error: usersError } = await supabase
+                .from('usuario')
+                .select('auth_id, nombre_completo, correo_electronico') // Usamos auth_id, nombre_completo, correo_electronico
+                .in('auth_id', userIds);
+                
+            if (usersError) throw usersError;
+
+            // 3. Crear el Mapa de Usuarios (userMap existe SÓLO aquí)
+            const userMap = users.reduce((acc, user) => {
+                acc[user.auth_id] = user;
+                return acc;
+            }, {});
+            
+            // 4. ASIGNACIÓN Y MAPEO DE DATOS (DENTRO del IF)
+            pendingRequestsWithUsers = requests.map(req => ({
+                ...req,
+                usuario: userMap[req.usuario_id] // userMap es visible aquí
+            }));
+            
+        }
+        
+        // 5. Asignar el resultado final a allData
+        // (Si userIds.length > 0, usa pendingRequestsWithUsers. Si no, usa requests vacíos)
+        allData.pendingRequests = pendingRequestsWithUsers; 
+
+        // ... el resto del código ...
+        
+        const requestCount = document.getElementById('requestCount');
+        if (requestCount) {
+            requestCount.textContent = allData.pendingRequests.length;
+            requestCount.style.display = allData.pendingRequests.length > 0 ? 'inline-block' : 'none';
+        }
+
+        return allData.pendingRequests;
+    } catch (error) {
+        console.error('❌ Error cargando solicitudes pendientes:', error);
+        return [];
+    }
+
+    console.log('✅ Solicitudes cargadas con datos de usuario:', allData.pendingRequests);
+
+// Solo renderizar si la pestaña está activa
+if (document.getElementById('requests-tab').style.display !== 'none') {
+    renderRequestsTable(allData.pendingRequests); // <-- Esto debe ejecutarse
+}
+}
+
+// --- NUEVAS FUNCIONES: Acciones del Admin (RPC) ---
+
+async function handleApproval(usuarioId) {
+    if (!confirm('¿Estás seguro de que quieres APROBAR esta solicitud?')) {
+        return;
+    }
+
+    // Usar la variable global que guarda el ID de Supabase
+    const adminAuthId = currentAdminAuthId; 
+
+    if (!adminAuthId) {
+        console.error('❌ Error: ID del administrador no disponible. Inicie sesión nuevamente.');
+        alert('Error: No se pudo obtener el ID del administrador.');
+        return;
+    }
+    try {
+        // Llamada a la función RPC (la que creaste en SQL)
+        const { data, error } = await supabase.rpc('aprobar_emprendedor', {
+            p_admin_id: adminAuthId, // El ID del administrador (user.id de Supabase / auth_id de tabla usuario)
+            p_usuario_id: usuarioId // El ID del emprendedor a aprobar
+        });
+
+        if (error) throw error;
+
+        alert('✅ Solicitud aprobada con éxito.');
+        // Recargar el dashboard para actualizar la lista
+        loadDashboardData(); 
+
+    } catch (error) {
+        console.error('❌ Error al aprobar solicitud:', error);
+        alert('❌ Error al aprobar solicitud: ' + (error.message || error.details));
+    }
+}
+
+async function handleRejection(usuarioId) {
+    const motivo = prompt('Escribe un breve motivo para el rechazo (opcional):');
+    if (motivo === null) return; // Cancelado
+    
+    try {
+        // Llamada a la función RPC de rechazo
+        const { data, error } = await supabase.rpc('rechazar_emprendedor', {
+            p_usuario_id: usuarioId
+        });
+
+        if (error) throw error;
+
+        const result = data[0];
+        
+        if (result.success) {
+            alert('🛑 Solicitud RECHAZADA.');
+        } else {
+            alert(`⚠️ Error al rechazar: ${result.message}`);
+        }
+
+        // Recargar la tabla
+        loadPendingRequests();
+
+    } catch (err) {
+        console.error('Error al rechazar solicitud:', err);
+        alert('❌ Error al procesar el rechazo.');
+    }
+}
+
+
+// --- NUEVAS FUNCIONES: Cargar Datos de Monetización ---
+
+// Cargar Ingresos en Dinero Real (Bs)
+async function loadIngresosBs() {
+    try {
+        const { data, error } = await supabase.rpc('get_total_ingreso_bs');
+
+        if (error) throw error;
+        
+        // Retorna el monto total en Bs (o 0 si es nulo)
+        return data !== null ? parseFloat(data) : 0;
+    } catch (e) {
+        console.error('❌ Error al cargar ingresos en Bs:', e);
+        return 0;
+    }
+}
+
+// Cargar Comisiones en Créditos (♻️)
+async function loadComisionesCreditos() {
+    try {
+        const { data, error } = await supabase.rpc('get_total_comisiones_creditos');
+
+        if (error) throw error;
+        
+        // Retorna el total de créditos retenidos (o 0 si es nulo)
+        return data !== null ? parseFloat(data) : 0;
+    } catch (e) {
+        console.error('❌ Error al cargar comisiones en créditos:', e);
+        return 0;
+    }
+}
+
+
     // Actualizar estadísticas del dashboard
     function updateDashboardStats() {
         const users = allData.users || [];
         const publications = allData.publications || [];
         const exchanges = allData.exchanges || [];
         const credits = allData.credits || [];
+
+        const ingresoBs = allData.totalIngresoBs || 0;
+    const comisionesCreditos = allData.totalComisionCreditos || 0;
 
         document.getElementById('totalUsers').textContent = users.length;
         document.getElementById('totalPublications').textContent = publications.length;
@@ -763,10 +1057,27 @@ async function loadExchangesData() {
         
         document.getElementById('totalCredits').textContent = totalCredits.toFixed(0);
 
-        // Actualizar gráfico de actividad
-        updateActivityChart();
+     // Actualizar gráfico de actividad
+    updateActivityChart();
+
+    // --- NUEVAS ACTUALIZACIONES DE MONETIZACIÓN ---
+    const totalIngresoBsEl = document.getElementById('totalIngresoBs');
+    if (totalIngresoBsEl) {
+        // Muestra en formato de moneda (ej. 1,234.50)
+        totalIngresoBsEl.textContent = ingresoBs.toLocaleString('es-BO', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     }
 
+    const totalComisionCreditosEl = document.getElementById('totalComisionCreditos');
+    if (totalComisionCreditosEl) {
+        // Muestra en formato numérico (ej. 1,234.50)
+        totalComisionCreditosEl.textContent = comisionesCreditos.toLocaleString('es-BO', {
+            maximumFractionDigits: 2
+        });
+    }
+}
     // Actualizar tabla de actividad reciente
     function updateRecentActivityTable() {
         const activity = allData.recentActivity || [];
@@ -1049,6 +1360,9 @@ async function loadExchangesData() {
                     case 'publications':
                         loadPublicationsData();
                         break;
+                        case 'requests': // <--- NUEVO CASE
+        loadPendingRequests();
+        break;
                     case 'reports':
                         // No necesita carga adicional
                         break;
@@ -1056,6 +1370,210 @@ async function loadExchangesData() {
             });
         });
     }
+
+// --- NUEVA FUNCIÓN: Renderizar Solicitudes ---
+// Función para renderizar la tabla de solicitudes
+function renderRequestsTable(requests) {
+    const container = document.getElementById('requestsTable');
+
+    if (!requests || requests.length === 0) {
+        container.innerHTML = '<p>🎉 No hay solicitudes de emprendedores pendientes.</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Negocio</th>
+                    <th>Descripción</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${requests.map(req => {
+                    // *** ¡CORRECCIÓN CLAVE AQUÍ! ***
+                    const solicituDate = req.fecha_solicitud; 
+                    
+                    return `
+                    <tr>
+                        <td>${req.usuario?.nombre_completo || 'N/A'}</td>
+                        <td>${req.usuario?.correo_electronico || 'N/A'}</td>
+                        <td><strong>${req.nombre_negocio || 'Sin nombre'}</strong></td>
+                        <td>${req.descripcion_negocio?.substring(0, 50) || 'Sin descripción'}...</td>
+                        
+                        <td>${solicituDate ? new Date(solicituDate).toLocaleDateString() : 'N/A'}</td>
+                        
+                        <td>
+                            <button onclick="handleApproval('${req.usuario_id}')" class="btn-approve">
+                                Aprobar
+                            </button>
+                            <button onclick="handleRejection('${req.usuario_id}')" class="btn-reject">
+                                Rechazar
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+
+
+// Función para renderizar un gráfico de área (simula el estilo de tu captura)
+function renderChart(ctx, labels, data, labelText, color) {
+    if (window.myCharts && window.myCharts[ctx.canvas.id]) {
+        window.myCharts[ctx.canvas.id].destroy(); // Destruye el gráfico anterior
+    }
+    
+    // Configuración para simular tu gráfico de área
+    window.myCharts = window.myCharts || {};
+    window.myCharts[ctx.canvas.id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelText,
+                data: data,
+                backgroundColor: color + '33', // Color con transparencia
+                borderColor: color,
+                borderWidth: 2,
+                fill: true, // Relleno de área
+                tension: 0.4, // Suaviza la línea (curvas)
+                pointRadius: 4 
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // Oculta la leyenda del dataset, si está en el título
+                }
+            }
+        }
+    });
+}
+
+// --- Funciones para obtener los datos de la DB (necesitas la importación de Supabase) ---
+
+// NOTA: Asegúrate de tener la variable 'supabase' importada o definida globalmente.
+
+async function fetchIngresosBsSemanal() {
+    try {
+        const { data, error } = await supabase.rpc('get_ingresos_bs_semanal');
+        if (error) {
+            console.error("❌ Error de Supabase (get_ingresos_bs_semanal):", error.message);
+            // Si hay un error, devolvemos un array vacío para no detener Promise.all
+            return [];
+        }
+        
+        console.log("✅ Datos de Ingresos RPC:", data); // <-- ¡NUEVO LOG!
+        
+        // Es crucial que el tipo de retorno sea un array, aunque esté vacío.
+        return data || []; 
+
+    } catch (e) {
+        // Esto captura errores de red (timeout, etc.)
+        console.error("❌ Error de Red/RPC al cargar Ingresos Bs Semanal:", e); 
+        return [];
+    }
+}
+async function fetchCreditosVendidosSemanal() {
+    try {
+        const { data, error } = await supabase.rpc('get_creditos_vendidos_semanal');
+        if (error) throw error;
+        return data; 
+    } catch (e) {
+        console.error("Error al cargar Créditos Vendidos Semanal:", e);
+        return [];
+    }
+}
+
+
+// --- FUNCIÓN PRINCIPAL DE CARGA ---
+
+async function loadMonetizationCharts() {
+    console.log('🔄 Cargando datos de monetización semanal...');
+    
+    const [ingresosData, creditosData] = await Promise.all([
+        fetchIngresosBsSemanal(),
+        fetchCreditosVendidosSemanal()
+    ]);
+
+    // ----------------------------------------------------
+    // GRÁFICO 1: INGRESOS BS - LÓGICA COMPLETA Y SEGURA
+    // ----------------------------------------------------
+    const ctxIngresosEl = document.getElementById('ingresosChart'); 
+    
+    if (!ctxIngresosEl) {
+        console.error("❌ Error: Elemento 'ingresosChart' no encontrado en el DOM.");
+    } else if (ingresosData && ingresosData.length > 0) {
+        
+        // 1. Declaración y Asignación de variables (dentro del IF)
+        ingresosData.sort((a, b) => (a.semana > b.semana) ? 1 : -1); 
+        const labelsBs = ingresosData.map(d => d.semana.split('-')[1]); 
+        const dataBs = ingresosData.map(d => parseFloat(d.total_bs));
+        
+        // 2. Dibujo del gráfico (ahora labelsBs y dataBs están en scope)
+        const ctxIngresos = ctxIngresosEl.getContext('2d');
+        if (ctxIngresos) {
+            renderChart(
+                ctxIngresos, 
+                labelsBs, 
+                dataBs, 
+                'Ingresos por compra de Paquetes (Bs)', 
+                '#007bff'
+            );
+        }
+        
+    } else {
+        console.warn("No hay datos de ingresos disponibles para mostrar.");
+        // Opcional: Mostrar mensaje en el div contenedor si está vacío
+        // ctxIngresosEl.parentNode.innerHTML = '<h3>No hay datos de ingresos recientes.</h3>'; 
+    }
+
+
+    // ----------------------------------------------------
+    // GRÁFICO 2: CRÉDITOS VENDIDOS - LÓGICA COMPLETA Y SEGURA
+    // ----------------------------------------------------
+    const ctxCreditosEl = document.getElementById('creditosChart');
+
+    if (!ctxCreditosEl) {
+        console.error("❌ Error: Elemento 'creditosChart' no encontrado en el DOM.");
+    } else if (creditosData && creditosData.length > 0) {
+        
+        // 1. Declaración y Asignación de variables
+        creditosData.sort((a, b) => (a.semana > b.semana) ? 1 : -1); 
+        const labelsCreditos = creditosData.map(d => d.semana.split('-')[1]);
+        const dataCreditos = creditosData.map(d => parseFloat(d.total_creditos));
+        
+        // 2. Dibujo del gráfico
+        const ctxCreditos = ctxCreditosEl.getContext('2d');
+        if (ctxCreditos) {
+            renderChart(
+                ctxCreditos, 
+                labelsCreditos, 
+                dataCreditos, 
+                'Créditos verdes vendidos', 
+                '#ff9500'
+            );
+        }
+        
+    } else {
+        console.warn("No hay datos de créditos disponibles para mostrar.");
+        // ctxCreditosEl.parentNode.innerHTML = '<h3>No hay datos de créditos recientes.</h3>';
+    }
+}
 
     // Configurar logout
     function setupLogout() {
@@ -1075,7 +1593,6 @@ async function loadExchangesData() {
     // Inicializar dashboard
     async function initAdminDashboard() {
         await loadDashboardData();
-        setupTabNavigation();
         setupLogout();
         
         // Configurar actualización automática cada 30 segundos
@@ -1088,6 +1605,50 @@ async function loadExchangesData() {
         if (isAdmin) {
             await initAdminDashboard();
         }
+
+
+const menuItems = document.querySelectorAll('.sidebar .menu-item');
+    const tabs = document.querySelectorAll('.tab-content');
+    
+    menuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const tabName = item.dataset.tab;
+            
+            // 1. Ocultar todas las pestañas y desactivar todos los ítems del menú
+            tabs.forEach(tab => tab.style.display = 'none');
+            menuItems.forEach(m => m.classList.remove('active'));
+            
+            // 2. Mostrar la pestaña seleccionada y activar el ítem
+            const selectedTab = document.getElementById(`${tabName}-tab`);
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+                item.classList.add('active');
+            }
+            
+            // 3. ¡EJECUTAR LA FUNCIÓN DE GRÁFICOS CUANDO SE SELECCIONA LA PESTAÑA 'REPORTS'!
+            if (tabName === 'reports') {
+                loadMonetizationCharts();
+            }
+
+            // Agreguemos los otros casos por si necesitas recargar las tablas al cambiar de pestaña
+            switch(tabName) {
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'exchanges':
+                    loadExchangesData();
+                    break;
+                case 'publications':
+                    loadPublicationsData();
+                    break;
+                case 'requests':
+                    loadPendingRequests();
+                    break;
+            }
+        });
+    });
+
+
     });
 
     // Hacer funciones globales para los botones
@@ -1095,11 +1656,14 @@ async function loadExchangesData() {
     window.loadUsersData = loadUsersData;
     window.loadExchangesData = loadExchangesData;
     window.loadPublicationsData = loadPublicationsData;
+    window.loadPendingRequests = loadPendingRequests; // <--- NUEVO
+window.handleApproval = handleApproval;           // <--- NUEVO
+window.handleRejection = handleRejection;         // <--- NUEVO
     window.generateUsersReport = generateUsersReport;
     window.generateExchangesReport = generateExchangesReport;
     window.generatePublicationsReport = generatePublicationsReport;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script type="module" src="/scripts/reportes.js"></script>
+
+
 </body>
 </html>

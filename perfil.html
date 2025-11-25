@@ -1,806 +1,709 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Perfil - Plataforma de Trueque</title>
-  <link rel="stylesheet" href="styles/estilos.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-  <style>
-    /* Estilos mejorados para el perfil */
-    .perfil-container {
-      max-width: 1200px;
-      margin: 30px auto;
-      padding: 0 20px;
-    }
-
-    .perfil-header {
-      background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%);
-      border-radius: 20px;
-      padding: 30px;
-      color: white;
-      margin-bottom: 30px;
-      box-shadow: 0 10px 30px rgba(47, 154, 52, 0.2);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .perfil-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 200px;
-      height: 200px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      transform: translate(60px, -60px);
-    }
-
-    .perfil-info {
-      display: flex;
-      align-items: center;
-      gap: 25px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .perfil-foto {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-      background: white;
-    }
-
-    .perfil-detalle {
-      flex: 1;
-    }
-
-    .perfil-detalle h2 {
-      margin: 0 0 8px 0;
-      font-size: 2rem;
-      font-weight: 700;
-    }
-
-    .perfil-detalle p {
-      margin: 0;
-      opacity: 0.9;
-      font-size: 1.1rem;
-    }
-
-    .user-stats {
-      display: flex;
-      gap: 25px;
-      margin-top: 20px;
-    }
-
-    .stat-item {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 15px 20px;
-      border-radius: 15px;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .stat-value {
-      font-weight: bold;
-      font-size: 1.5rem;
-      color: white;
-      margin-bottom: 5px;
-    }
-
-    .stat-item div:last-child {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-
-    .perfil-saldo {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 20px;
-      border-radius: 15px;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      margin-top: 20px;
-    }
-
-    .saldo-badge {
-      font-size: 2rem;
-      font-weight: bold;
-      margin: 10px 0;
-      color: white;
-    }
-
-    .btn-recargar {
-      background: white;
-      color: var(--green);
-      border: none;
-      padding: 12px 25px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 1rem;
-      transition: all 0.3s;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn-recargar:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .historial-link {
-      display: inline-block;
-      margin-top: 12px;
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      opacity: 0.9;
-      transition: opacity 0.3s;
-    }
-
-    .historial-link:hover {
-      opacity: 1;
-      text-decoration: underline;
-    }
-
-    .perfil-actions {
-      display: flex;
-      gap: 15px;
-      margin-top: 30px;
-      flex-wrap: wrap;
-    }
-
-    .btn-publicar {
-      background: var(--green);
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 1.1rem;
-      transition: all 0.3s;
-      box-shadow: 0 4px 15px rgba(47, 154, 52, 0.3);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-publicar:hover {
-      background: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(47, 154, 52, 0.4);
-    }
-
-    .btn-logout {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 2px solid rgba(255, 255, 255, 0.5);
-      padding: 15px 30px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 1.1rem;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-logout:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-2px);
-    }
-
-    .back-btn {
-      background: white;
-      color: var(--green);
-      border: 2px solid var(--green);
-      padding: 12px 25px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 1rem;
-      transition: all 0.3s;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .back-btn:hover {
-      background: var(--green);
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(47, 154, 52, 0.3);
-    }
-
-    .perfil-publicaciones {
-      margin: 40px 0 20px 0;
-    }
-
-    .perfil-publicaciones h3 {
-      font-size: 1.8rem;
-      color: #333;
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 25px;
-      margin-top: 20px;
-    }
-
-    .pub-card {
-      background: white;
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s;
-      border: 1px solid #f0f0f0;
-      position: relative;
-    }
-
-    .pub-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .pub-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .pub-credit {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: rgba(47, 154, 52, 0.95);
-      color: white;
-      padding: 8px 15px;
-      border-radius: 20px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      backdrop-filter: blur(10px);
-    }
-
-    .menu-dots {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #333;
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s;
-      backdrop-filter: blur(10px);
-    }
-
-    .menu-dots:hover {
-      background: white;
-      transform: scale(1.1);
-    }
-
-    .menu-opciones {
-      display: none;
-      position: absolute;
-      top: 55px;
-      right: 15px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-      z-index: 100;
-      overflow: hidden;
-      min-width: 150px;
-    }
-
-    .menu-opciones.show {
-      display: block;
-    }
-
-    .menu-opciones li {
-      padding: 12px 15px;
-      cursor: pointer;
-      transition: background 0.3s;
-      border-bottom: 1px solid #f0f0f0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .menu-opciones li:last-child {
-      border-bottom: none;
-    }
-
-    .menu-opciones li:hover {
-      background: #f8f9fa;
-    }
-
-    .pub-content {
-      padding: 20px;
-    }
-
-    .pub-content strong {
-      display: block;
-      font-size: 1.1rem;
-      margin-bottom: 8px;
-      color: #333;
-    }
-
-    .pub-content p {
-      color: #666;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      margin-bottom: 10px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .pub-content small {
-      color: #999;
-      font-size: 0.8rem;
-    }
-
-    .no-posts {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 60px 40px;
-      color: #666;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .no-posts p {
-      margin-bottom: 20px;
-      font-size: 1.1rem;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-      font-size: 1.1rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .perfil-info {
-        flex-direction: column;
-        text-align: center;
-      }
-      
-      .perfil-foto {
-        width: 100px;
-        height: 100px;
-      }
-      
-      .user-stats {
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-      
-      .grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 20px;
-      }
-      
-      .perfil-actions {
-        justify-content: center;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .perfil-header {
-        padding: 20px;
-      }
-      
-      .grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .btn-publicar, .btn-logout {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Trueque Digital</title>
+    <!-- Asumo que usas Font Awesome para los iconos y una librería de estilos (ej. Tailwind CSS) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos básicos para las tarjetas de publicación */
+        .pub-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .pub-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .pub-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .pub-credit {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #22c55e; /* Green 500 */
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        .pub-content {
+            padding: 15px;
+        }
+        /* Estilos del menú de opciones */
+        .menu-dots {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .menu-opciones {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            z-index: 20;
+            min-width: 120px;
+            display: none; /* Oculto por defecto */
+        }
+        .menu-opciones.show {
+            display: block;
+        }
+        .menu-opciones li {
+            padding: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+        .menu-opciones li:hover {
+            background-color: #f3f4f6;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
+        .no-posts {
+            grid-column: 1 / -1; /* Ocupar todo el ancho */
+            text-align: center;
+            padding: 50px;
+            background-color: #f9fafb;
+            border-radius: 12px;
+            border: 1px dashed #e5e7eb;
+        }
+        /* Estilos del Modal */
+        #modalEmprendedor {
+            display: none; /* Empezar oculto y se muestra con JS */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-visible {
+            display: flex !important;
+        }
+    </style>
 </head>
-<body class="perfil-body">
-  <section class="perfil-container">
-    <!-- Flecha para volver -->
-    <button class="back-btn" id="backBtn" title="Volver al Marketplace">
-      <i class="fas fa-arrow-left"></i>
-      Volver al Marketplace
-    </button>
+<body class="bg-gray-50 min-h-screen">
 
-    <!-- Encabezado del perfil -->
-    <div class="perfil-header">
-      <div class="perfil-info">
-        <img src="https://i.imgur.com/s1X6L2F.png" class="perfil-foto" alt="Foto de perfil">
-        <div class="perfil-detalle">
-          <h2 id="profileName">Cargando...</h2>
-          <p id="profileEmail" style="opacity: 0.9;"></p>
-          <div class="user-stats">
-            <div class="stat-item">
-              <div class="stat-value" id="pubCount">0</div>
-              <div>Publicaciones</div>
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="flex justify-between items-center mb-6">
+            <button id="backBtn" class="text-green-600 hover:text-green-800 transition duration-150">
+                <i class="fas fa-arrow-left mr-2"></i> Volver al Dashboard
+            </button>
+            <h1 class="text-3xl font-extrabold text-gray-800">Mi Perfil</h1>
+            <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
+        </header>
+
+        <!-- Sección de Datos del Usuario -->
+        <section class="bg-white rounded-xl shadow-lg p-6 mb-8 border-t-4 border-green-500">
+            <div class="flex items-center space-x-6">
+                <div class="flex-shrink-0">
+                    <div class="w-16 h-16 bg-green-200 rounded-full flex items-center justify-center text-green-700 text-3xl font-bold">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+                <div>
+                    <h2 id="profileName" class="text-2xl font-bold text-gray-900">Cargando Nombre...</h2>
+                    <p id="profileEmail" class="text-gray-500 text-sm">Cargando Correo...</p>
+                    <div class="mt-2 flex items-center space-x-4">
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 font-semibold text-sm rounded-full">
+                            Saldo: <span id="saldoBadge">0 ♻️</span>
+                        </span>
+                        <button id="recargarBtn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Recargar Créditos
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="stat-item">
-              <div class="stat-value" id="vendidosCount">0</div>
-              <div>Vendidos</div>
+            
+            <!-- Botón de Solicitud de Emprendedor -->
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <div id="emprendedorSection" class="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <h3 class="text-lg font-semibold text-green-800 mb-2 flex items-center">
+                        <i class="fas fa-store mr-2"></i> Estado de Emprendedor
+                    </h3>
+                    <p id="emprendedorStatus" class="text-gray-700 mb-4">
+                        Puedes postularte para obtener el rol de "Emprendedor" y empezar a monetizar.
+                    </p>
+                    <button 
+                        id="btnSolicitarEmprendedor"
+                        class="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition duration-200 shadow-md text-sm">
+                        <i class="fas fa-handshake mr-1"></i> Solicitar Rol
+                    </button>
+                </div>
             </div>
-            <div class="stat-item">
-              <div class="stat-value" id="ratingCount">4.8</div>
-              <div>Calificación</div>
+        </section>
+
+        <!-- Sección de Estadísticas -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow p-4 text-center">
+                <p class="text-3xl font-extrabold text-green-600" id="pubCount">0</p>
+                <p class="text-gray-500 text-sm">Publicaciones Activas</p>
             </div>
-          </div>
+            <div class="bg-white rounded-xl shadow p-4 text-center">
+                <p class="text-3xl font-extrabold text-green-600" id="vendidosCount">0</p>
+                <p class="text-gray-500 text-sm">Créditos Generados</p>
+            </div>
+            <!-- Otros contadores si los tienes -->
+        </section>
+
+        <!-- Mis Publicaciones -->
+        <section class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Mis Publicaciones</h2>
+                <button id="openFormBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-150">
+                    <i class="fas fa-plus"></i> Crear Nueva
+                </button>
+            </div>
+            <div id="userPostsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Las publicaciones se renderizarán aquí -->
+            </div>
+        </section>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- MODAL PARA SOLICITUD DE EMPRENDEDOR (Colocado al final del body) -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="modalEmprendedor" class="fixed inset-0 bg-gray-900 bg-opacity-70 items-center justify-center z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 m-4 transform transition-transform duration-300 scale-95 opacity-0" id="modalContent">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center">
+                <i class="fas fa-rocket mr-2 text-green-600"></i> Postulación Emprendedor
+            </h2>
+            
+            <form id="formSolicitudEmprendedor">
+                <!-- Campos del formulario -->
+                <div class="mb-4">
+                    <label for="nombreNegocio" class="block text-sm font-medium text-gray-700">Nombre del Negocio / Marca <span class="text-red-500">*</span></label>
+                    <input type="text" id="nombreNegocio" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                </div>
+
+                <div class="mb-4">
+                    <label for="descripcionNegocio" class="block text-sm font-medium text-gray-700">Describe tu modelo sostenible y por qué usas el trueque <span class="text-red-500">*</span></label>
+                    <textarea id="descripcionNegocio" rows="3" required
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label for="productosServicios" class="block text-sm font-medium text-gray-700">Productos o Servicios Principales a Ofrecer <span class="text-red-500">*</span></label>
+                    <textarea id="productosServicios" rows="2" required
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label for="urlContacto" class="block text-sm font-medium text-gray-700">Sitio Web / Red Social (Opcional)</label>
+                    <input type="url" id="urlContacto" 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                </div>
+
+                <!-- Botones -->
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="btnCerrarModal"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-150">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150">
+                        Enviar Postulación
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
-
-      <div class="perfil-saldo">
-        <p><strong>Saldo Actual</strong></p>
-        <div class="saldo-badge" id="saldoBadge">0 ♻️</div>
-        <button id="recargarBtn" class="btn-recargar">
-          <i class="fas fa-coins"></i>
-          Recargar Créditos
-        </button>
-        <a href="historial.html" class="historial-link">
-          <i class="fas fa-history"></i>
-          Ver Historial Completo
-        </a>
-      </div>
     </div>
 
-    <!-- Acciones principales -->
-    <div class="perfil-actions">
-      <button class="btn-publicar" id="openFormBtn">
-        <i class="fas fa-plus"></i>
-        Crear Nueva Publicación
-      </button>
-      
-      <button id="logoutBtn" class="btn-logout">
-        <i class="fas fa-sign-out-alt"></i>
-        Cerrar Sesión
-      </button>
-    </div>
 
-    <!-- Publicaciones del usuario -->
-    <div class="perfil-publicaciones">
-      <h3><i class="fas fa-images"></i> Mis Publicaciones</h3>
-    </div>
+    <!-- ------------------------------------------------------------------ -->
+    <!-- LÓGICA JAVASCRIPT DEL PERFIL (Tu código original + funciones nuevas) -->
+    <!-- ------------------------------------------------------------------ -->
+    
+    <script type="module">
+        import { supabase } from './config/db.js';
 
-    <!-- Galería de publicaciones -->
-    <div class="grid publicaciones-grid" id="userPostsGrid">
-      <div class="loading">
-        <i class="fas fa-spinner fa-spin"></i>
-        Cargando publicaciones...
-      </div>
-    </div>
-  </section>
+        // --- Elementos del DOM ---
+        const backBtn = document.getElementById('backBtn');
+        const openFormBtn = document.getElementById('openFormBtn');
+        const userPostsGrid = document.getElementById('userPostsGrid');
+        const profileName = document.getElementById('profileName');
+        const profileEmail = document.getElementById('profileEmail');
+        const saldoBadge = document.getElementById('saldoBadge');
+        const pubCount = document.getElementById('pubCount');
+        const vendidosCount = document.getElementById('vendidosCount');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const recargarBtn = document.getElementById('recargarBtn');
+        const emprendedorStatusDiv = document.getElementById('emprendedorSection'); // Contenedor del estado
+        const btnSolicitarEmprendedor = document.getElementById('btnSolicitarEmprendedor'); // Botón de solicitud
+        const modalEmprendedor = document.getElementById('modalEmprendedor');
+        const modalContent = document.getElementById('modalContent');
+        const btnCerrarModal = document.getElementById('btnCerrarModal');
+        const formSolicitudEmprendedor = document.getElementById('formSolicitudEmprendedor');
 
-<script type="module">
-import { supabase } from './config/db.js';
 
-// --- Elementos del DOM ---
-const backBtn = document.getElementById('backBtn');
-const openFormBtn = document.getElementById('openFormBtn');
-const userPostsGrid = document.getElementById('userPostsGrid');
-const profileName = document.getElementById('profileName');
-const profileEmail = document.getElementById('profileEmail');
-const saldoBadge = document.getElementById('saldoBadge');
-const pubCount = document.getElementById('pubCount');
-const vendidosCount = document.getElementById('vendidosCount');
-const logoutBtn = document.getElementById('logoutBtn');
-const recargarBtn = document.getElementById('recargarBtn');
+        let currentUserId = null;
+        let currentUserRol = 'Usuario'; // Variable para almacenar el rol
 
-let currentUserId = null;
+        // ---------------------------------------------------
+        // --- FUNCIONES ESPECÍFICAS DE EMPRENDEDOR (NUEVAS) ---
+        // ---------------------------------------------------
 
-// --- Funciones de Utilidad ---
+        function mostrarFormularioEmprendedor() {
+            modalEmprendedor.classList.add('modal-visible');
+            // Aplicar transición para animar la aparición del modal
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
 
-// Cargar datos del usuario
-async function loadUserData() {
+        function cerrarFormularioEmprendedor() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            // Retrasar la ocultación completa para que termine la transición
+            setTimeout(() => {
+                modalEmprendedor.classList.remove('modal-visible');
+                formSolicitudEmprendedor.reset(); // Limpiar el formulario
+            }, 300); 
+        }
+
+        async function verificarEstadoEmprendedor(userId) {
+            // Verifica el rol del usuario
+            if (currentUserRol === 'Emprendedor') {
+                emprendedorStatusDiv.innerHTML = `
+                    <h3 class="text-lg font-semibold text-green-700 mb-2 flex items-center">
+                        <i class="fas fa-award mr-2"></i> Rol: Emprendedor Certificado
+                    </h3>
+                    <p class="text-gray-700">¡Felicidades! Tienes permiso para crear ofertas de monetización.</p>
+                `;
+                return;
+            }
+
+            // Si no es Emprendedor, verifica si ya tiene una solicitud pendiente
+            const { data, error } = await supabase
+                .from('perfil_emprendedor')
+                .select('estado_solicitud')
+                .eq('usuario_id', userId)
+                .order('fecha_solicitud', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 es "No rows found"
+                console.error('Error al verificar solicitud:', error.message);
+            }
+
+            if (data && data.estado_solicitud === 'pendiente') {
+                btnSolicitarEmprendedor.disabled = true;
+                btnSolicitarEmprendedor.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btnSolicitarEmprendedor.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btnSolicitarEmprendedor.innerHTML = '<i class="fas fa-clock mr-1"></i> Solicitud Pendiente';
+                document.getElementById('emprendedorStatus').textContent = 'Tu solicitud de emprendedor está siendo revisada por el administrador.';
+            } 
+            // Si no hay data o está rechazada, el botón sigue activo (mostrarFormularioEmprendedor)
+        }
+
+        async function enviarSolicitudEmprendedor(event) {
+            event.preventDefault();
+
+            if (!currentUserId) {
+                alert("Debes iniciar sesión para enviar una solicitud.");
+                return;
+            }
+
+            const nombreNegocio = document.getElementById('nombreNegocio').value.trim();
+            const descripcion = document.getElementById('descripcionNegocio').value.trim();
+            const productos = document.getElementById('productosServicios').value.trim();
+            const urlContacto = document.getElementById('urlContacto').value.trim();
+
+            if (!nombreNegocio || !descripcion || !productos) {
+                // Usar un mensaje personalizado en lugar de alert
+                console.error("Por favor, completa todos los campos obligatorios.");
+                return;
+            }
+            
+            try {
+                // 3. Insertar la solicitud en la tabla 'perfil_emprendedor'
+                const { error } = await supabase
+                    .from('perfil_emprendedor')
+                    .insert({
+                        usuario_id: currentUserId,
+                        nombre_negocio: nombreNegocio,
+                        descripcion_negocio: descripcion,
+                        productos_servicios: productos,
+                        url_contacto: urlContacto,
+                        estado_solicitud: 'pendiente'
+                    });
+
+                if (error) throw error;
+
+                // Reemplazar alert()
+                console.log('✅ Solicitud enviada con éxito. Recibirás una notificación cuando sea aprobada.');
+                
+                // 4. Cerrar el modal y actualizar la vista
+                cerrarFormularioEmprendedor();
+                
+                // Forzar la actualización del mensaje de estado
+                currentUserRol = 'Usuario'; 
+                verificarEstadoEmprendedor(currentUserId);
+
+            } catch (error) {
+                console.error('Error al enviar solicitud de emprendedor:', error);
+                // Reemplazar alert()
+                console.error('❌ Error al enviar la solicitud: ' + error.message);
+            }
+        }
+
+
+
+// ... (Tus funciones: mostrarFormularioEmprendedor, cerrarFormularioEmprendedor, verificarEstadoEmprendedor, enviarSolicitudEmprendedor)
+
+// ---------------------------------------------------
+// --- FUNCIONES DE ESTADÍSTICAS (NUEVAS) ---
+// ---------------------------------------------------
+
+async function loadCreditosGenerados() {
+    if (!currentUserId) { // Solo verificamos que exista el ID
+        vendidosCount.textContent = '0';
+        return;
+    }
+
     try {
-        console.log('Cargando datos del usuario...');
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-            alert('Debes iniciar sesión para ver tu perfil');
-            window.location.href = 'index.html';
+        // Llama a la función RPC de Supabase (asumiendo que ya la creaste con "Intercambio")
+        const { data, error } = await supabase.rpc('get_creditos_generados', {
+            p_usuario_id: currentUserId
+        });
+
+        if (error) {
+            console.error('Error al cargar créditos generados:', error);
+vendidosCount.textContent = 'Error';
             return;
         }
 
-        currentUserId = user.id;
-        console.log('Usuario ID:', currentUserId);
-
-        // Obtener datos del usuario desde la tabla 'usuario'
-        const { data: usuario, error } = await supabase
-            .from('usuario')
-            .select('*')
-            .eq('auth_id', user.id)
-            .single();
-
-        if (error) {
-            console.error('Error al cargar usuario:', error);
-            throw error;
-        }
-
-        if (usuario) {
-            console.log('Datos del usuario:', usuario);
-            // Mostrar información del usuario
-            profileName.textContent = usuario.nombre_completo || 'Usuario';
-            profileEmail.textContent = usuario.correo_electronico || user.email;
-            
-            // Actualizar saldo
-            const saldo = usuario.saldo_creditos || 0;
-            saldoBadge.textContent = `${saldo} ♻️`;
-            localStorage.setItem('user_saldo', saldo);
-            
-            // Guardar datos en localStorage para otras páginas
-            localStorage.setItem('user_id', user.id);
-            localStorage.setItem('user_email', usuario.correo_electronico || user.email);
-            localStorage.setItem('user_name', usuario.nombre_completo);
-        } else {
-            console.log('No se encontraron datos del usuario en la tabla usuario');
-        }
+        // 'data' contendrá la suma total de 'creditos_verd' del vendedor
+        const totalGenerado = data !== null ? data : 0;
+        
+        // Actualiza el elemento en el dashboard, formateado para mejor lectura
+        vendidosCount.textContent = totalGenerado.toLocaleString('es-BO', { maximumFractionDigits: 0 }); 
 
     } catch (error) {
-        console.error('Error al cargar datos del usuario:', error);
-        // Usar datos de localStorage como fallback
-        const userName = localStorage.getItem('user_name') || 'Usuario';
-        const userEmail = localStorage.getItem('user_email') || '';
-        const userSaldo = localStorage.getItem('user_saldo') || '0';
-        
-        profileName.textContent = userName;
-        profileEmail.textContent = userEmail;
-        saldoBadge.textContent = `${userSaldo} ♻️`;
+        console.error('Error en loadCreditosGenerados:', error);
+        vendidosCount.textContent = 'Error';
     }
 }
 
-// Cargar publicaciones del usuario
-async function fetchUserPosts() {
-    if (!currentUserId) {
-        console.log('No hay currentUserId, no se pueden cargar publicaciones');
-        return;
-    }
+        // ---------------------------------------------------
+        // --- FUNCIONES DE UTILIDAD (TU CÓDIGO ORIGINAL) ---
+        // ---------------------------------------------------
 
-    console.log('Cargando publicaciones para usuario:', currentUserId);
-    userPostsGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando publicaciones...</div>';
-    
-    try {
-        const { data: posts, error } = await supabase
-            .from('Publicacion')
-            .select('*')
-            .eq('usuario_id', currentUserId)
-            .order('id_publicacion', { ascending: false });
+        // Cargar datos del usuario
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    // Reemplazar alert()
+                    console.log('Debes iniciar sesión para ver tu perfil');
+                    window.location.href = 'index.html';
+                    return;
+                }
 
-        if (error) {
-            console.error('Error al cargar publicaciones:', error);
-            throw error;
+                currentUserId = user.id;
+
+                // Obtener datos del usuario desde la tabla 'usuario'
+                const { data: usuario, error } = await supabase
+                    .from('usuario')
+                    .select('*')
+                    .eq('auth_id', user.id)
+                    .single();
+
+                if (error) throw error;
+
+                if (usuario) {
+                    profileName.textContent = usuario.nombre_completo || 'Usuario';
+                    profileEmail.textContent = usuario.correo_electronico || user.email;
+                    
+                    const saldo = usuario.saldo_creditos || 0;
+                    saldoBadge.textContent = `${saldo} ♻️`;
+                    localStorage.setItem('user_saldo', saldo);
+                    
+                    currentUserRol = usuario.rol || 'Usuario'; 
+                    localStorage.setItem('user_rol', currentUserRol); 
+                    
+                    // Iniciar la verificación del estado de emprendedor
+                    verificarEstadoEmprendedor(currentUserId);
+                } 
+
+            } catch (error) {
+                console.error('Error al cargar datos del usuario:', error);
+                // Fallback (de tu código original)
+                const userName = localStorage.getItem('user_name') || 'Usuario';
+                const userEmail = localStorage.getItem('user_email') || '';
+                const userSaldo = localStorage.getItem('user_saldo') || '0';
+                
+                profileName.textContent = userName;
+                profileEmail.textContent = userEmail;
+                saldoBadge.textContent = `${userSaldo} ♻️`;
+            }
         }
-        
-        console.log('Publicaciones encontradas:', posts);
-        renderPostsGrid(posts || []);
-        updateStats(posts || []);
 
-    } catch (err) {
-        console.error('Error completo al cargar publicaciones:', err);
-        userPostsGrid.innerHTML = `
-            <div class="no-posts">
-                <h3>❌ Error al cargar las publicaciones</h3>
-                <p>${err.message}</p>
-                <button onclick="window.location.href='publicar.html'" 
-                        class="btn-publicar" style="margin-top: 15px;">
-                    <i class="fas fa-plus"></i>
-                    Intentar Crear Publicación
-                </button>
-            </div>
-        `;
-    }
-}
+        // Cargar publicaciones del usuario
+        async function fetchUserPosts() {
+            if (!currentUserId) {
+                console.log('No hay currentUserId, no se pueden cargar publicaciones');
+                return;
+            }
 
-// Renderizar publicaciones
-function renderPostsGrid(posts) {
-    userPostsGrid.innerHTML = '';
-    
-    if (posts.length === 0) {
-        userPostsGrid.innerHTML = `
-            <div class="no-posts">
-                <h3>📭 Aún no tienes publicaciones</h3>
-                <p>Comienza tu journey en el trueque digital creando tu primera publicación</p>
-                <button onclick="window.location.href='publicar.html'" 
-                        class="btn-publicar" style="margin-top: 20px;">
-                    <i class="fas fa-plus"></i>
-                    Crear Mi Primera Publicación
-                </button>
-            </div>
-        `;
-    } else {
-        posts.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'pub-card';
-            card.dataset.id = p.id_publicacion;
+            userPostsGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando publicaciones...</div>';
             
-            // Mapeo de campos según la estructura real
-            const titulo = p.titulo || p.description || 'Sin título';
-            const descripcion = p.descripcion || p.meaning_of_text || 'Sin descripción';
-            const precio = p.precio || p.private || 0;
-            const categoria = p.nombre_categoria || p.mention_anticipator || 'General';
-            const imagen = p.imagen_url || p.images_url || null;
-            
-            card.innerHTML = `
-                ${imagen ? `
-                    <img src="${imagen}" alt="${titulo}" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                ` : `
-                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f0f3f0 0%, #e6f4ea 100%); 
-                               display: flex; align-items: center; justify-content: center; color: #999;">
-                        <i class="fas fa-image" style="font-size: 3rem;"></i>
+            try {
+                const { data: posts, error } = await supabase
+                    .from('Publicacion')
+                    .select('*')
+                    .eq('usuario_id', currentUserId)
+                    .order('id_publicacion', { ascending: false });
+
+                if (error) throw error;
+                
+                renderPostsGrid(posts || []);
+                updateStats(posts || []);
+
+            } catch (err) {
+                console.error('Error completo al cargar publicaciones:', err);
+                userPostsGrid.innerHTML = `
+                    <div class="no-posts">
+                        <h3>❌ Error al cargar las publicaciones</h3>
+                        <p>${err.message}</p>
+                        <button onclick="window.location.href='publicar.html'" 
+                                class="btn-publicar" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i>
+                            Intentar Crear Publicación
+                        </button>
                     </div>
-                `}
-                
-                <div class="pub-credit">${precio} ♻️</div>
-                
-                <div class="menu-dots" data-id="${p.id_publicacion}">
-                    <i class="fas fa-ellipsis-v"></i>
-                </div>
-                
-                <ul class="menu-opciones" id="menu-${p.id_publicacion}">
-                    <li data-action="edit" data-id="${p.id_publicacion}">
-                        <i class="fas fa-edit"></i> Editar
-                    </li>
-                    <li data-action="delete" data-id="${p.id_publicacion}" style="color: #f44336;">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </li>
-                </ul>
-
-                <div class="pub-content">
-                    <strong>${titulo}</strong>
-                    <p>${descripcion}</p>
-                    <small>
-                        <i class="fas fa-tag"></i> Categoría: ${categoria}
-                    </small>
-                </div>
-            `;
-            userPostsGrid.appendChild(card);
-        });
-    }
-}
-
-// Actualizar estadísticas
-function updateStats(posts) {
-    pubCount.textContent = posts.length;
-    // Por simplicidad, asumimos que 0 vendidos
-    vendidosCount.textContent = '0';
-}
-
-// Eliminar publicación
-async function handleDeletePost(postId) {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
-        return;
-    }
-
-    try {
-        const { error } = await supabase
-            .from('Publicacion')
-            .delete()
-            .eq('id_publicacion', postId)
-            .eq('usuario_id', currentUserId);
-
-        if (error) throw error;
-
-        alert('✅ Publicación eliminada con éxito.');
-        fetchUserPosts();
-
-    } catch (err) {
-        console.error('Error al eliminar publicación:', err);
-        alert('❌ Error al eliminar la publicación.');
-    }
-}
-
-// Cerrar sesión
-async function handleLogout() {
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-
-        // Limpiar localStorage
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('user_email');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('user_saldo');
-
-        alert('Sesión cerrada correctamente');
-        window.location.href = 'index.html?logout=true';
-
-    } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-        alert('Error al cerrar sesión');
-    }
-}
-
-// --- Event Listeners ---
-backBtn.addEventListener('click', () => {
-    window.location.href = 'index2.html';
-});
-
-openFormBtn.addEventListener('click', () => {
-    window.location.href = 'publicar.html';
-});
-
-logoutBtn.addEventListener('click', handleLogout);
-
-recargarBtn.addEventListener('click', () => {
-    window.location.href = 'compra.html';
-});
-
-userPostsGrid.addEventListener('click', function(event) {
-    const target = event.target;
-    const menuDots = target.closest('.menu-dots');
-    const menuItem = target.closest('li[data-action]');
-    
-    // Mostrar/Ocultar menú
-    if (menuDots) {
-        const postId = menuDots.dataset.id;
-        const menu = document.getElementById(`menu-${postId}`);
-        
-        // Ocultar otros menús
-        document.querySelectorAll('.menu-opciones.show').forEach(m => {
-            if (m.id !== `menu-${postId}`) m.classList.remove('show');
-        });
-
-        menu.classList.toggle('show');
-    }
-
-    // Ejecutar acción
-    if (menuItem) {
-        const action = menuItem.dataset.action;
-        const postId = menuItem.dataset.id;
-
-        menuItem.closest('.menu-opciones').classList.remove('show');
-
-        if (action === 'delete') {
-            handleDeletePost(postId);
-        } else if (action === 'edit') {
-            window.location.href = `editar.html?id=${postId}`;
+                `;
+            }
         }
-    }
-});
 
-// Cerrar menús al hacer click fuera
-document.addEventListener('click', function(event) {
-    if (!event.target.closest('.menu-dots') && !event.target.closest('.menu-opciones')) {
-        document.querySelectorAll('.menu-opciones.show').forEach(menu => {
-            menu.classList.remove('show');
+        // Renderizar publicaciones
+        function renderPostsGrid(posts) {
+            userPostsGrid.innerHTML = '';
+            
+            if (posts.length === 0) {
+                userPostsGrid.innerHTML = `
+                    <div class="no-posts">
+                        <h3>📭 Aún no tienes publicaciones</h3>
+                        <p>Comienza tu journey en el trueque digital creando tu primera publicación</p>
+                        <button onclick="window.location.href='publicar.html'" 
+                                class="btn-publicar" style="margin-top: 20px;">
+                            <i class="fas fa-plus"></i>
+                            Crear Mi Primera Publicación
+                        </button>
+                    </div>
+                `;
+            } else {
+                posts.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'pub-card';
+                    card.dataset.id = p.id_publicacion;
+                    
+                    const titulo = p.titulo || p.description || 'Sin título';
+                    const descripcion = p.descripcion || p.meaning_of_text || 'Sin descripción';
+                    const precio = p.precio || p.private || 0;
+                    const categoria = p.nombre_categoria || p.mention_anticipator || 'General';
+                    const imagen = p.imagen_url || p.images_url || null;
+                    
+                    card.innerHTML = `
+                        ${imagen ? `
+                            <img src="${imagen}" alt="${titulo}" 
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        ` : `
+                            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f0f3f0 0%, #e6f4ea 100%); 
+                                        display: flex; align-items: center; justify-content: center; color: #999;">
+                                <i class="fas fa-image" style="font-size: 3rem;"></i>
+                            </div>
+                        `}
+                        
+                        <div class="pub-credit">${precio} ♻️</div>
+                        
+                        <div class="menu-dots" data-id="${p.id_publicacion}">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                        
+                        <ul class="menu-opciones" id="menu-${p.id_publicacion}">
+                            <li data-action="edit" data-id="${p.id_publicacion}">
+                                <i class="fas fa-edit"></i> Editar
+                            </li>
+                            <li data-action="delete" data-id="${p.id_publicacion}" style="color: #f44336;">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </li>
+                        </ul>
+
+                        <div class="pub-content">
+                            <strong>${titulo}</strong>
+                            <p>${descripcion}</p>
+                            <small>
+                                <i class="fas fa-tag"></i> Categoría: ${categoria}
+                            </small>
+                        </div>
+                    `;
+                    userPostsGrid.appendChild(card);
+                });
+            }
+        }
+
+        // Actualizar estadísticas
+        function updateStats(posts) {
+            pubCount.textContent = posts.length;
+            vendidosCount.textContent = '0';
+        }
+
+        // Eliminar publicación
+        async function handleDeletePost(postId) {
+            if (!window.confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('Publicacion')
+                    .delete()
+                    .eq('id_publicacion', postId)
+                    .eq('usuario_id', currentUserId);
+
+                if (error) throw error;
+
+                // Reemplazar alert()
+                console.log('✅ Publicación eliminada con éxito.');
+                fetchUserPosts();
+
+            } catch (err) {
+                console.error('Error al eliminar publicación:', err);
+                // Reemplazar alert()
+                console.error('❌ Error al eliminar la publicación.');
+            }
+        }
+
+        // Cerrar sesión
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_name');
+                localStorage.removeItem('user_saldo');
+                localStorage.removeItem('user_rol');
+
+                // Reemplazar alert()
+                console.log('Sesión cerrada correctamente');
+                window.location.href = 'index.html?logout=true';
+
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                // Reemplazar alert()
+                console.error('Error al cerrar sesión');
+            }
+        }
+
+        // --- Event Listeners ---
+        // 1. Botones de Navegación
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'index2.html';
         });
-    }
-});
 
-// Inicializar al cargar la página
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Inicializando perfil...');
-    await loadUserData();
-    await fetchUserPosts();
-});
-</script>
+        openFormBtn.addEventListener('click', () => {
+            window.location.href = 'publicar.html';
+        });
+
+        logoutBtn.addEventListener('click', handleLogout);
+
+        recargarBtn.addEventListener('click', () => {
+            window.location.href = 'compra.html';
+        });
+
+        // 2. Eventos del Modal de Emprendedor (NUEVOS)
+        btnSolicitarEmprendedor.addEventListener('click', mostrarFormularioEmprendedor);
+        btnCerrarModal.addEventListener('click', cerrarFormularioEmprendedor);
+        formSolicitudEmprendedor.addEventListener('submit', enviarSolicitudEmprendedor);
+
+        // 3. Lógica de Menús y Cierre General
+        userPostsGrid.addEventListener('click', function(event) {
+            const target = event.target;
+            const menuDots = target.closest('.menu-dots');
+            const menuItem = target.closest('li[data-action]');
+            
+            if (menuDots) {
+                const postId = menuDots.dataset.id;
+                const menu = document.getElementById(`menu-${postId}`);
+                
+                document.querySelectorAll('.menu-opciones.show').forEach(m => {
+                    if (m.id !== `menu-${postId}`) m.classList.remove('show');
+                });
+
+                menu.classList.toggle('show');
+            }
+
+            if (menuItem) {
+                const action = menuItem.dataset.action;
+                const postId = menuItem.dataset.id;
+
+                menuItem.closest('.menu-opciones').classList.remove('show');
+
+                if (action === 'delete') {
+                    handleDeletePost(postId);
+                } else if (action === 'edit') {
+                    window.location.href = `editar.html?id=${postId}`;
+                }
+            }
+        });
+
+        // Cerrar menús y modal al hacer click fuera
+        document.addEventListener('click', function(event) {
+            // Cierre de menús de publicación
+            if (!event.target.closest('.menu-dots') && !event.target.closest('.menu-opciones')) {
+                document.querySelectorAll('.menu-opciones.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+            
+            // Cierre del modal de emprendedor
+            if (modalEmprendedor.classList.contains('modal-visible') && !modalContent.contains(event.target) && !btnSolicitarEmprendedor.contains(event.target)) {
+                cerrarFormularioEmprendedor();
+            }
+        });
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Ocultar el modal al inicio
+            modalEmprendedor.classList.remove('modal-visible');
+
+            await loadUserData(); 
+            await fetchUserPosts();
+            // 📢 ¡NUEVA LLAMADA AÑADIDA AQUÍ!
+await loadCreditosGenerados();
+        });
+    </script>
 </body>
 </html>

@@ -1,7 +1,169 @@
+// ------------------------ Variables Globales -------------------------------
+let reportData = null;
+let chartInstance = null;
+let secondaryChartInstance = null;
+let selectedReportType = "users"; // users, eco
+let selectedReportTime = "weekly"; // weekly, monthly, yearly
+let selectedEcoType = "all"; // all, co2, water, energy
+let co2Saved = 0;
+let energySaved = 0;
+let waterSaved = 0;
+
+let reportUpdateInterval = null;
+const REPORT_UPDATE_DELAY = 30000;
+
+// ------------------------ Datos para pruebas -------------------------------
+const mockUsers = {
+  weekly: {
+    labels: ['13', '14', '15', '16', '17', '18', '19'],
+    data: [2, 5, 12, 8, 25, 18, 15],
+    title: 'Registro de usuarios semanal'
+  },
+  monthly: {
+    labels: ['Aug', 'Sep', 'Oct', 'Nov'],
+    data: [45, 78, 92, 65],
+    title: 'Registro de usuarios mensual'
+  },
+  yearly: {
+    labels: ["2024", '2025'],
+    data: [200, 550],
+    title: 'Registro de usuarios anual'
+  }
+};
+
+const mockEco = {
+  weekly: {
+    labels: ['Ropa', 'Electrónicos', 'Servicios', 'Otros'],
+    data: [150, 100, 200, 100],
+    colors: [
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(255, 206, 86, 0.8)',
+      'rgba(75, 192, 192, 0.8)'
+    ],
+    borders: [
+      'rgba(255, 99, 132, 1)',
+      'rgba(54, 162, 235, 1)',
+      'rgba(255, 206, 86, 1)',
+      'rgba(75, 192, 192, 1)'
+    ],
+    title: 'Weekly CO2 Savings'
+  },
+  monthly: {
+    labels: ['Ropa', 'Electrónicos', 'Servicios', 'Otros'],
+    data: [500, 300, 700, 200],
+    colors: [
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(255, 206, 86, 0.8)',
+      'rgba(75, 192, 192, 0.8)'
+    ],
+    borders: [
+      'rgba(255, 99, 132, 1)',
+      'rgba(54, 162, 235, 1)',
+      'rgba(255, 206, 86, 1)',
+      'rgba(75, 192, 192, 1)'
+    ],
+    title: 'Monthly CO2 Savings'
+  },
+  yearly: {
+    labels: ['Ropa', 'Electrónicos', 'Servicios', 'Otros'],
+    data: [1500, 800, 1200, 500],
+    colors: [
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(255, 206, 86, 0.8)',
+      'rgba(75, 192, 192, 0.8)'
+    ],
+    borders: [
+      'rgba(255, 99, 132, 1)',
+      'rgba(54, 162, 235, 1)',
+      'rgba(255, 206, 86, 1)',
+      'rgba(75, 192, 192, 1)'
+    ],
+    title: 'Yearly CO2 Savings'
+  }
+};
+
+const mockEcoLine = {
+  weekly: {
+    co2: {
+      labels: ['18', '19', '20', '21', '22', '23', '24'],
+      data: [120, 150, 180, 210, 190, 220, 250]
+    },
+    energy: {
+      labels: ['18', '19', '20', '21', '22', '23', '24'],
+      data: [45, 52, 48, 60, 55, 65, 70]
+    },
+    water: {
+      labels: ['18', '19', '20', '21', '22', '23', '24'],
+      data: [800, 950, 1100, 1250, 1150, 1300, 1400]
+    }
+  },
+  monthly: {
+    co2: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      data: [650, 720, 810, 780, 850, 920]
+    },
+    energy: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      data: [240, 260, 280, 270, 290, 310]
+    },
+    water: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      data: [5200, 5800, 6400, 6100, 6700, 7200]
+    }
+  },
+  yearly: {
+    co2: {
+      labels: ['2020', '2021', '2022', '2023', '2024'],
+      data: [2800, 3500, 4200, 5100, 6500]
+    },
+    energy: {
+      labels: ['2020', '2021', '2022', '2023', '2024'],
+      data: [980, 1200, 1450, 1750, 2100]
+    },
+    water: {
+      labels: ['2020', '2021', '2022', '2023', '2024'],
+      data: [18500, 22000, 26000, 31000, 38000]
+    }
+  }
+};
+
+const mockMoneyGains = {
+  weekly: {
+    labels: ['15', '16', '17', '18', '19', '20', '21'],
+    data: [50, 75, 120, 90, 150, 200, 180]
+  },
+  monthly: {
+    labels: ['Mar', 'Apr', 'May', 'Jun'],
+    data: [800, 1200, 950, 1100]
+  },
+  yearly: {
+    labels: ['2020', '2021', '2022', '2023', '2024'],
+    data: [6000, 5900, 6100, 6200, 6300]
+  }
+};
+
+const mockCreditsGenerated = {
+  weekly: {
+    labels: ['15', '16', '17', '18', '19', '20', '21'],
+    data: [500, 750, 1200, 900, 1500, 2000, 1800]
+  },
+  monthly: {
+    labels: ['Mar', 'Apr', 'May', 'Jun'],
+    data: [8000, 12000, 9500, 11000]
+  },
+  yearly: {
+    labels: ['2020', '2021', '2022', '2023', '2024'],
+    data: [60000, 59000, 61000, 62000, 63000]
+  }
+};
+
+// --------------------- Asegurar Chart.js disponible ------------------------
 (function () {
   'use strict';
 
-  // Esperar a que Chart.js esté disponible
   function waitForChartJS(callback) {
     if (typeof Chart !== 'undefined') {
       callback();
@@ -10,7 +172,6 @@
     }
   }
 
-  // Inicializar cuando el DOM esté listo
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
@@ -19,420 +180,603 @@
 
   function init() {
     waitForChartJS(() => {
-      // Tu código que usa Chart.js aquí
-      console.log('Chart.js está listo para usar');
       generatePanel();
     });
   }
-
-  // Exponer funciones globalmente si es necesario
-  /* window.miGraficador = {
-      crearGrafico: function(canvasId, config) {
-          const canvas = document.getElementById(canvasId);
-          return new Chart(canvas, config);
-      }
-  }; */
 })();
 
-////////////////////////////////////////////////////////////////////////// Consulta registros
-// Registros semanales (últimos 7 días)
-async function getRegistrosSemanales() {
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: true });
+// --------------- Actualizacion para eventos de consulta --------------------
+document.addEventListener('DOMContentLoaded', function () {
+  startReportListener();
+});
 
-  if (error) throw error;
+function startReportListener() {
+  document.querySelectorAll('.menu-item').forEach(button => {
+    button.addEventListener('click', function () {
+      const tabId = this.getAttribute('data-tab') + '-tab';
 
-  // Procesar datos por día
-  const dailyCounts = {};
-  data.forEach(user => {
-    const day = new Date(user.created_at).getDate().toString();
-    dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      if (tabId === 'reports-tab') {
+        startReportUpdates();
+      } else {
+        stopReportUpdates();
+      }
+    });
   });
-
-  return {
-    labels: Object.keys(dailyCounts),
-    data: Object.values(dailyCounts),
-    title: 'Registro de usuarios semanal'
-  };
 }
 
-// Registros mensuales (últimos 4 meses)
-async function getRegistrosMensuales() {
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .gte('created_at', new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-
-  const monthlyCounts = {};
-  data.forEach(user => {
-    const month = new Date(user.created_at).toLocaleDateString('es-ES', { month: 'short' });
-    monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
-  });
-
-  return {
-    labels: Object.keys(monthlyCounts),
-    data: Object.values(monthlyCounts),
-    title: 'Registro de usuarios mensual'
-  };
+function startReportUpdates() {
+  stopReportUpdates();
+  updateReports();
+  reportUpdateInterval = setInterval(updateReports, REPORT_UPDATE_DELAY);
 }
 
-// Registros anuales
-async function getRegistrosAnuales() {
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('created_at')
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-
-  const yearlyCounts = {};
-  data.forEach(user => {
-    const year = new Date(user.created_at).getFullYear().toString();
-    yearlyCounts[year] = (yearlyCounts[year] || 0) + 1;
-  });
-
-  return {
-    labels: Object.keys(yearlyCounts),
-    data: Object.values(yearlyCounts),
-    title: 'Registro de usuarios Anual'
-  };
-}
-////////////////////////////////////////////////////////////////////////// Consulta registros
-
-////////////////////////////////////////////////////////////////////////// CO2
-// CO2 por categoría - Semanal
-async function getCO2PorCategoriaSemanal() {
-  const { data, error } = await supabase
-    .from('reportes_impacto')
-    .select(`
-      co2_ahorrado,
-      publicaciones (
-        categorias (
-          nombre
-        )
-      )
-    `)
-    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-  if (error) throw error;
-
-  const categorias = {
-    'Ropa': 0,
-    'Tecnología': 0,
-    'Servicios': 0,
-    'Otros': 0
-  };
-
-  data.forEach(reporte => {
-    const categoria = reporte.publicaciones?.categorias?.nombre || 'Otros';
-    categorias[categoria] = (categorias[categoria] || 0) + parseFloat(reporte.co2_ahorrado);
-  });
-
-  return {
-    labels: Object.keys(categorias),
-    data: Object.values(categorias),
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  };
+function stopReportUpdates() {
+  if (reportUpdateInterval) {
+    clearInterval(reportUpdateInterval);
+    reportUpdateInterval = null;
+  }
 }
 
-// CO2 por categoría - Mensual
-async function getCO2PorCategoriaMensual() {
-  const { data, error } = await supabase
-    .from('reportes_impacto')
-    .select(`
-      co2_ahorrado,
-      publicaciones (
-        categorias (
-          nombre
-        )
-      )
-    `)
-    .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-  if (error) throw error;
-
-  const categorias = {
-    'Ropa': 0,
-    'Tecnología': 0,
-    'Servicios': 0,
-    'Otros': 0
-  };
-
-  data.forEach(reporte => {
-    const categoria = reporte.publicaciones?.categorias?.nombre || 'Otros';
-    categorias[categoria] = (categorias[categoria] || 0) + parseFloat(reporte.co2_ahorrado);
-  });
-
-  return {
-    labels: Object.keys(categorias),
-    data: Object.values(categorias),
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  };
+// ------------ Actualizacion de reportes y consultas a Supabase ------------
+async function updateReports() {
+  console.log("Actualizando reportes...");
+  reportData = await getAllSupabaseData();
+  generateReport();
 }
 
-// CO2 por categoría - Anual
-async function getCO2PorCategoriaAnual() {
-  const { data, error } = await supabase
-    .from('reportes_impacto')
-    .select(`
-      co2_ahorrado,
-      publicaciones (
-        categorias (
-          nombre
-        )
-      )
-    `)
-    .gte('created_at', new Date(new Date().getFullYear(), 0, 1).toISOString());
-
-  if (error) throw error;
-
-  const categorias = {
-    'Ropa': 0,
-    'Tecnología': 0,
-    'Servicios': 0,
-    'Otros': 0
-  };
-
-  data.forEach(reporte => {
-    const categoria = reporte.publicaciones?.categorias?.nombre || 'Otros';
-    categorias[categoria] = (categorias[categoria] || 0) + parseFloat(reporte.co2_ahorrado);
-  });
-
-  return {
-    labels: Object.keys(categorias),
-    data: Object.values(categorias),
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  };
-}
-//////////////////////////////////////////////////////////////////////////
-
-async function cargarDatosGraficos() {
+// Funcion para obtener todos los datos de supabase
+async function getAllSupabaseData() {
   try {
-    const [
-      registrosSemanales,
-      registrosMensuales,
-      registrosAnuales,
-      co2Semanal,
-      co2Mensual,
-      co2Anual
-    ] = await Promise.all([
-      getRegistrosSemanales(),
-      getRegistrosMensuales(),
-      getRegistrosAnuales(),
-      getCO2PorCategoriaSemanal(),
-      getCO2PorCategoriaMensual(),
-      getCO2PorCategoriaAnual()
+    const [userData, impactData, gainsData] = await Promise.all([
+      getUnifiedUserData(),
+      getUnifiedImpactData(),
+      getUnifiedPackageData()
     ]);
 
     return {
-      mockSub: {
-        weekely: registrosSemanales,
-        monthly: registrosMensuales,
-        yearly: registrosAnuales
-      },
-      mockCateg: {
-        weekely: co2Semanal,
-        monthly: co2Mensual,
-        yearly: co2Anual
-      }
+      users: userData,
+      eco: impactData,
+      gains: gainsData
     };
 
   } catch (error) {
-    console.error('Error cargando datos:', error);
-    // Retornar datos mock en caso de error
-    return { mockSub, mockCateg };
-  }
-}
-
-
-const mockSub = {
-  weekely: {
-    labels: ['13', '14', '15', '16', '17', '18', '19'],
-    data: [2, 5, 12, 8, 25, 18, 15],
-    title: 'Registro de usuarios semanal'
-  },
-  monthly: {
-    labels: ['Ag', 'Sept', 'Oct', 'Nov'],
-    data: [45, 78, 92, 65],
-    title: 'Registro de usuarios mensual'
-  },
-  yearly: {
-    labels: ["2024", '2025'],
-    data: [200, 550],
-    title: 'Registro de usuarios Anual'
-  }
-};
-
-const mockCateg = {
-  weekely: {
-    labels: ['Ropa', 'Tecnología', 'Servicios', 'Otros'],
-    data: [150, 100, 200, 100], // kg de CO2 ahorrado
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  },
-  monthly: {
-    labels: ['Ropa', 'Tecnología', 'Servicios', 'Otros'],
-    data: [500, 300, 700, 200], // kg de CO2 ahorrado
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  },
-  yearly: {
-    labels: ['Ropa', 'Tecnología', 'Servicios', 'Otros'],
-    data: [1500, 800, 1200, 500], // kg de CO2 ahorrado
-    colores: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)'
-    ],
-    bordes: [
-      'rgba(255, 99, 132, 1)',
-      'rgba(54, 162, 235, 1)',
-      'rgba(255, 206, 86, 1)',
-      'rgba(75, 192, 192, 1)'
-    ]
-  },
-};
-
-let chartInstance = null;
-
-let co2 = 0;
-
-function generateCategyReport(type) {
-  const ctx = document.getElementById('canvas-chart-display').getContext('2d');
-
-
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
-
-  const data = mockCateg[type];
-  //co2 = data.data.reduce((a, b) => a + b, 0);
-
-  console.log(type, data);
-
-  chartInstance = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: data.labels,
-      datasets: [{
-        data: data.data,
-        backgroundColor: data.colores,
-        borderColor: data.bordes,
-        borderWidth: 2,
-        hoverOffset: 15
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              const label = context.label || '';
-              const value = context.raw;
-              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percentage = Math.round((value / total) * 100);
-              return `${label}: ${formatearNumero(value)} (${percentage}%)`;
-            }
-          }
-        }
-      },
-      animation: {
-        animateScale: true,
-        animateRotate: true
+    console.error('Error loading data:', error);
+    return {
+      users: mockUsers, eco: mockEco, gains: {
+        cost: mockMoneyGains,
+        points: mockCreditsGenerated
       }
+    };
+  }
+}
+
+// Consulta para registros de usuarios
+async function getUnifiedUserData() {
+  const { data, error } = await supabase
+    .from('usuario')
+    .select('fecha_creacion')
+    .order('fecha_creacion', { ascending: true });
+
+  if (error) throw error;
+
+  if (!data || data.length === 0) {
+    return {
+      weekly: mockUsers.weekly,
+      monthly: mockUsers.monthly,
+      yearly: mockUsers.yearly
+    };
+  }
+
+  // Obtener los distintos periodos
+  return {
+    weekly: processUsersByPeriod(data, 'weekly'),
+    monthly: processUsersByPeriod(data, 'monthly'),
+    yearly: processUsersByPeriod(data, 'yearly')
+  };
+}
+
+function processUsersByPeriod(data, period) {
+  let cutoffDate = new Date();
+
+  switch (period) {
+    case 'weekly':
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+      break;
+    case 'monthly':
+      cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+      break;
+    case 'yearly':
+      cutoffDate = new Date(0);
+      break;
+  }
+
+  const filteredData = data.filter(user =>
+    new Date(user.fecha_creacion) >= cutoffDate
+  );
+
+  const grouped = {};
+  const titles = {
+    weekly: 'Registros semanales',
+    monthly: 'Registros mensuales',
+    yearly: 'Registros anuales'
+  };
+
+  filteredData.forEach(user => {
+    const date = new Date(user.fecha_creacion);
+    let key;
+
+    switch (period) {
+      case 'weekly':
+        key = date.getDate().toString();
+        break;
+      case 'monthly':
+        key = date.toLocaleDateString('es-ES', { month: 'short' });
+        break;
+      case 'yearly':
+        key = date.getFullYear().toString();
+        break;
     }
+
+    grouped[key] = (grouped[key] || 0) + 1;
   });
+
+  const labels = Object.keys(grouped);
+  const values = Object.values(grouped);
+
+  return {
+    labels: labels,
+    data: values,
+    title: titles[period]
+  };
+}
+
+// Consulta para Reportes_Impacto
+async function getUnifiedImpactData() {
+  const startDate = new Date();
+  startDate.setFullYear(startDate.getFullYear() - 3); // Ultimo año
+
+  const { data, error } = await supabase
+    .from('Reportes_Impacto')
+    .select(`
+      co2,
+      energia_ahorrada,
+      agua_preservada,
+      fecha_registro,
+      Publicacion (
+        categoria (
+          nombre
+        )
+      )
+    `)
+    .gte('fecha_registro', startDate.toISOString())
+    .order('fecha_registro', { ascending: true });
+
+  if (error) throw error;
+
+  if (!data || data.length === 0) {
+    return {
+      weekly: mockEco.weekly,
+      monthly: mockEco.monthly,
+      yearly: mockEco.yearly,
+      line: mockEcoLine
+    }
+  }
+
+  // Obtener los datos para los graficos de linea y torta
+  return {
+    weekly: processImpactForDonut(data, 'weekly'),
+    monthly: processImpactForDonut(data, 'monthly'),
+    yearly: processImpactForDonut(data, 'yearly'),
+    // Data for line chart
+    line: processImpactForLine(data)
+  };
+}
+
+function processImpactForDonut(data, period) {
+  const cutoffDate = new Date();
+
+  switch (period) {
+    case 'weekly':
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+      break;
+    case 'monthly':
+      cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+      break;
+    case 'yearly':
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+      break;
+  }
+
+  const filteredData = data.filter(item =>
+    new Date(item.fecha_registro) >= cutoffDate
+  );
+
+  const impactByCategory = {
+    'Ropa': 0,
+    'Electrónicos': 0,
+    'Servicios': 0,
+    'Otros': 0
+  };
+
+  filteredData.forEach(report => {
+    // CORRECTION: Use correct relationship name
+    const category = report.Publicacion?.categoria?.nombre || 'Otros';
+    // Map Spanish category names to English
+    const englishCategory = mapCategory(category);
+    impactByCategory[englishCategory] += parseFloat(report.co2) || 0;
+  });
+
+  // Filter categories with data
+  const categoriesWithData = Object.entries(impactByCategory)
+    .filter(([_, value]) => value > 0);
+
+  const labels = categoriesWithData.map(([category]) => category);
+  const values = categoriesWithData.map(([_, value]) => value);
+
+  const titles = {
+    weekly: 'Ahorro de CO2 semanal',
+    monthly: 'Ahorro de CO2 mensual',
+    yearly: 'Ahorro de CO2 anual'
+  };
+
+  return {
+    labels: labels,
+    data: values,
+    colors: [
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(255, 206, 86, 0.8)',
+      'rgba(75, 192, 192, 0.8)'
+    ],
+    borders: [
+      'rgba(255, 99, 132, 1)',
+      'rgba(54, 162, 235, 1)',
+      'rgba(255, 206, 86, 1)',
+      'rgba(75, 192, 192, 1)'
+    ],
+    title: titles[period]
+  };
+}
+
+function mapCategory(spanishCategory) {
+  const categoryMap = {
+    'Ropa': 'Ropa',
+    'Electrónicos': 'Electrónicos',
+    'Servicios': 'Servicios',
+    'Otros': 'Otros'
+  };
+  return categoryMap[spanishCategory] || 'Otros';
+}
+
+function processImpactForLine(data) {
+  const grouped = {
+    weekly: { co2: {}, energy: {}, water: {} },
+    monthly: { co2: {}, energy: {}, water: {} },
+    yearly: { co2: {}, energy: {}, water: {} }
+  };
+
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(today.getDate() - i);
+    const dayKey = date.getDate().toString();
+    grouped.weekly.co2[dayKey] = 0;
+    grouped.weekly.energy[dayKey] = 0;
+    grouped.weekly.water[dayKey] = 0;
+  }
+
+  data.forEach(item => {
+    const date = new Date(item.fecha_registro);
+
+    // Group by day (weekly)
+    const day = date.getDate().toString();
+    if (grouped.weekly.co2.hasOwnProperty(day)) {
+      groupData(grouped.weekly, day, item);
+    }
+
+    // Group by month (monthly)  
+    const month = date.toLocaleDateString('es-ES', { month: 'short' });
+    groupData(grouped.monthly, month, item);
+
+    // Group by year (yearly)
+    const year = date.getFullYear().toString();
+    groupData(grouped.yearly, year, item);
+  });
+
+  // Convert to chart format
+  return {
+    weekly: convertForLine(grouped.weekly),
+    monthly: convertForLine(grouped.monthly),
+    yearly: convertForLine(grouped.yearly)
+  };
+}
+
+function groupData(grouped, key, item) {
+  if (!grouped.co2[key]) grouped.co2[key] = 0;
+  if (!grouped.energy[key]) grouped.energy[key] = 0;
+  if (!grouped.water[key]) grouped.water[key] = 0;
+
+  grouped.co2[key] += parseFloat(item.co2) || 0;
+  grouped.energy[key] += parseFloat(item.energia_ahorrada) || 0;
+  grouped.water[key] += parseFloat(item.agua_preservada) || 0;
+}
+
+function convertForLine(grouped) {
+  // Use CO2 keys as reference (should be the same for all)
+  const labels = Object.keys(grouped.co2);
+
+  return {
+    co2: {
+      labels: labels,
+      data: labels.map(key => grouped.co2[key])
+    },
+    energy: {
+      labels: labels,
+      data: labels.map(key => grouped.energy[key])
+    },
+    water: {
+      labels: labels,
+      data: labels.map(key => grouped.water[key])
+    }
+  };
+}
+
+const CURRENT_DATE = new Date(); // Debe estar en las variables globales
+
+const MOCK_DATA = {
+    cost: mockMoneyGains, // Usa tu mock de ingresos (costo)
+    points: mockCreditsGenerated // Usa tu mock de créditos (puntos)
+};
+// Consulta para Ganancias - ¡USANDO LAS RPC DE SUPABASE!
+async function getUnifiedPackageData() {
+    try {
+        // Llamadas Semanales
+        const [w_ingresos, w_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_semanal'),
+            supabase.rpc('get_creditos_vendidos_semanal')
+        ]);
+
+        // Llamadas Mensuales
+        const [m_ingresos, m_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_mensual'),
+            supabase.rpc('get_creditos_vendidos_mensual')
+        ]);
+        
+        // Llamadas Anuales
+        const [y_ingresos, y_creditos] = await Promise.all([
+            supabase.rpc('get_ingresos_bs_anual'),
+            supabase.rpc('get_creditos_vendidos_anual')
+        ]);
+
+        // Procesar y unir los resultados
+        const costData = {
+            weekly: processRpcData(w_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'weekly'),
+            monthly: processRpcData(m_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'monthly'),
+            yearly: processRpcData(y_ingresos.data, 'total_bs', 'Ingresos por Paquetes (Bs)', 'yearly')
+        };
+        
+        const pointsData = {
+            weekly: processRpcData(w_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'weekly'),
+            monthly: processRpcData(m_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'monthly'),
+            yearly: processRpcData(y_creditos.data, 'total_creditos', 'Créditos verdes vendidos', 'yearly')
+        };
+
+        return {
+            cost: costData,
+            points: pointsData
+        };
+
+    } catch (error) {
+        console.error('Error obteniendo datos de monetización (RPC):', error);
+        return {
+            cost: mockMoneyGains, 
+            points: mockCreditsGenerated
+        };
+    }
 }
 
 
-function generateSubcriptionReports(time) {
-  const ctx = document.getElementById('canvas-chart-display').getContext('2d');
+// NUEVA FUNCIÓN AUXILIAR: Mapea y rellena la respuesta de la RPC
+function processRpcData(data, valueKey, title, period) {
+    if (!reportData) {
+        const mockType = valueKey === 'total_bs' ? 'cost' : 'points';
+        return MOCK_DATA[mockType][period]; 
+        // Esta línea asume que MOCK_DATA[type][period] existe y está bien formateado.
+    }
+    
+    // 1. Crear una estructura base para todo el rango (con valor 0)
+    const baseRange = generateDateRange(period, CURRENT_DATE);
 
-  // Destruir gráfico anterior si existe
-  if (chartInstance) {
-    chartInstance.destroy();
+    // 2. Llenar la estructura base con los datos reales de la RPC
+    const groupedData = data.reduce((acc, item) => {
+        let rpcKey = item[Object.keys(item).find(k => k !== valueKey)]; // Obtiene la clave del período (semana, mes, anio)
+
+        // Formatear la clave de la RPC para que coincida con la clave del rango base
+        const formattedKey = formatKey(rpcKey, period); 
+
+        const value = parseFloat(item[valueKey] || 0);
+
+        // Si la clave existe en el rango base, le sumamos el valor
+        if (acc.hasOwnProperty(formattedKey)) {
+            acc[formattedKey] += value;
+        }
+
+        return acc;
+    }, baseRange); // Inicia el acumulador con el rango base
+
+    // 3. Devolver los datos listos para Chart.js
+    return {
+        labels: Object.keys(groupedData),
+        data: Object.values(groupedData),
+        title: title
+    };
+}
+
+
+// NUEVA FUNCIÓN AUXILIAR: Genera un objeto con todas las etiquetas del rango y valor cero.
+function generateDateRange(period, today) {
+    const range = {};
+    let count; 
+    
+    if (period === 'weekly') {
+        count = 6; // Últimas 6 semanas
+        for (let i = count - 1; i >= 0; i--) {
+            const tempDate = new Date();
+            tempDate.setDate(today.getDate() - (i * 7)); // Retroceder semanas
+
+            // Asumimos que la RPC nos da la semana actual (48) y las anteriores (47, 46, etc.)
+            const weekNumber = getWeekNumber(tempDate);
+            const key = `${weekNumber}`; // Solo el número de semana (ej: '47')
+            
+            if (!range.hasOwnProperty(key)) {
+              range[key] = 0;
+            }
+        }
+    } else if (period === 'monthly') {
+        count = 6; // Últimos 6 meses (para coincidir con tus mocks)
+        for (let i = count - 1; i >= 0; i--) {
+            const tempDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            // Usamos formato simple: 'Nov'
+            const key = tempDate.toLocaleDateString('es-ES', { month: 'short' }); 
+            range[key] = 0;
+        }
+    } else if (period === 'yearly') {
+        count = 5; // Últimos 5 años (para coincidir con tus mocks)
+        for (let i = count - 1; i >= 0; i--) {
+            const year = today.getFullYear() - i;
+            const key = year.toString(); // Ejemplo: '2025'
+            range[key] = 0;
+        }
+    }
+    
+    return range;
+}
+
+// Función auxiliar para obtener el número de semana (necesario para el relleno de datos)
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo.toString();
+}
+
+
+
+// NUEVA FUNCIÓN AUXILIAR: Estandariza el formato de la clave (key)
+function formatKey(rpcKey, period) {
+    if (period === 'weekly') {
+        // '2025-47' -> '47'
+        return rpcKey.split('-')[1]; 
+    } else if (period === 'monthly') {
+        // '2025-11' -> 'Nov'
+        const [year, month] = rpcKey.split('-');
+        const monthName = new Date(year, month - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
+        return monthName;
+    } else { 
+        // '2025' -> '2025'
+        return rpcKey;
+    }
+}
+
+// ----------------------- Report Control -------------------------------
+function changeReportType(type, event) {
+  selectedReportType = type;
+
+  document.querySelectorAll('.type-ctl-btn').forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+
+  generateReport();
+}
+
+function changeReportTime(time, event) {
+  selectedReportTime = time;
+
+  document.querySelectorAll('.period-ctl-btn').forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+
+  generateReport();
+}
+
+function changeEcoType(type) {
+  selectedEcoType = type;
+  generateReport();
+}
+
+// Prepare Graphics Area
+function prepareGraphicsArea() {
+  const graphicsArea = document.getElementById("graphics-area-container");
+  if (!graphicsArea) return;
+
+  if (selectedReportType === "users" && graphicsArea.childElementCount !== 1) {
+    graphicsArea.firstChild.style.flex = "1 1 100%";
+    if (graphicsArea.lastChild !== graphicsArea.firstChild) {
+      graphicsArea.removeChild(graphicsArea.lastChild);
+    }
   }
 
-  const data = mockSub[time];
+  if (["eco", "earnings"].includes(selectedReportType) &&
+    graphicsArea.childElementCount !== 2) {
 
-  // Configuración del gráfico
+    graphicsArea.firstChild.style.flex = "1 1 48%";
+    const canvasContainerTwo = document.createElement("div");
+    canvasContainerTwo.style.flex = "1 1 48%";
+    canvasContainerTwo.style.minHeight = "350px";
+    canvasContainerTwo.style.minWidth = "200px";
+    canvasContainerTwo.style.position = "relative";
+
+    const canvasTwo = document.createElement("canvas");
+    canvasTwo.id = "canvas-chart-display-two";
+
+    canvasContainerTwo.appendChild(canvasTwo);
+    graphicsArea.appendChild(canvasContainerTwo);
+  }
+}
+
+// Generate current report
+function generateReport() {
+  prepareGraphicsArea();
+
+  if (selectedReportType === "users") {
+    generateSubscriptionReports();
+  }
+
+  if (selectedReportType === "eco") {
+    generateEcoDonut();
+    generateEcoLine();
+  }
+
+  if (selectedReportType === "earnings") {
+    generateCreditsBought();
+    generateMoneyGains();
+  }
+}
+
+// Reporte de registros de usuario
+function generateSubscriptionReports() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  // Destroy previous chart if exists
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  const data = reportData.users[selectedReportTime];
+
+  // Chart configuration
   const config = {
-    type: 'bar', // Puedes cambiar a 'line' para gráfico de línea
+    type: 'bar',
     data: {
       labels: data.labels,
       datasets: [{
-        label: 'Número de Suscripciones',
+        label: 'Numbero de Registros',
         data: data.data,
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
@@ -440,13 +784,7 @@ function generateSubcriptionReports(time) {
           'rgba(255, 206, 86, 0.6)',
           'rgba(75, 192, 192, 0.6)',
           'rgba(153, 102, 255, 0.6)',
-          'rgba(255, 159, 64, 0.6)',
-          'rgba(199, 199, 199, 0.6)',
-          'rgba(83, 102, 255, 0.6)',
-          'rgba(40, 159, 64, 0.6)',
-          'rgba(210, 99, 132, 0.6)',
-          'rgba(20, 162, 235, 0.6)',
-          'rgba(255, 206, 86, 0.6)'
+          'rgba(255, 159, 64, 0.6)'
         ],
         borderColor: [
           'rgba(255, 99, 132, 1)',
@@ -493,7 +831,7 @@ function generateSubcriptionReports(time) {
           },
           title: {
             display: true,
-            text: 'Número de Registros'
+            text: 'Numbero de Registros'
           }
         },
         x: {
@@ -509,114 +847,552 @@ function generateSubcriptionReports(time) {
     }
   };
 
-  // Crear nuevo gráfico
+  // Create new chart
   chartInstance = new Chart(ctx, config);
 }
-/* WIP
-function updateActiveButton(type, selected) {
-  if (type === "users") {
-    const buttons = document.querySelectorAll("control-button-activity");
-    buttons.forEach(b => {
-      if (b.classList.contains(type)) {
-        b.classList.remove()
+
+// Donut chart for environmental impact
+function generateEcoDonut() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  const data = reportData.eco[selectedReportTime];
+
+  chartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.data,
+        backgroundColor: data.colors,
+        borderColor: data.borders,
+        borderWidth: 2,
+        hoverOffset: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.label || '';
+              const value = context.raw;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = Math.round((value / total) * 100);
+              return `${label}: ${formatNumber(value)} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
       }
-    })
+    }
+  });
+}
+
+// Line chart for environmental impact
+function generateEcoLine() {
+  const ctx = document.getElementById("canvas-chart-display-two").getContext('2d');
+
+  if (secondaryChartInstance) {
+    secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
   }
 
-} */
+  const data = getCurrentEcoData();
+  const config = getCurrentEcoConfig();
 
-// Crear un reporte de impacto
-function generateReport(type) {
-  console.log("Will generate", type);
+  // Create new chart
+  secondaryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: config.datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: config.title,
+          font: {
+            size: 16,
+            weight: 'bold'
+          },
+          padding: 20
+        },
+        legend: {
+          display: config.showLegend,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: config.primaryColor,
+          borderWidth: 1,
+          cornerRadius: 6,
+          callbacks: {
+            label: function (context) {
+              const dataset = context.dataset;
+              const value = context.parsed.y;
+              const unit = dataset.unit || '';
+              return `${dataset.label}: ${value} ${unit}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          },
+          title: {
+            display: true,
+            text: config.yUnit,
+            font: {
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            callback: function (value) {
+              return value + ' ' + config.shortUnit;
+            }
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          },
+          title: {
+            display: true,
+            text: config.xTitle,
+            font: {
+              weight: 'bold'
+            }
+          }
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart'
+      },
+      elements: {
+        line: {
+          borderJoinStyle: 'round'
+        }
+      }
+    }
+  });
+}
 
-  if (type === "users") {
-    const canvasControls = document.getElementById("canvas-display-controls");
-    canvasControls.innerHTML = '';
+// Linea para creditos comprados
+function generateCreditsBought() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
 
-    const buttonTypes = [
-      { type: "weekely", text: "Semanal" },
-      { type: "monthly", text: "Mensual" },
-      { type: "yearly", text: "Anual" },
-    ]
-
-    buttonTypes.forEach(e => {
-      const button = document.createElement('button');
-      button.className = 'btn control-button-activity';
-      button.style.color = "black";
-      button.style.backgroundColor = "white";
-      button.style.borderWidth = "1px";
-      button.style.borderColor = "black";
-      button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
-      button.textContent = e.text;
-      button.addEventListener('click', () => generateSubcriptionReports(e.type));
-      canvasControls.appendChild(button);
-    })
-
-    generateSubcriptionReports("weekely");
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
   }
 
-  if (type === "eco") {
-    const canvasControls = document.getElementById("canvas-display-controls");
-    canvasControls.innerHTML = '';
+  const data = reportData.gains.cost[selectedReportTime];
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Ingresos por compra de Paquetes',
+        data: data.data,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: getPackageChartOptions('Ingresos por Paquetes (BOB)')
+  });
+}
 
-    const buttonTypes = [
-      { type: "weekely", text: "Semanal" },
-      { type: "monthly", text: "Mensual" },
-      { type: "yearly", text: "Anual" },
-    ]
+// Linea para dinero ganado
+function generateMoneyGains() {
+  const ctx = document.getElementById("canvas-chart-display-two").getContext('2d');
 
-    buttonTypes.forEach(e => {
-      const button = document.createElement('button');
-      button.className = 'btn control-button-activity';
-      button.style.color = "black";
-      button.style.backgroundColor = "white";
-      button.style.borderWidth = "1px";
-      button.style.borderColor = "black";
-      button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.5)";
-      button.textContent = e.text;
-      button.addEventListener('click', () => generateCategyReport(e.type));
-      canvasControls.appendChild(button);
-    })
+  if (secondaryChartInstance) {
+    secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
+  }
 
-    generateCategyReport("weekely");
+  const data = reportData.gains.points[selectedReportTime];
+
+  secondaryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Creditos verdes vendidos',
+        data: data.data,
+        borderColor: 'rgba(255, 159, 64, 1)',
+        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: getPackageChartOptions('Creditos verdes vendidos')
+  });
+}
+
+// Comunes para linea de ganancias
+function getPackageChartOptions(title) {
+  const titleES = {
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "yearly": "Anual"
+  }
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: true,
+        text: `${title} - ${titleES[selectedReportTime]}`
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
+}
+
+// ------------------ Auxiliares para grafico de Linea Chart -----------------
+function getCurrentEcoData() {
+  if (!reportData || !reportData.eco || !reportData.eco.line) {
+    // Fallback to mock data if no real data
+    if (selectedEcoType === 'all') {
+      return getCombinedEcoData();
+    } else {
+      return mockEcoLine[selectedReportTime][selectedEcoType];
+    }
+  }
+
+  // Use real data from Supabase
+  const realData = reportData.eco.line[selectedReportTime];
+
+  if (selectedEcoType === 'all') {
+    return {
+      labels: realData.co2.labels,
+      datasets: [
+        {
+          label: 'CO2 ahorrado',
+          data: realData.co2.data,
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          unit: 'kg'
+        },
+        {
+          label: 'Energía ahorrada',
+          data: realData.energy.data,
+          backgroundColor: 'rgba(255, 159, 64, 0.1)',
+          borderColor: 'rgba(255, 159, 64, 1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          unit: 'kWh'
+        },
+        {
+          label: 'Agua preservada',
+          data: realData.water.data,
+          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          unit: 'L'
+        }
+      ]
+    };
+  } else {
+    return realData[selectedEcoType];
   }
 }
 
+function getCombinedEcoData() {
+  const co2Data = mockEcoLine[selectedReportTime].co2;
+  const energyData = mockEcoLine[selectedReportTime].energy;
+  const waterData = mockEcoLine[selectedReportTime].water;
+
+  // Use CO2 labels as reference (should be the same for all)
+  return {
+    labels: co2Data.labels,
+    datasets: [
+      {
+        label: 'CO2 ahorrado',
+        data: co2Data.data,
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: false,
+        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        unit: 'kg'
+      },
+      {
+        label: 'Energía ahorrada',
+        data: energyData.data,
+        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+        borderColor: 'rgba(255, 159, 64, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: false,
+        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        unit: 'kWh'
+      },
+      {
+        label: 'Agua preservada',
+        data: waterData.data,
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: false,
+        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        unit: 'L'
+      }
+    ]
+  };
+}
+
+function getCurrentEcoConfig() {
+  const titles = {
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "yearly": "Anual"
+  }
+
+  const configs = {
+    co2: {
+      datasets: [{
+        label: 'CO2 Saved',
+        data: mockEcoLine[selectedReportTime].co2.data,
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        hoverRadius: 8,
+        unit: 'kg'
+      }],
+      title: `CO2 Saved - ${titles[selectedReportTime]}`,
+      yUnit: 'CO2 Saved (kg)',
+      shortUnit: 'kg',
+      xTitle: titles[selectedReportTime],
+      primaryColor: 'rgba(75, 192, 192, 1)',
+      showLegend: true
+    },
+    energy: {
+      datasets: [{
+        label: 'Energy Saved',
+        data: mockEcoLine[selectedReportTime].energy.data,
+        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+        borderColor: 'rgba(255, 159, 64, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        unit: 'kWh'
+      }],
+      title: `Energy Saved - ${titles[selectedReportTime]}`,
+      yUnit: 'Energy Saved (kWh)',
+      shortUnit: 'kWh',
+      xTitle: titles[selectedReportTime],
+      primaryColor: 'rgba(255, 159, 64, 1)',
+      showLegend: true
+    },
+    water: {
+      datasets: [{
+        label: 'Water Preserved',
+        data: mockEcoLine[selectedReportTime].water.data,
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        unit: 'L'
+      }],
+      title: `Water Preserved - ${titles[selectedReportTime]}`,
+      yUnit: 'Water Preserved (L)',
+      shortUnit: 'L',
+      xTitle: titles[selectedReportTime],
+      primaryColor: 'rgba(54, 162, 235, 1)',
+      showLegend: true
+    },
+    all: {
+      datasets: getCombinedEcoData().datasets,
+      title: `Impacto Ambiental  - ${titles[selectedReportTime]}`,
+      yUnit: 'Valor',
+      shortUnit: '',
+      xTitle: titles[selectedReportTime],
+      primaryColor: 'rgba(75, 192, 192, 1)',
+      showLegend: true
+    }
+  };
+
+  return configs[selectedEcoType];
+}
+
+// Utility function
+function formatNumber(num) {
+  return new Intl.NumberFormat('en-US').format(num);
+}
+
+// --------------------- UI de Panel de control ------------------------------
 function generatePanel() {
   const reportContainer = document.getElementById("report-seccion-container");
-  reportContainer.innerHTML = ''; // Limpiar contenedor
+  reportContainer.innerHTML = ''; // Clear container
+
+  // ------------ Report Type Control Section -----------
+  const topControls = document.createElement("div");
+  topControls.style.width = "100%";
+  topControls.style.marginBottom = "20px";
+  topControls.style.display = "flex";
+  topControls.style.gap = "5px";
 
   const buttonConfigs = [
-    { type: "users", text: "Usuarios" },
-    { type: "eco", text: "Ecológico" },
+    { type: "users", text: "Usuarios Registrados" },
+    { type: "eco", text: "Impacto Ambiental" },
+    { type: "earnings", text: "Dinero generado" }
   ];
 
   buttonConfigs.forEach(config => {
     const button = document.createElement('button');
-    button.className = 'btn control-button-activity';
+    button.className = `btn control-button-activity type-ctl-btn ${config.type === "users" ? "active" : ""}`;
+    button.style.color = "black";
+    button.style.backgroundColor = "white";
+    button.style.borderWidth = "1px";
+    button.style.borderColor = "black";
+    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.3)";
     button.textContent = config.text;
-    button.style.marginLeft = "5px";
-    button.addEventListener('click', () => generateReport(config.type));
-    reportContainer.appendChild(button);
+    button.addEventListener('click', (e) => changeReportType(config.type, e));
+    topControls.appendChild(button);
   });
 
-  const canvasContainer = document.createElement("div");
-  canvasContainer.style.width = "100%";
-  canvasContainer.style.height = "300px";
-  canvasContainer.style.alignContent = "center";
+  reportContainer.appendChild(topControls);
 
-  const canvas = document.createElement("canvas");
-  canvas.id = "canvas-chart-display";
+  // ----------- Graphics Area -------------------------
+  const graphicsArea = document.createElement("div");
+  graphicsArea.id = "graphics-area-container";
+  graphicsArea.style.width = "100%";
+  graphicsArea.style.minHeight = "400px";
+  graphicsArea.style.display = "flex";
+  graphicsArea.style.flexWrap = "wrap";
+  graphicsArea.style.gap = "20px";
+  graphicsArea.style.marginBottom = "20px";
 
+  const canvasContainerOne = document.createElement("div");
+  canvasContainerOne.style.flex = "1 1 100%";
+  canvasContainerOne.style.minHeight = "350px";
+  canvasContainerOne.style.minWidth = "200px";
+  canvasContainerOne.style.position = "relative";
+
+  const canvasOne = document.createElement("canvas");
+  canvasOne.id = "canvas-chart-display-one";
+
+  canvasContainerOne.appendChild(canvasOne);
+  graphicsArea.appendChild(canvasContainerOne);
+
+  reportContainer.appendChild(graphicsArea);
+
+  // ------------ Control del Periodo -------------------
   const canvasControls = document.createElement("div");
   canvasControls.id = "canvas-display-controls";
   canvasControls.style.display = "flex";
   canvasControls.style.justifyContent = "center";
   canvasControls.style.gap = "10px";
-  canvasControls.style.marginTop = "5px";
 
-  canvasContainer.appendChild(canvas);
+  const buttonTypes = [
+    { type: "weekly", text: "Semanal" },
+    { type: "monthly", text: "Mensual" },
+    { type: "yearly", text: "Anual" },
+  ]
 
-  reportContainer.appendChild(canvasContainer);
+  buttonTypes.forEach(e => {
+    const button = document.createElement('button');
+    button.className = `btn control-button-activity period-ctl-btn ${e.type === "weekly" ? "active" : ""}`;
+    button.style.color = "black";
+    button.style.backgroundColor = "white";
+    button.style.borderWidth = "1px";
+    button.style.borderColor = "black";
+    button.style.boxShadow = "3px 3px 5px rgba(0, 0, 0, 0.3)";
+    button.textContent = e.text;
+    button.addEventListener('click', (ev) => changeReportTime(e.type, ev));
+    canvasControls.appendChild(button);
+  })
+
   reportContainer.appendChild(canvasControls);
 }
