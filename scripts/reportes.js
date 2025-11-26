@@ -1287,7 +1287,7 @@ function generateEcoLine() {
     type: 'line',
     data: {
       labels: data.labels,
-      datasets: config.datasets
+      datasets: data.datasets
     },
     options: {
       responsive: true,
