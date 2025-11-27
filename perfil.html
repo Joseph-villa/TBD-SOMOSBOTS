@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Perfil - Trueque Digital</title>
-    <!-- Asumo que usas Font Awesome para los iconos y una librería de estilos (ej. Tailwind CSS) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilos básicos para las tarjetas de publicación */
         .pub-card {
             background-color: white;
             border-radius: 12px;
@@ -30,7 +28,7 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: #22c55e; /* Green 500 */
+            background-color: #22c55e;
             color: white;
             padding: 4px 8px;
             border-radius: 8px;
@@ -40,7 +38,6 @@
         .pub-content {
             padding: 15px;
         }
-        /* Estilos del menú de opciones */
         .menu-dots {
             position: absolute;
             top: 10px;
@@ -69,7 +66,7 @@
             margin: 0;
             z-index: 20;
             min-width: 120px;
-            display: none; /* Oculto por defecto */
+            display: none;
         }
         .menu-opciones.show {
             display: block;
@@ -90,21 +87,62 @@
             color: #6b7280;
         }
         .no-posts {
-            grid-column: 1 / -1; /* Ocupar todo el ancho */
+            grid-column: 1 / -1;
             text-align: center;
             padding: 50px;
             background-color: #f9fafb;
             border-radius: 12px;
             border: 1px dashed #e5e7eb;
         }
-        /* Estilos del Modal */
         #modalEmprendedor {
-            display: none; /* Empezar oculto y se muestra con JS */
+            display: none;
             align-items: center;
             justify-content: center;
         }
         .modal-visible {
             display: flex !important;
+        }
+        .star-rating {
+            display: inline-flex;
+            align-items: center;
+        }
+        .star {
+            color: #d1d5db;
+            margin-right: 2px;
+        }
+        .star.filled {
+            color: #fbbf24;
+        }
+        .rating-average {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .review-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #10b981;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .review-comment {
+            color: #4b5563;
+            font-style: italic;
+        }
+        .no-reviews {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px dashed #d1d5db;
         }
     </style>
 </head>
@@ -129,7 +167,7 @@
                         <i class="fas fa-user-circle"></i>
                     </div>
                 </div>
-                <div>
+                <div class="flex-1">
                     <h2 id="profileName" class="text-2xl font-bold text-gray-900">Cargando Nombre...</h2>
                     <p id="profileEmail" class="text-gray-500 text-sm">Cargando Correo...</p>
                     <div class="mt-2 flex items-center space-x-4">
@@ -140,6 +178,21 @@
                             Recargar Créditos
                         </button>
                     </div>
+                </div>
+                
+                <!-- Sección de Calificación Promedio -->
+                <div class="text-center border-l pl-6 border-gray-200">
+                    <div class="rating-average" id="ratingAverage">0.0</div>
+                    <div class="star-rating mt-1" id="starRating">
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">
+                        <span id="reviewCount">0</span> reseña(s)
+                    </p>
                 </div>
             </div>
             
@@ -171,7 +224,26 @@
                 <p class="text-3xl font-extrabold text-green-600" id="vendidosCount">0</p>
                 <p class="text-gray-500 text-sm">Créditos Generados</p>
             </div>
-            <!-- Otros contadores si los tienes -->
+            <div class="bg-white rounded-xl shadow p-4 text-center">
+                <p class="text-3xl font-extrabold text-green-600" id="totalReviews">0</p>
+                <p class="text-gray-500 text-sm">Reseñas Recibidas</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-4 text-center">
+                <p class="text-3xl font-extrabold text-green-600" id="avgRating">0.0</p>
+                <p class="text-gray-500 text-sm">Calificación Promedio</p>
+            </div>
+        </section>
+
+        <!-- Sección de Reseñas y Calificaciones -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-star mr-2 text-yellow-500"></i> Mis Reseñas
+            </h2>
+            <div id="reviewsContainer" class="space-y-4">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando reseñas...
+                </div>
+            </div>
         </section>
 
         <!-- Mis Publicaciones -->
@@ -188,9 +260,7 @@
         </section>
     </div>
 
-    <!-- ------------------------------------------------------------------ -->
-    <!-- MODAL PARA SOLICITUD DE EMPRENDEDOR (Colocado al final del body) -->
-    <!-- ------------------------------------------------------------------ -->
+    <!-- MODAL PARA SOLICITUD DE EMPRENDEDOR -->
     <div id="modalEmprendedor" class="fixed inset-0 bg-gray-900 bg-opacity-70 items-center justify-center z-50 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 m-4 transform transition-transform duration-300 scale-95 opacity-0" id="modalContent">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center">
@@ -198,7 +268,6 @@
             </h2>
             
             <form id="formSolicitudEmprendedor">
-                <!-- Campos del formulario -->
                 <div class="mb-4">
                     <label for="nombreNegocio" class="block text-sm font-medium text-gray-700">Nombre del Negocio / Marca <span class="text-red-500">*</span></label>
                     <input type="text" id="nombreNegocio" required
@@ -223,7 +292,6 @@
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                 </div>
 
-                <!-- Botones -->
                 <div class="flex justify-end space-x-3">
                     <button type="button" id="btnCerrarModal"
                             class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-150">
@@ -238,11 +306,6 @@
         </div>
     </div>
 
-
-    <!-- ------------------------------------------------------------------ -->
-    <!-- LÓGICA JAVASCRIPT DEL PERFIL (Tu código original + funciones nuevas) -->
-    <!-- ------------------------------------------------------------------ -->
-    
     <script type="module">
         import { supabase } from './config/db.js';
 
@@ -257,24 +320,125 @@
         const vendidosCount = document.getElementById('vendidosCount');
         const logoutBtn = document.getElementById('logoutBtn');
         const recargarBtn = document.getElementById('recargarBtn');
-        const emprendedorStatusDiv = document.getElementById('emprendedorSection'); // Contenedor del estado
-        const btnSolicitarEmprendedor = document.getElementById('btnSolicitarEmprendedor'); // Botón de solicitud
+        const emprendedorStatusDiv = document.getElementById('emprendedorSection');
+        const btnSolicitarEmprendedor = document.getElementById('btnSolicitarEmprendedor');
         const modalEmprendedor = document.getElementById('modalEmprendedor');
         const modalContent = document.getElementById('modalContent');
         const btnCerrarModal = document.getElementById('btnCerrarModal');
         const formSolicitudEmprendedor = document.getElementById('formSolicitudEmprendedor');
-
+        
+        // Nuevos elementos para calificaciones
+        const ratingAverage = document.getElementById('ratingAverage');
+        const starRating = document.getElementById('starRating');
+        const reviewCount = document.getElementById('reviewCount');
+        const reviewsContainer = document.getElementById('reviewsContainer');
+        const totalReviews = document.getElementById('totalReviews');
+        const avgRating = document.getElementById('avgRating');
 
         let currentUserId = null;
-        let currentUserRol = 'Usuario'; // Variable para almacenar el rol
+        let currentUserRol = 'Usuario';
 
         // ---------------------------------------------------
-        // --- FUNCIONES ESPECÍFICAS DE EMPRENDEDOR (NUEVAS) ---
+        // --- FUNCIONES PARA CALIFICACIONES Y RESEÑAS ---
+        // ---------------------------------------------------
+
+        function renderStars(rating, container) {
+            const stars = container.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < Math.floor(rating)) {
+                    star.classList.add('filled');
+                } else if (index < rating) {
+                    star.classList.add('filled');
+                } else {
+                    star.classList.remove('filled');
+                }
+            });
+        }
+
+        async function loadUserRatings() {
+            if (!currentUserId) return;
+
+            try {
+                const { data: ratings, error } = await supabase
+                    .from('calificacion')
+                    .select(`
+                        puntuacion,
+                        comentario,
+                        fecha_calificacion,
+                        calificador_id,
+                        usuario:calificador_id(nombre_completo)
+                    `)
+                    .eq('calificado_id', currentUserId)
+                    .order('fecha_calificacion', { ascending: false });
+
+                if (error) throw error;
+
+                const reviews = ratings || [];
+                const total = reviews.length;
+                
+                const average = total > 0 
+                    ? (reviews.reduce((sum, review) => sum + review.puntuacion, 0) / total).toFixed(1)
+                    : 0;
+
+                reviewCount.textContent = total;
+                totalReviews.textContent = total;
+                ratingAverage.textContent = average;
+                avgRating.textContent = average;
+
+                renderStars(average, starRating);
+                renderReviews(reviews);
+
+            } catch (error) {
+                console.error('Error al cargar calificaciones:', error);
+                reviewsContainer.innerHTML = `
+                    <div class="no-reviews">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error al cargar las reseñas</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderReviews(reviews) {
+            if (reviews.length === 0) {
+                reviewsContainer.innerHTML = `
+                    <div class="no-reviews">
+                        <i class="fas fa-star text-2xl mb-2"></i>
+                        <h3 class="text-lg font-semibold mb-2">Aún no tienes reseñas</h3>
+                        <p class="text-gray-600">Las reseñas aparecerán aquí cuando otros usuarios te califiquen después de realizar intercambios.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            reviewsContainer.innerHTML = reviews.map(review => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="star-rating">
+                            ${Array.from({length: 5}, (_, i) => 
+                                `<span class="star ${i < review.puntuacion ? 'filled' : ''}">★</span>`
+                            ).join('')}
+                        </div>
+                        <span class="text-sm text-gray-500">
+                            ${new Date(review.fecha_calificacion).toLocaleDateString('es-ES')}
+                        </span>
+                    </div>
+                    <div class="review-comment">
+                        "${review.comentario || 'Sin comentario'}"
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        - ${review.usuario?.nombre_completo || 'Usuario'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ---------------------------------------------------
+        // --- FUNCIONES EXISTENTES DEL PERFIL ---
         // ---------------------------------------------------
 
         function mostrarFormularioEmprendedor() {
             modalEmprendedor.classList.add('modal-visible');
-            // Aplicar transición para animar la aparición del modal
             setTimeout(() => {
                 modalContent.classList.remove('scale-95', 'opacity-0');
             }, 10);
@@ -282,15 +446,13 @@
 
         function cerrarFormularioEmprendedor() {
             modalContent.classList.add('scale-95', 'opacity-0');
-            // Retrasar la ocultación completa para que termine la transición
             setTimeout(() => {
                 modalEmprendedor.classList.remove('modal-visible');
-                formSolicitudEmprendedor.reset(); // Limpiar el formulario
+                formSolicitudEmprendedor.reset();
             }, 300); 
         }
 
         async function verificarEstadoEmprendedor(userId) {
-            // Verifica el rol del usuario
             if (currentUserRol === 'Emprendedor') {
                 emprendedorStatusDiv.innerHTML = `
                     <h3 class="text-lg font-semibold text-green-700 mb-2 flex items-center">
@@ -301,7 +463,6 @@
                 return;
             }
 
-            // Si no es Emprendedor, verifica si ya tiene una solicitud pendiente
             const { data, error } = await supabase
                 .from('perfil_emprendedor')
                 .select('estado_solicitud')
@@ -310,7 +471,7 @@
                 .limit(1)
                 .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 es "No rows found"
+            if (error && error.code !== 'PGRST116') {
                 console.error('Error al verificar solicitud:', error.message);
             }
 
@@ -320,8 +481,7 @@
                 btnSolicitarEmprendedor.classList.add('bg-gray-400', 'cursor-not-allowed');
                 btnSolicitarEmprendedor.innerHTML = '<i class="fas fa-clock mr-1"></i> Solicitud Pendiente';
                 document.getElementById('emprendedorStatus').textContent = 'Tu solicitud de emprendedor está siendo revisada por el administrador.';
-            } 
-            // Si no hay data o está rechazada, el botón sigue activo (mostrarFormularioEmprendedor)
+            }
         }
 
         async function enviarSolicitudEmprendedor(event) {
@@ -338,13 +498,11 @@
             const urlContacto = document.getElementById('urlContacto').value.trim();
 
             if (!nombreNegocio || !descripcion || !productos) {
-                // Usar un mensaje personalizado en lugar de alert
-                console.error("Por favor, completa todos los campos obligatorios.");
+                alert("Por favor, completa todos los campos obligatorios.");
                 return;
             }
             
             try {
-                // 3. Insertar la solicitud en la tabla 'perfil_emprendedor'
                 const { error } = await supabase
                     .from('perfil_emprendedor')
                     .insert({
@@ -358,72 +516,49 @@
 
                 if (error) throw error;
 
-                // Reemplazar alert()
-                console.log('✅ Solicitud enviada con éxito. Recibirás una notificación cuando sea aprobada.');
+                alert('✅ Solicitud enviada con éxito. Recibirás una notificación cuando sea aprobada.');
                 
-                // 4. Cerrar el modal y actualizar la vista
                 cerrarFormularioEmprendedor();
-                
-                // Forzar la actualización del mensaje de estado
                 currentUserRol = 'Usuario'; 
                 verificarEstadoEmprendedor(currentUserId);
 
             } catch (error) {
                 console.error('Error al enviar solicitud de emprendedor:', error);
-                // Reemplazar alert()
-                console.error('❌ Error al enviar la solicitud: ' + error.message);
+                alert('❌ Error al enviar la solicitud: ' + error.message);
             }
         }
 
+        async function loadCreditosGenerados() {
+            if (!currentUserId) {
+                vendidosCount.textContent = '0';
+                return;
+            }
 
+            try {
+                const { data, error } = await supabase.rpc('get_creditos_generados', {
+                    p_usuario_id: currentUserId
+                });
 
-// ... (Tus funciones: mostrarFormularioEmprendedor, cerrarFormularioEmprendedor, verificarEstadoEmprendedor, enviarSolicitudEmprendedor)
+                if (error) {
+                    console.error('Error al cargar créditos generados:', error);
+                    vendidosCount.textContent = 'Error';
+                    return;
+                }
 
-// ---------------------------------------------------
-// --- FUNCIONES DE ESTADÍSTICAS (NUEVAS) ---
-// ---------------------------------------------------
+                const totalGenerado = data !== null ? data : 0;
+                vendidosCount.textContent = totalGenerado.toLocaleString('es-BO', { maximumFractionDigits: 0 }); 
 
-async function loadCreditosGenerados() {
-    if (!currentUserId) { // Solo verificamos que exista el ID
-        vendidosCount.textContent = '0';
-        return;
-    }
-
-    try {
-        // Llama a la función RPC de Supabase (asumiendo que ya la creaste con "Intercambio")
-        const { data, error } = await supabase.rpc('get_creditos_generados', {
-            p_usuario_id: currentUserId
-        });
-
-        if (error) {
-            console.error('Error al cargar créditos generados:', error);
-vendidosCount.textContent = 'Error';
-            return;
+            } catch (error) {
+                console.error('Error en loadCreditosGenerados:', error);
+                vendidosCount.textContent = 'Error';
+            }
         }
 
-        // 'data' contendrá la suma total de 'creditos_verd' del vendedor
-        const totalGenerado = data !== null ? data : 0;
-        
-        // Actualiza el elemento en el dashboard, formateado para mejor lectura
-        vendidosCount.textContent = totalGenerado.toLocaleString('es-BO', { maximumFractionDigits: 0 }); 
-
-    } catch (error) {
-        console.error('Error en loadCreditosGenerados:', error);
-        vendidosCount.textContent = 'Error';
-    }
-}
-
-        // ---------------------------------------------------
-        // --- FUNCIONES DE UTILIDAD (TU CÓDIGO ORIGINAL) ---
-        // ---------------------------------------------------
-
-        // Cargar datos del usuario
         async function loadUserData() {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 
                 if (!user) {
-                    // Reemplazar alert()
                     console.log('Debes iniciar sesión para ver tu perfil');
                     window.location.href = 'index.html';
                     return;
@@ -431,7 +566,6 @@ vendidosCount.textContent = 'Error';
 
                 currentUserId = user.id;
 
-                // Obtener datos del usuario desde la tabla 'usuario'
                 const { data: usuario, error } = await supabase
                     .from('usuario')
                     .select('*')
@@ -451,13 +585,11 @@ vendidosCount.textContent = 'Error';
                     currentUserRol = usuario.rol || 'Usuario'; 
                     localStorage.setItem('user_rol', currentUserRol); 
                     
-                    // Iniciar la verificación del estado de emprendedor
                     verificarEstadoEmprendedor(currentUserId);
                 } 
 
             } catch (error) {
                 console.error('Error al cargar datos del usuario:', error);
-                // Fallback (de tu código original)
                 const userName = localStorage.getItem('user_name') || 'Usuario';
                 const userEmail = localStorage.getItem('user_email') || '';
                 const userSaldo = localStorage.getItem('user_saldo') || '0';
@@ -468,7 +600,6 @@ vendidosCount.textContent = 'Error';
             }
         }
 
-        // Cargar publicaciones del usuario
         async function fetchUserPosts() {
             if (!currentUserId) {
                 console.log('No hay currentUserId, no se pueden cargar publicaciones');
@@ -505,7 +636,6 @@ vendidosCount.textContent = 'Error';
             }
         }
 
-        // Renderizar publicaciones
         function renderPostsGrid(posts) {
             userPostsGrid.innerHTML = '';
             
@@ -572,13 +702,10 @@ vendidosCount.textContent = 'Error';
             }
         }
 
-        // Actualizar estadísticas
         function updateStats(posts) {
             pubCount.textContent = posts.length;
-            vendidosCount.textContent = '0';
         }
 
-        // Eliminar publicación
         async function handleDeletePost(postId) {
             if (!window.confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
                 return;
@@ -593,18 +720,15 @@ vendidosCount.textContent = 'Error';
 
                 if (error) throw error;
 
-                // Reemplazar alert()
-                console.log('✅ Publicación eliminada con éxito.');
+                alert('✅ Publicación eliminada con éxito.');
                 fetchUserPosts();
 
             } catch (err) {
                 console.error('Error al eliminar publicación:', err);
-                // Reemplazar alert()
-                console.error('❌ Error al eliminar la publicación.');
+                alert('❌ Error al eliminar la publicación.');
             }
         }
 
-        // Cerrar sesión
         async function handleLogout() {
             try {
                 const { error } = await supabase.auth.signOut();
@@ -616,19 +740,16 @@ vendidosCount.textContent = 'Error';
                 localStorage.removeItem('user_saldo');
                 localStorage.removeItem('user_rol');
 
-                // Reemplazar alert()
-                console.log('Sesión cerrada correctamente');
+                alert('Sesión cerrada correctamente');
                 window.location.href = 'index.html?logout=true';
 
             } catch (error) {
                 console.error('Error al cerrar sesión:', error);
-                // Reemplazar alert()
-                console.error('Error al cerrar sesión');
+                alert('Error al cerrar sesión');
             }
         }
 
         // --- Event Listeners ---
-        // 1. Botones de Navegación
         backBtn.addEventListener('click', () => {
             window.location.href = 'index2.html';
         });
@@ -643,12 +764,10 @@ vendidosCount.textContent = 'Error';
             window.location.href = 'compra.html';
         });
 
-        // 2. Eventos del Modal de Emprendedor (NUEVOS)
         btnSolicitarEmprendedor.addEventListener('click', mostrarFormularioEmprendedor);
         btnCerrarModal.addEventListener('click', cerrarFormularioEmprendedor);
         formSolicitudEmprendedor.addEventListener('submit', enviarSolicitudEmprendedor);
 
-        // 3. Lógica de Menús y Cierre General
         userPostsGrid.addEventListener('click', function(event) {
             const target = event.target;
             const menuDots = target.closest('.menu-dots');
@@ -679,16 +798,13 @@ vendidosCount.textContent = 'Error';
             }
         });
 
-        // Cerrar menús y modal al hacer click fuera
         document.addEventListener('click', function(event) {
-            // Cierre de menús de publicación
             if (!event.target.closest('.menu-dots') && !event.target.closest('.menu-opciones')) {
                 document.querySelectorAll('.menu-opciones.show').forEach(menu => {
                     menu.classList.remove('show');
                 });
             }
             
-            // Cierre del modal de emprendedor
             if (modalEmprendedor.classList.contains('modal-visible') && !modalContent.contains(event.target) && !btnSolicitarEmprendedor.contains(event.target)) {
                 cerrarFormularioEmprendedor();
             }
@@ -696,13 +812,12 @@ vendidosCount.textContent = 'Error';
 
         // Inicializar al cargar la página
         document.addEventListener('DOMContentLoaded', async () => {
-            // Ocultar el modal al inicio
             modalEmprendedor.classList.remove('modal-visible');
 
             await loadUserData(); 
             await fetchUserPosts();
-            // 📢 ¡NUEVA LLAMADA AÑADIDA AQUÍ!
-await loadCreditosGenerados();
+            await loadCreditosGenerados();
+            await loadUserRatings();
         });
     </script>
 </body>
