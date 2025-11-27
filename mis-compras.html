@@ -1091,7 +1091,7 @@ function actualizarCreditosUI(nuevoSaldo) {
                                     style="background: #f44336; margin-bottom: 5px;">
                                 ❌ Cancelar Compra
                             </button>
-                            <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')"
+                            <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id || compra.Publicacion?.usuario_id}')"
                                     style="background: #17a2b8;">
                                 💬 ${tieneMensajes ? 'Ver Chat' : 'Contactar Vendedor'}
                                 ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
@@ -1190,6 +1190,7 @@ function actualizarCreditosUI(nuevoSaldo) {
         }
 
         // ========== FILTROS DE COMPRAS ==========
+
 
         function setupPurchaseFilters() {
             const filterItems = document.querySelectorAll('#categoriesList li');
@@ -1621,37 +1622,172 @@ function actualizarCreditosUI(nuevoSaldo) {
             }
         }
 
+        // 🚨 VERSIÓN MÁS ROBUSTA - AGREGA ESTA FUNCIÓN TEMPORAL
+function obtenerVendedorId(compra) {
+    console.log('🔍 Obteniendo vendedorId de:', compra);
+    
+    // Intentar diferentes formas de obtener el vendedorId
+    if (compra.usuario_vendedor_id && typeof compra.usuario_vendedor_id === 'string') {
+        return compra.usuario_vendedor_id;
+    }
+    if (compra.Publicacion?.usuario_id) {
+        return compra.Publicacion.usuario_id;
+    }
+    if (compra.usuario_vendedor_id && compra.usuario_vendedor_id.auth_id) {
+        return compra.usuario_vendedor_id.auth_id;
+    }
+    
+    console.error('No se pudo obtener vendedorId de:', compra);
+    return null;
+}
+
+
         // ========== FUNCIONES DE CONFIRMACIÓN Y CANCELACIÓN ==========
 
         // Función para confirmar recepción (ejecutar desde botón en interfaz)
-        window.confirmarRecepcion = async function(intercambioId) {
-            try {
-                console.log('✅ Confirmando recepción para intercambio:', intercambioId);
-                mostrarLoadingCompra("Confirmando recepción...");
+        // ========== FUNCIÓN DEFINITIVA QUE USA LOS TRIGGERS CORRECTOS ==========
 
-                // 1. Liberar créditos al VENDEDOR
-                await liberarCreditosAlVendedor(intercambioId);
+window.confirmarRecepcion = async function(intercambioId) {
+    try {
+        console.log('✅ Confirmando recepción para intercambio:', intercambioId);
+        mostrarLoadingCompra("Confirmando recepción...");
 
-                // 2. Marcar publicación como VENDIDA
-                await marcarPublicacionComoVendida(intercambioId);
+        // 1. Obtener datos del intercambio
+        const { data: intercambio, error: intercambioError } = await supabase
+            .from('Intercambio')
+            .select(`
+                *,
+                Publicacion (*)
+            `)
+            .eq('id_intercambio', intercambioId)
+            .single();
 
-                // 3. Completar el intercambio
-                await completarIntercambio(intercambioId);
+        if (intercambioError) throw intercambioError;
 
-                ocultarLoadingCompra();
-                mostrarNotificacion('✅ Recepción confirmada. Créditos transferidos al vendedor.', 'success');
+        console.log('📋 Datos del intercambio:', intercambio);
 
-                // Recargar las compras después de 2 segundos
-                setTimeout(async () => {
-                    await loadMisCompras();
-                }, 2000);
+        // 2. TRANSFERIR CRÉDITOS AL VENDEDOR
+        await transferirCreditosAlVendedor(intercambioId, intercambio);
 
-            } catch (error) {
-                console.error('❌ Error confirmando recepción:', error);
-                ocultarLoadingCompra();
-                mostrarNotificacion('❌ Error al confirmar recepción: ' + error.message, 'error');
-            }
+        // 3. USAR FUNCIÓN SEGURA DE LA BD
+        const { data: resultado, error: updateError } = await supabase
+            .rpc('actualizar_intercambio_seguro', {
+                p_intercambio_id: intercambioId
+            });
+
+        if (updateError) {
+            console.error('❌ Error actualizando intercambio:', updateError);
+            throw updateError;
         }
+
+        console.log('✅ Intercambio actualizado via función segura:', resultado);
+
+        // 4. MARCAR PUBLICACIÓN COMO VENDIDA
+        const { error: updatePubError } = await supabase
+            .from('Publicacion')
+            .update({
+                estado: 'vendido',
+                fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id_publicacion', intercambio.publicacion_id);
+
+        if (updatePubError) {
+            console.warn('⚠️ Error actualizando publicación:', updatePubError);
+        }
+
+        // 5. ACTUALIZAR CUSTODIA
+        const { error: updateCustodiaError } = await supabase
+            .from('custodia_creditos')
+            .update({
+                estado: 'liberado',
+                fecha_liberacion: new Date().toISOString()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (updateCustodiaError) {
+            console.warn('⚠️ Error en custodia:', updateCustodiaError);
+        }
+
+        ocultarLoadingCompra();
+        mostrarNotificacion('✅ Recepción confirmada. Intercambio completado.', 'success');
+
+        // Recargar las compras
+        setTimeout(async () => {
+            await loadMisCompras();
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Error confirmando recepción:', error);
+        ocultarLoadingCompra();
+        mostrarNotificacion('❌ Error al confirmar recepción: ' + error.message, 'error');
+    }
+}
+
+// ========== VERSIÓN SIMPLIFICADA SI NO QUIERES CREAR FUNCIONES EN BD ==========
+
+window.confirmarRecepcionSimple = async function(intercambioId) {
+    try {
+        console.log('✅ Confirmando recepción (método simple):', intercambioId);
+        mostrarLoadingCompra("Confirmando recepción...");
+
+        // 1. Obtener datos
+        const { data: intercambio, error: intercambioError } = await supabase
+            .from('Intercambio')
+            .select('*')
+            .eq('id_intercambio', intercambioId)
+            .single();
+
+        if (intercambioError) throw intercambioError;
+
+        // 2. Transferir créditos
+        await transferirCreditosAlVendedor(intercambioId, intercambio);
+
+        // 3. Actualizar intercambio usando SQL directo con manejo de errores
+        const { error: updateError } = await supabase
+            .from('Intercambio')
+            .update({
+                estado: 'completado',
+                fecha_cierre: new Date().toISOString()
+            })
+            .eq('id_intercambio', intercambioId)
+            .eq('estado', 'en_proceso'); // Solo actualizar si está en proceso
+
+        if (updateError) {
+            console.warn('⚠️ Error del trigger (continuando):', updateError);
+            // Continuar aunque falle el trigger
+        }
+
+        // 4. Actualizar publicación
+        await supabase
+            .from('Publicacion')
+            .update({
+                estado: 'vendido',
+                fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id_publicacion', intercambio.publicacion_id);
+
+        // 5. Actualizar custodia
+        await supabase
+            .from('custodia_creditos')
+            .update({
+                estado: 'liberado',
+                fecha_liberacion: new Date().toISOString()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        ocultarLoadingCompra();
+        mostrarNotificacion('✅ Recepción confirmada. Intercambio completado.', 'success');
+
+        setTimeout(async () => {
+            await loadMisCompras();
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Error:', error);
+        ocultarLoadingCompra();
+        mostrarNotificacion('❌ Error: ' + error.message, 'error');
+    }
+}
 
         async function liberarCreditosAlVendedor(intercambioId) {
             try {
@@ -1910,63 +2046,114 @@ async function reactivarPublicacion(publicacionId) {
         // ========== 🆕 FUNCIONES NUEVAS PARA CHAT Y CALIFICACIÓN ==========
 
         // 🆕 FUNCIÓN PARA ABRIR CHAT DESDE MIS COMPRAS
-        window.abrirChatCompra = async function(intercambioId, tituloProducto, vendedorId) {
-            try {
-                console.log('💬 Abriendo chat para compra:', intercambioId);
-                
-                // Crear modal de chat
-                const modal = document.createElement('div');
-                modal.innerHTML = `
-                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                               background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
-                               align-items: center; z-index: 9999;">
-                        <div style="background: white; width: 90%; max-width: 600px; max-height: 80vh; 
-                                   border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
-                            <div style="background: #4CAF50; color: white; padding: 20px; 
-                                       display: flex; justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0;">💬 Chat: ${tituloProducto}</h3>
-                                <button id="cerrar-chat-compra" 
-                                        style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
-                            </div>
-                            <div id="cuerpo-chat-compra" style="padding: 20px; flex: 1; overflow-y: auto; max-height: 400px;">
-                                Cargando mensajes...
-                            </div>
-                            <div style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #e0e0e0;">
-                                <input type="text" id="input-mensaje-compra" placeholder="Escribe tu mensaje..." 
-                                       style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
-                                <button id="enviar-mensaje-compra" 
-                                        style="background: #4CAF50; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer;">
-                                    Enviar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
+        // 🚨 REEMPLAZA COMPLETAMENTE ESTA FUNCIÓN
+window.abrirChatCompra = async function(intercambioId, tituloProducto, vendedorId) {
+    try {
+        console.log('💬 Abriendo chat para compra:', { 
+            intercambioId, 
+            tituloProducto, 
+            vendedorId,
+            tipoVendedorId: typeof vendedorId
+        });
 
-                // Cargar mensajes existentes
-                await cargarMensajesChat(intercambioId, 'cuerpo-chat-compra');
-
-                // Configurar eventos
-                modal.querySelector('#cerrar-chat-compra').onclick = () => {
-                    modal.remove();
-                };
-
-                modal.querySelector('#enviar-mensaje-compra').onclick = () => {
-                    enviarMensajeChat(intercambioId, vendedorId, 'input-mensaje-compra', 'cuerpo-chat-compra');
-                };
-
-                modal.querySelector('#input-mensaje-compra').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        enviarMensajeChat(intercambioId, vendedorId, 'input-mensaje-compra', 'cuerpo-chat-compra');
+        // 🚨 CORRECCIÓN CRÍTICA: Si vendedorId es "[object Object]", buscar el real
+        let vendedorIdCorregido = vendedorId;
+        
+        if (vendedorId === "[object Object]" || typeof vendedorId !== 'string') {
+            console.warn('⚠️ vendedorId problemático, buscando en datos...');
+            
+            // Buscar en todasLasCompras
+            const compra = todasLasCompras.find(c => c.id_intercambio === intercambioId);
+            if (compra) {
+                if (compra.usuario_vendedor_id && typeof compra.usuario_vendedor_id === 'string') {
+                    vendedorIdCorregido = compra.usuario_vendedor_id;
+                } else if (compra.Publicacion?.usuario_id) {
+                    vendedorIdCorregido = compra.Publicacion.usuario_id;
+                } else {
+                    // Último recurso: obtener del intercambio en la BD
+                    const { data: intercambio, error } = await supabase
+                        .from('Intercambio')
+                        .select('usuario_vendedor_id')
+                        .eq('id_intercambio', intercambioId)
+                        .single();
+                    
+                    if (!error && intercambio && intercambio.usuario_vendedor_id) {
+                        vendedorIdCorregido = intercambio.usuario_vendedor_id;
+                    } else {
+                        throw new Error('No se pudo obtener el ID del vendedor');
                     }
-                });
-
-            } catch (error) {
-                console.error('Error abriendo chat:', error);
-                alert('Error al abrir el chat: ' + error.message);
+                }
+            } else {
+                throw new Error('No se encontró la compra en los datos cargados');
             }
+        }
+
+        // Validar que sea un UUID válido
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(vendedorIdCorregido)) {
+            throw new Error(`ID del vendedor no es un UUID válido: ${vendedorIdCorregido}`);
+        }
+
+        console.log('✅ Vendedor ID corregido y validado:', vendedorIdCorregido);
+
+        // Crear modal de chat (igual que antes)
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                       background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                       align-items: center; z-index: 9999;">
+                <div style="background: white; width: 90%; max-width: 600px; max-height: 80vh; 
+                           border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+                    <div style="background: #4CAF50; color: white; padding: 20px; 
+                               display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">💬 Chat: ${tituloProducto}</h3>
+                        <button id="cerrar-chat-compra" 
+                                style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+                    </div>
+                    <div id="cuerpo-chat-compra" style="padding: 20px; flex: 1; overflow-y: auto; max-height: 400px;">
+                        Cargando mensajes...
+                    </div>
+                    <div style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #e0e0e0;">
+                        <input type="text" id="input-mensaje-compra" placeholder="Escribe tu mensaje..." 
+                               style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+                        <button id="enviar-mensaje-compra" 
+                                style="background: #4CAF50; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer;">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Cargar mensajes existentes
+        await cargarMensajesChat(intercambioId, 'cuerpo-chat-compra');
+
+        // Configurar eventos
+        modal.querySelector('#cerrar-chat-compra').onclick = () => {
+            modal.remove();
         };
+
+        modal.querySelector('#enviar-mensaje-compra').onclick = () => {
+            enviarMensajeChat(intercambioId, vendedorIdCorregido, 'input-mensaje-compra', 'cuerpo-chat-compra');
+        };
+
+        modal.querySelector('#input-mensaje-compra').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                enviarMensajeChat(intercambioId, vendedorIdCorregido, 'input-mensaje-compra', 'cuerpo-chat-compra');
+            }
+        });
+
+        // Enfocar el input
+        setTimeout(() => {
+            modal.querySelector('#input-mensaje-compra').focus();
+        }, 100);
+
+    } catch (error) {
+        console.error('❌ Error abriendo chat:', error);
+        mostrarNotificacion('❌ Error al abrir el chat: ' + error.message, 'error');
+    }
+};
 
         // 🆕 FUNCIÓN PARA CARGAR MENSAJES EN EL CHAT
         async function cargarMensajesChat(intercambioId, contenedorId) {
@@ -2013,32 +2200,41 @@ async function reactivarPublicacion(publicacionId) {
 
         // 🆕 FUNCIÓN PARA ENVIAR MENSAJE EN EL CHAT
         async function enviarMensajeChat(intercambioId, vendedorId, inputId, contenedorId) {
-            const input = document.getElementById(inputId);
-            const mensaje = input.value.trim();
+    const input = document.getElementById(inputId);
+    const mensaje = input.value.trim();
 
-            if (!mensaje) return;
+    if (!mensaje) return;
 
-            try {
-                const { error: insertError } = await supabase
-                    .from('Mensaje')
-                    .insert([{
-                        contenido: mensaje,
-                        fecha_envio: new Date(),
-                        intercambio_id: intercambioId,
-                        emisor_id: currentUserId,
-                        receptor_id: vendedorId
-                    }]);
+    try {
+        console.log('💬 Enviando mensaje con:', {
+            intercambioId,
+            vendedorId,
+            mensaje,
+            currentUserId
+        });
 
-                if (insertError) throw insertError;
+        const { data, error } = await supabase
+            .from('Mensaje')
+            .insert([{
+                contenido: mensaje,
+                fecha_envio: new Date().toISOString(),
+                intercambio_id: intercambioId,
+                emisor_id: currentUserId,
+                receptor_id: vendedorId
+            }])
+            .select();
 
-                input.value = '';
-                await cargarMensajesChat(intercambioId, contenedorId);
+        if (error) throw error;
 
-            } catch (error) {
-                console.error('Error enviando mensaje:', error);
-                alert('Error al enviar el mensaje');
-            }
-        }
+        console.log('✅ Mensaje enviado:', data);
+        input.value = '';
+        await cargarMensajesChat(intercambioId, contenedorId);
+
+    } catch (error) {
+        console.error('❌ Error enviando mensaje:', error);
+        mostrarNotificacion('❌ Error al enviar mensaje: ' + error.message, 'error');
+    }
+}
 
         // 🆕 FUNCIÓN PARA ABRIR MODAL DE CALIFICACIÓN
         window.abrirModalCalificacion = function(intercambioId, tituloProducto) {
