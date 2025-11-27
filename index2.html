@@ -686,9 +686,8 @@ function renderProducts(products) {
         // ID vendedor según tu tabla (usuario_id)
         const sellerId = producto.usuario_id || producto.usuario || '';
 
-        console.log('sellerId detectado:', sellerId);
-
-        const perfilOnclick = sellerId ? `onclick="window.irAlPerfil('${sellerId}')" ` : '';
+        // contenedor vendedor/reseñas y estadísticas
+        const sellerContainerId = `seller-info-${producto.id_publicacion || producto.id || ''}`;
 
         return `
             <div class="product-card" data-producto-id="${producto.id_publicacion || producto.id || ''}">
@@ -696,19 +695,17 @@ function renderProducts(products) {
                          : `<div style="width:100%;height:150px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;"><span style="color:#999">Sin imagen</span></div>`}
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px 0 10px;">
                     <div style="font-weight:bold;">${titulo}</div>
-                    <button type="button" ${perfilOnclick} title="Ver perfil del autor" style="font-size:0.8rem;padding:6px 8px;border-radius:6px;background:#eef9f0;color:#036d19;border:1px solid rgba(47,154,52,0.12);cursor:pointer;">
-                        Ver perfil
-                    </button>
                 </div>
                 <p style="font-size:0.8rem;color:#666;padding:0 10px;margin:6px 0 10px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                    ${descripcion}
                 </p>
                 <p style="font-size:0.7rem;color:#888;padding:0 10px;margin:0 0 6px 0;">Categoría: ${categoria}</p>
-                <div style="display:flex;gap:8px;padding:0 10px 10px 10px;align-items:center;flex-wrap:wrap;">
-                    <span style="background:#e6f9ec;color:#0b6b2a;padding:6px 8px;border-radius:8px;font-size:0.8rem;">CO2: ${ahorroCo2} kg</span>
-                    <span style="background:#eaf5ff;color:#0b477a;padding:6px 8px;border-radius:8px;font-size:0.8rem;">Agua: ${ahorroAgua} L</span>
-                    <span style="background:#fff7e6;color:#8a5a00;padding:6px 8px;border-radius:8px;font-size:0.8rem;">Energía: ${ahorroEnergia} kWh</span>
+
+                <!-- vendedor, reseñas (estrellas) y estadísticas mejoradas -->
+                <div id="${sellerContainerId}" style="padding:10px;border-top:1px solid #f3f4f6;background:#fff;">
+                    <div style="font-size:0.85rem;color:#9ca3af;">Cargando datos del vendedor…</div>
                 </div>
+
                 <div style="display:flex;gap:8px;padding:0 10px 16px 10px;">
                     <div class="credits" style="flex:1;display:flex;align-items:center;justify-content:center;">${precio} ♻️</div>
                     <button class="btn-intercambiar" style="flex:1;" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">Comprar</button>
@@ -716,8 +713,181 @@ function renderProducts(products) {
             </div>
         `;
     }).join('');
+
+    // después de renderizar, rellenar datos de vendedor y reseñas por cada producto
+    products.forEach(p => {
+        const pid = p.id_publicacion || p.id || '';
+        populateSellerInfoForProduct(p, `seller-info-${pid}`);
+    });
 }
 
+
+// --- helpers nuevos / actualizados para vendedor, reseñas y totales ---
+async function fetchSellerById(sellerId) {
+    if (!sellerId) return null;
+    try {
+        console.log('fetchSellerById -> sellerId:', sellerId);
+        // intentar traer todo el registro (varios intentos por si el id es auth_id o id_usuario)
+        let res = await supabase.from('usuario').select('*').eq('id_usuario', sellerId).maybeSingle();
+        if (!res.error && res.data) {
+            console.log('fetchSellerById -> encontrado por id_usuario:', res.data);
+            return res.data;
+        }
+
+        res = await supabase.from('usuario').select('*').eq('auth_id', sellerId).maybeSingle();
+        if (!res.error && res.data) {
+            console.log('fetchSellerById -> encontrado por auth_id:', res.data);
+            return res.data;
+        }
+
+        // intento adicional: si sellerId es numérico, buscar por id sin tipos estrictos
+        if (!isNaN(Number(sellerId))) {
+            res = await supabase.from('usuario').select('*').eq('id_usuario', Number(sellerId)).maybeSingle();
+            if (!res.error && res.data) {
+                console.log('fetchSellerById -> encontrado por id_usuario (num):', res.data);
+                return res.data;
+            }
+        }
+
+        console.warn('fetchSellerById -> no se encontró usuario para:', sellerId);
+        return null;
+    } catch (e) {
+        console.warn('fetchSellerById error', e);
+        return null;
+    }
+}
+
+async function fetchReviewsForSellerId(sellerId, limit = 50) {
+    if (!sellerId) return [];
+    const tableCandidates = ['calificacion','Calificacion','resena','Resena','resenas','Resenas','review','reviews','valoracion','valoraciones','reseña','reseñas'];
+    const colCandidates = ['calificado_id','vendedor_id','receptor_id','usuario_id','id_usuario','auth_id','publicacion_id'];
+    for (const tbl of tableCandidates) {
+        for (const col of colCandidates) {
+            try {
+                const q = await supabase.from(tbl).select('*').eq(col, sellerId).order('fecha_calificacion', { ascending: false }).limit(limit);
+                if (!q.error && Array.isArray(q.data) && q.data.length > 0) {
+                    return q.data;
+                }
+            } catch (e) {
+                // tabla/col no existe -> continuar
+            }
+        }
+    }
+    return [];
+}
+
+async function computeSellerTotals(sellerId) {
+    // suma ahorro_co2, ahorro_agua, ahorro_energia de publicaciones activas del vendedor
+    try {
+        if (!sellerId) return { co2: 0, agua: 0, energia: 0 };
+        const { data, error } = await supabase
+            .from('Publicacion')
+            .select('ahorro_co2,ahorro_agua,ahorro_energia')
+            .eq('usuario_id', sellerId)
+            .eq('estado', 'activo')
+            .limit(1000); // reasonable upper
+        if (error || !Array.isArray(data)) return { co2: 0, agua: 0, energia: 0 };
+        const totals = data.reduce((acc, r) => {
+            acc.co2 += Number(r.ahorro_co2) || 0;
+            acc.agua += Number(r.ahorro_agua) || 0;
+            acc.energia += Number(r.ahorro_energia) || 0;
+            return acc;
+        }, { co2: 0, agua: 0, energia: 0 });
+        return totals;
+    } catch (e) {
+        console.warn('computeSellerTotals error', e);
+        return { co2: 0, agua: 0, energia: 0 };
+    }
+}
+
+function renderStarsHtmlFromReviews(reviews) {
+    if (!reviews || reviews.length === 0) return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
+    const vals = reviews.map(r => Number(r.puntuacion ?? r.rating ?? r.calificacion ?? r.score ?? 0)).filter(v => !isNaN(v));
+    if (vals.length === 0) return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
+    const avg = vals.reduce((a,b) => a+b,0)/vals.length;
+    const filled = Math.round(avg);
+    const maxStars = 5;
+    let stars = '';
+    for (let i=1;i<=maxStars;i++){
+        stars += i<=filled ? '<span style="color:#f59e0b;font-weight:700;margin-right:2px;">★</span>' : '<span style="color:#e5e7eb;margin-right:2px;">★</span>';
+    }
+    return `<div style="display:flex;align-items:center;gap:8px;">
+                <div style="display:flex;align-items:center">${stars}</div>
+                <div style="font-size:0.85rem;color:#6b7280;">${avg.toFixed(1)} (${vals.length})</div>
+            </div>`;
+}
+
+// llena el contenedor del producto con vendedor, reseñas (estrellas) y estadísticas mejoradas
+async function populateSellerInfoForProduct(producto, containerId) {
+    try {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const sellerId = producto.usuario_id || producto.usuario || producto.vendedor_id || producto.id_usuario || producto.auth_id || '';
+        if (!sellerId) {
+            container.innerHTML = '<span style="color:#9ca3af;font-size:0.9rem;">Vendedor desconocido</span>';
+            return;
+        }
+
+        // obtener vendedor
+        const vendedor = await fetchSellerById(sellerId);
+        console.log('populateSellerInfoForProduct -> vendedor:', vendedor, 'producto:', producto);
+
+        // si no se encontró vendedor, tratar usar campos de la propia publicación
+        const fallbackNombre = producto.usuario_nombre || producto.nombre_vendedor || producto.nombre_usuario || producto.vendedor_nombre || null;
+
+        // obtener reseñas del vendedor (usar auth_id o id_usuario según lo disponible)
+        const lookupIdForReviews = vendedor?.auth_id ?? vendedor?.id_usuario ?? sellerId;
+        const reviews = await fetchReviewsForSellerId(lookupIdForReviews, 50);
+
+        // calcular totales del vendedor (sum de sus publicaciones)
+        const totals = await computeSellerTotals(vendedor?.id_usuario ?? sellerId);
+
+        // resolver nombre y correo con múltiples alternativas
+        const nombre = vendedor?.nombre_completo
+                    || vendedor?.nombre
+                    || vendedor?.nombre_usuario
+                    || vendedor?.usuario
+                    || vendedor?.username
+                    || vendedor?.display_name
+                    || fallbackNombre
+                    || 'Vendedor';
+
+        const correo = vendedor?.correo_electronico ?? vendedor?.email ?? producto.usuario_email ?? '';
+
+        const starsHtml = renderStarsHtmlFromReviews(reviews);
+
+        container.innerHTML = `
+            <div style="display:flex;gap:12px;align-items:center;">
+                <div style="width:44px;height:44px;border-radius:50%;background:#f3f8f6;display:flex;align-items:center;justify-content:center;font-weight:700;color:#10b981;">
+                    ${ (String(nombre)[0] || 'U').toUpperCase() }
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:700;color:#111827;">${nombre}</div>
+                    ${ correo ? `<div style="font-size:0.85rem;color:#6b7280;">${correo}</div>` : '' }
+                    <div style="margin-top:6px">${starsHtml}</div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+                <div style="background:linear-gradient(180deg,#f0fff4,#ffffff);border:1px solid #e6f9ec;padding:8px 12px;border-radius:10px;min-width:110px;">
+                    <div style="font-size:0.75rem;color:#0b6b2a">CO2 total</div>
+                    <div style="font-weight:800;font-size:1.05rem;color:#065f46">${totals.co2.toFixed(2)} <span style="font-weight:600;font-size:0.85rem;color:#6b7280">kg</span></div>
+                </div>
+                <div style="background:linear-gradient(180deg,#eef7ff,#ffffff);border:1px solid #e6f3ff;padding:8px 12px;border-radius:10px;min-width:110px;">
+                    <div style="font-size:0.75rem;color:#0b477a">Agua total</div>
+                    <div style="font-weight:800;font-size:1.05rem;color:#065f46">${totals.agua.toFixed(2)} <span style="font-weight:600;font-size:0.85rem;color:#6b7280">L</span></div>
+                </div>
+                <div style="background:linear-gradient(180deg,#fff8e6,#ffffff);border:1px solid #fff3e0;padding:8px 12px;border-radius:10px;min-width:110px;">
+                    <div style="font-size:0.75rem;color:#8a5a00">Energía total</div>
+                    <div style="font-weight:800;font-size:1.05rem;color:#065f46">${totals.energia.toFixed(2)} <span style="font-weight:600;font-size:0.85rem;color:#6b7280">kWh</span></div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('populateSellerInfoForProduct error', err);
+    }
+}
         // ========== FUNCIÓN REALIZAR COMPRA MEJORADA ==========
 
         window.realizarCompra = async function(producto) {
