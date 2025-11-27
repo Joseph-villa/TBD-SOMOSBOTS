@@ -2,7 +2,7 @@
 let reportData = null;
 let chartInstance = null;
 let secondaryChartInstance = null;
-let selectedReportType = "users"; // users, eco
+let selectedReportType = "users"; // users, eco, earnings, exchanges, publications, user-status
 let selectedReportTime = "weekly"; // weekly, monthly, yearly
 let selectedEcoType = "all"; // all, co2, water, energy
 let co2Saved = 0;
@@ -227,25 +227,36 @@ async function updateReports() {
 // Funcion para obtener todos los datos de supabase
 async function getAllSupabaseData() {
   try {
-    const [userData, impactData, gainsData] = await Promise.all([
+    const [userData, impactData, gainsData, exchangeData, publicationData, userStatusData] = await Promise.all([
       getUnifiedUserData(),
       getUnifiedImpactData(),
-      getUnifiedPackageData()
+      getUnifiedPackageData(),
+      getUnifiedExchangeData(),
+      getUnifiedPublicationData(),
+      getUnifiedUserStatusData()
     ]);
 
     return {
       users: userData,
       eco: impactData,
-      gains: gainsData
+      gains: gainsData,
+      exchanges: exchangeData,
+      publications: publicationData,
+      userStatus: userStatusData
     };
 
   } catch (error) {
     console.error('Error loading data:', error);
     return {
-      users: mockUsers, eco: mockEco, gains: {
+      users: mockUsers, 
+      eco: mockEco, 
+      gains: {
         cost: mockMoneyGains,
         points: mockCreditsGenerated
-      }
+      },
+      exchanges: { weekly: {}, monthly: {}, yearly: {} },
+      publications: { weekly: {}, monthly: {}, yearly: {} },
+      userStatus: { weekly: {}, monthly: {}, yearly: {} }
     };
   }
 }
@@ -327,6 +338,159 @@ function processUsersByPeriod(data, period) {
     labels: labels,
     data: values,
     title: titles[period]
+  };
+}
+
+// Consulta para Usuarios Activos e Inactivos
+async function getUnifiedUserStatusData() {
+  try {
+    // Obtener todos los usuarios con su última sesión
+    const { data: users, error: usersError } = await supabase
+      .from('usuario')
+      .select('auth_id, nombre_completo, fecha_creacion')
+      .order('fecha_creacion', { ascending: true });
+
+    if (usersError) throw usersError;
+
+    console.log(`📊 Total de usuarios obtenidos: ${users ? users.length : 0}`);
+
+    if (!users || users.length === 0) {
+      console.warn('⚠️ Sin usuarios registrados');
+      return {
+        weekly: { 
+          labels: ['Activos', 'Inactivos'], 
+          data: [0, 0], 
+          title: 'Usuarios por Estado Semanal',
+          colors: ['rgba(76, 175, 80, 0.8)', 'rgba(244, 67, 54, 0.8)'],
+          borders: ['rgba(76, 175, 80, 1)', 'rgba(244, 67, 54, 1)']
+        },
+        monthly: { 
+          labels: ['Activos', 'Inactivos'], 
+          data: [0, 0], 
+          title: 'Usuarios por Estado Mensual',
+          colors: ['rgba(76, 175, 80, 0.8)', 'rgba(244, 67, 54, 0.8)'],
+          borders: ['rgba(76, 175, 80, 1)', 'rgba(244, 67, 54, 1)']
+        },
+        yearly: { 
+          labels: ['Activos', 'Inactivos'], 
+          data: [0, 0], 
+          title: 'Usuarios por Estado Anual',
+          colors: ['rgba(76, 175, 80, 0.8)', 'rgba(244, 67, 54, 0.8)'],
+          borders: ['rgba(76, 175, 80, 1)', 'rgba(244, 67, 54, 1)']
+        }
+      };
+    }
+
+    // Obtener últimas sesiones
+    const { data: sesiones, error: sesionesError } = await supabase
+      .from('registro_sesiones')
+      .select('auth_id, fecha_ultima_conec')
+      .order('fecha_ultima_conec', { ascending: false });
+
+    if (sesionesError) throw sesionesError;
+
+    // Crear mapa de últimas sesiones
+    const ultimasSesiones = {};
+    if (sesiones) {
+      sesiones.forEach(sesion => {
+        if (!ultimasSesiones[sesion.auth_id]) {
+          ultimasSesiones[sesion.auth_id] = sesion.fecha_ultima_conec;
+        }
+      });
+    }
+
+    // Clasificar usuarios como activos (últimos 30 días) e inactivos
+    const clasificarUsuario = (userId) => {
+      const lastLogin = ultimasSesiones[userId];
+      if (!lastLogin) return 'inactivo';
+      
+      const lastDate = new Date(lastLogin);
+      const now = new Date();
+      const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
+      
+      return diffDays <= 30 ? 'activo' : 'inactivo';
+    };
+
+    // Procesar datos por período
+    return {
+      weekly: processUserStatusByPeriod(users, 'weekly', clasificarUsuario),
+      monthly: processUserStatusByPeriod(users, 'monthly', clasificarUsuario),
+      yearly: processUserStatusByPeriod(users, 'yearly', clasificarUsuario)
+    };
+
+  } catch (error) {
+    console.error('❌ Error obteniendo datos de estado de usuarios:', error);
+    return {
+      weekly: { 
+        labels: ['Error'], 
+        data: [0], 
+        title: 'Usuarios por Estado Semanal',
+        colors: ['rgba(158, 158, 158, 0.8)'],
+        borders: ['rgba(158, 158, 158, 1)']
+      },
+      monthly: { 
+        labels: ['Error'], 
+        data: [0], 
+        title: 'Usuarios por Estado Mensual',
+        colors: ['rgba(158, 158, 158, 0.8)'],
+        borders: ['rgba(158, 158, 158, 1)']
+      },
+      yearly: { 
+        labels: ['Error'], 
+        data: [0], 
+        title: 'Usuarios por Estado Anual',
+        colors: ['rgba(158, 158, 158, 0.8)'],
+        borders: ['rgba(158, 158, 158, 1)']
+      }
+    };
+  }
+}
+
+function processUserStatusByPeriod(data, period, clasificarUsuario) {
+  let cutoffDate = new Date();
+
+  switch (period) {
+    case 'weekly':
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+      break;
+    case 'monthly':
+      cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+      break;
+    case 'yearly':
+      cutoffDate = new Date(0);
+      break;
+  }
+
+  const filteredData = data.filter(user =>
+    new Date(user.fecha_creacion) >= cutoffDate
+  );
+
+  let activos = 0;
+  let inactivos = 0;
+
+  filteredData.forEach(user => {
+    const estado = clasificarUsuario(user.auth_id);
+    if (estado === 'activo') {
+      activos++;
+    } else {
+      inactivos++;
+    }
+  });
+
+  const titles = {
+    weekly: 'Usuarios por Estado Semanal',
+    monthly: 'Usuarios por Estado Mensual',
+    yearly: 'Usuarios por Estado Anual'
+  };
+
+  console.log(`📊 [${period}] Usuarios filtrados: ${filteredData.length}, Activos: ${activos}, Inactivos: ${inactivos}`);
+
+  return {
+    labels: ['Activos', 'Inactivos'],
+    data: [activos, inactivos],
+    title: titles[period],
+    colors: ['rgba(76, 175, 80, 0.8)', 'rgba(244, 67, 54, 0.8)'],
+    borders: ['rgba(76, 175, 80, 1)', 'rgba(244, 67, 54, 1)']
   };
 }
 
@@ -575,6 +739,193 @@ async function getUnifiedPackageData() {
     }
 }
 
+// Consulta para Intercambios
+async function getUnifiedExchangeData() {
+    try {
+        const { data, error } = await supabase
+            .from('Intercambio')
+            .select('fecha_creacion, creditos_verdes, estado')
+            .order('fecha_creacion', { ascending: true });
+
+        if (error) throw error;
+
+        console.log('🔄 Datos de Intercambios obtenidos:', data?.length || 0, 'registros');
+
+        if (!data || data.length === 0) {
+            console.warn('⚠️ Sin datos de intercambios, devolviendo datos vacíos con estructura');
+            return {
+                weekly: { labels: ['Sin datos'], data: [0], title: 'Intercambios Semanales' },
+                monthly: { labels: ['Sin datos'], data: [0], title: 'Intercambios Mensuales' },
+                yearly: { labels: ['Sin datos'], data: [0], title: 'Intercambios Anuales' }
+            };
+        }
+
+        const result = {
+            weekly: processExchangesByPeriod(data, 'weekly'),
+            monthly: processExchangesByPeriod(data, 'monthly'),
+            yearly: processExchangesByPeriod(data, 'yearly')
+        };
+
+        console.log('✅ Intercambios procesados:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Error obteniendo datos de intercambios:', error);
+        return {
+            weekly: { labels: ['Error'], data: [0], title: 'Intercambios Semanales' },
+            monthly: { labels: ['Error'], data: [0], title: 'Intercambios Mensuales' },
+            yearly: { labels: ['Error'], data: [0], title: 'Intercambios Anuales' }
+        };
+    }
+}
+
+function processExchangesByPeriod(data, period) {
+    let cutoffDate = new Date();
+
+    switch (period) {
+        case 'weekly':
+            cutoffDate.setDate(cutoffDate.getDate() - 7);
+            break;
+        case 'monthly':
+            cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+            break;
+        case 'yearly':
+            cutoffDate = new Date(0);
+            break;
+    }
+
+    const filteredData = data.filter(exchange =>
+        new Date(exchange.fecha_creacion) >= cutoffDate
+    );
+
+    const grouped = {};
+    const titles = {
+        weekly: 'Intercambios Semanales',
+        monthly: 'Intercambios Mensuales',
+        yearly: 'Intercambios Anuales'
+    };
+
+    filteredData.forEach(exchange => {
+        const date = new Date(exchange.fecha_creacion);
+        let key;
+
+        switch (period) {
+            case 'weekly':
+                key = date.getDate().toString();
+                break;
+            case 'monthly':
+                key = date.toLocaleDateString('es-ES', { month: 'short' });
+                break;
+            case 'yearly':
+                key = date.getFullYear().toString();
+                break;
+        }
+
+        grouped[key] = (grouped[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(grouped);
+    const values = Object.values(grouped);
+
+    return {
+        labels: labels,
+        data: values,
+        title: titles[period]
+    };
+}
+
+// Consulta para Publicaciones
+async function getUnifiedPublicationData() {
+    try {
+        const { data, error } = await supabase
+            .from('Publicacion')
+            .select('fecha_publicacion, precio, estado')
+            .order('fecha_publicacion', { ascending: true });
+
+        if (error) throw error;
+
+        console.log('📊 Datos de Publicaciones obtenidos:', data?.length || 0, 'registros');
+
+        if (!data || data.length === 0) {
+            console.warn('⚠️ Sin datos de publicaciones, devolviendo datos vacíos con estructura');
+            return {
+                weekly: { labels: ['Sin datos'], data: [0], title: 'Publicaciones Semanales' },
+                monthly: { labels: ['Sin datos'], data: [0], title: 'Publicaciones Mensuales' },
+                yearly: { labels: ['Sin datos'], data: [0], title: 'Publicaciones Anuales' }
+            };
+        }
+
+        const result = {
+            weekly: processPublicationsByPeriod(data, 'weekly'),
+            monthly: processPublicationsByPeriod(data, 'monthly'),
+            yearly: processPublicationsByPeriod(data, 'yearly')
+        };
+
+        console.log('✅ Publicaciones procesadas:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Error obteniendo datos de publicaciones:', error);
+        return {
+            weekly: { labels: ['Error'], data: [0], title: 'Publicaciones Semanales' },
+            monthly: { labels: ['Error'], data: [0], title: 'Publicaciones Mensuales' },
+            yearly: { labels: ['Error'], data: [0], title: 'Publicaciones Anuales' }
+        };
+    }
+}
+
+function processPublicationsByPeriod(data, period) {
+    let cutoffDate = new Date();
+
+    switch (period) {
+        case 'weekly':
+            cutoffDate.setDate(cutoffDate.getDate() - 7);
+            break;
+        case 'monthly':
+            cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+            break;
+        case 'yearly':
+            cutoffDate = new Date(0);
+            break;
+    }
+
+    const filteredData = data.filter(publication =>
+        new Date(publication.fecha_publicacion) >= cutoffDate
+    );
+
+    const grouped = {};
+    const titles = {
+        weekly: 'Publicaciones Semanales',
+        monthly: 'Publicaciones Mensuales',
+        yearly: 'Publicaciones Anuales'
+    };
+
+    filteredData.forEach(publication => {
+        const date = new Date(publication.fecha_publicacion);
+        let key;
+
+        switch (period) {
+            case 'weekly':
+                key = date.getDate().toString();
+                break;
+            case 'monthly':
+                key = date.toLocaleDateString('es-ES', { month: 'short' });
+                break;
+            case 'yearly':
+                key = date.getFullYear().toString();
+                break;
+        }
+
+        grouped[key] = (grouped[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(grouped);
+    const values = Object.values(grouped);
+
+    return {
+        labels: labels,
+        data: values,
+        title: titles[period]
+    };
+}
 
 // NUEVA FUNCIÓN AUXILIAR: Mapea y rellena la respuesta de la RPC
 function processRpcData(data, valueKey, title, period) {
@@ -714,7 +1065,7 @@ function prepareGraphicsArea() {
   const graphicsArea = document.getElementById("graphics-area-container");
   if (!graphicsArea) return;
 
-  if (selectedReportType === "users" && graphicsArea.childElementCount !== 1) {
+  if (["users", "exchanges", "publications"].includes(selectedReportType) && graphicsArea.childElementCount !== 1) {
     graphicsArea.firstChild.style.flex = "1 1 100%";
     if (graphicsArea.lastChild !== graphicsArea.firstChild) {
       graphicsArea.removeChild(graphicsArea.lastChild);
@@ -755,6 +1106,18 @@ function generateReport() {
   if (selectedReportType === "earnings") {
     generateCreditsBought();
     generateMoneyGains();
+  }
+
+  if (selectedReportType === "exchanges") {
+    generateExchangesChart();
+  }
+
+  if (selectedReportType === "publications") {
+    generatePublicationsChart();
+  }
+
+  if (selectedReportType === "user-status") {
+    generateUserStatusChart();
   }
 }
 
@@ -924,7 +1287,7 @@ function generateEcoLine() {
     type: 'line',
     data: {
       labels: data.labels,
-      datasets: config.datasets
+      datasets: data.datasets
     },
     options: {
       responsive: true,
@@ -1093,6 +1456,294 @@ function getPackageChartOptions(title) {
       }
     }
   };
+}
+
+// Gráfico de Intercambios
+function generateExchangesChart() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  if (!reportData || !reportData.exchanges) {
+    console.error('❌ No hay datos de intercambios disponibles');
+    return;
+  }
+
+  const data = reportData.exchanges[selectedReportTime];
+  
+  if (!data || !data.labels || !data.data) {
+    console.error('❌ Datos de intercambios inválidos:', data);
+    return;
+  }
+
+  console.log('📈 Generando gráfico de intercambios con datos:', data);
+
+  const config = {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Número de Intercambios',
+        data: data.data,
+        backgroundColor: [
+          'rgba(76, 175, 80, 0.6)',
+          'rgba(76, 175, 80, 0.6)',
+          'rgba(76, 175, 80, 0.6)',
+          'rgba(76, 175, 80, 0.6)',
+          'rgba(76, 175, 80, 0.6)',
+          'rgba(76, 175, 80, 0.6)'
+        ],
+        borderColor: [
+          'rgba(76, 175, 80, 1)',
+          'rgba(76, 175, 80, 1)',
+          'rgba(76, 175, 80, 1)',
+          'rgba(76, 175, 80, 1)',
+          'rgba(76, 175, 80, 1)',
+          'rgba(76, 175, 80, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: data.title,
+          font: {
+            size: 16,
+            weight: 'bold'
+          },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top',
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          cornerRadius: 4
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          },
+          title: {
+            display: true,
+            text: 'Número de Intercambios'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuart'
+      }
+    }
+  };
+
+  chartInstance = new Chart(ctx, config);
+}
+
+// Gráfico de Publicaciones
+function generatePublicationsChart() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  if (!reportData || !reportData.publications) {
+    console.error('❌ No hay datos de publicaciones disponibles');
+    return;
+  }
+
+  const data = reportData.publications[selectedReportTime];
+  
+  if (!data || !data.labels || !data.data) {
+    console.error('❌ Datos de publicaciones inválidos:', data);
+    return;
+  }
+
+  console.log('📈 Generando gráfico de publicaciones con datos:', data);
+
+  const config = {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Número de Publicaciones',
+        data: data.data,
+        backgroundColor: [
+          'rgba(33, 150, 243, 0.6)',
+          'rgba(33, 150, 243, 0.6)',
+          'rgba(33, 150, 243, 0.6)',
+          'rgba(33, 150, 243, 0.6)',
+          'rgba(33, 150, 243, 0.6)',
+          'rgba(33, 150, 243, 0.6)'
+        ],
+        borderColor: [
+          'rgba(33, 150, 243, 1)',
+          'rgba(33, 150, 243, 1)',
+          'rgba(33, 150, 243, 1)',
+          'rgba(33, 150, 243, 1)',
+          'rgba(33, 150, 243, 1)',
+          'rgba(33, 150, 243, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: data.title,
+          font: {
+            size: 16,
+            weight: 'bold'
+          },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top',
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          cornerRadius: 4
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          },
+          title: {
+            display: true,
+            text: 'Número de Publicaciones'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuart'
+      }
+    }
+  };
+
+  chartInstance = new Chart(ctx, config);
+}
+
+// Gráfico de usuarios activos e inactivos
+function generateUserStatusChart() {
+  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  if (!reportData || !reportData.userStatus) {
+    console.error('❌ No hay datos de estado de usuarios disponibles');
+    return;
+  }
+
+  const data = reportData.userStatus[selectedReportTime];
+  
+  if (!data || !data.labels || !data.data) {
+    console.error('❌ Datos de estado de usuarios inválidos:', data);
+    return;
+  }
+
+  console.log('📊 Generando gráfico de usuarios activos/inactivos con datos:', data);
+
+  const config = {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Usuarios',
+        data: data.data,
+        backgroundColor: [
+          'rgba(76, 175, 80, 0.7)',  // Verde para activos
+          'rgba(244, 67, 54, 0.7)'   // Rojo para inactivos
+        ],
+        borderColor: [
+          'rgba(76, 175, 80, 1)',
+          'rgba(244, 67, 54, 1)'
+        ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: data.title,
+          font: {
+            size: 16,
+            weight: 'bold'
+          },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top',
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          cornerRadius: 4,
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuart'
+      }
+    }
+  };
+
+  chartInstance = new Chart(ctx, config);
 }
 
 // ------------------ Auxiliares para grafico de Linea Chart -----------------
@@ -1326,7 +1977,10 @@ function generatePanel() {
   const buttonConfigs = [
     { type: "users", text: "Usuarios Registrados" },
     { type: "eco", text: "Impacto Ambiental" },
-    { type: "earnings", text: "Dinero generado" }
+    { type: "earnings", text: "Dinero generado" },
+    { type: "exchanges", text: "Intercambios" },
+    { type: "publications", text: "Publicaciones" },
+    { type: "user-status", text: "Usuarios Activos/Inactivos" }
   ];
 
   buttonConfigs.forEach(config => {
