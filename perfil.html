@@ -144,6 +144,80 @@
             border-radius: 8px;
             border: 1px dashed #d1d5db;
         }
+        /* --- estilos nuevos para reportes --- */
+        .report-grid {
+            display:flex;
+            gap:12px;
+            margin-top:12px;
+            align-items:stretch;
+            flex-wrap:wrap;
+        }
+        .report-card {
+            flex:1 1 200px;
+            display:flex;
+            gap:12px;
+            align-items:center;
+            padding:14px;
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.06);
+            border:1px solid rgba(15,23,42,0.04);
+            background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,250,0.9));
+            min-width:180px;
+        }
+        .report-card .icon {
+            width:54px;
+            height:54px;
+            border-radius:10px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:22px;
+            color:white;
+            flex-shrink:0;
+        }
+        .report-card .content { flex:1; }
+        .report-card .label { font-size:0.9rem; color:#374151; margin-bottom:4px; }
+        .report-card .value { font-size:1.4rem; font-weight:800; color:#0f5132; }
+        .report-card .unit { font-size:0.85rem; color:#6b7280; margin-left:6px; }
+
+        /* colores específicos */
+        .report-co2 .icon { background: linear-gradient(135deg,#20bf6b,#0ea45f); }
+        .report-agua .icon { background: linear-gradient(135deg,#60a5fa,#3b82f6); }
+        .report-energia .icon { background: linear-gradient(135deg,#ffd166,#ffb020); }
+
+        @media (max-width:640px){
+            .report-grid { flex-direction:column; }
+        }
+
+        /* --- subtítulo bonito para "Reportes" --- */
+        .reports-subtitle {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            margin:0 0 12px 0;
+            font-size:1rem;
+            font-weight:700;
+            color:#111827;
+            letter-spacing:0.2px;
+        }
+        .reports-subtitle .decor {
+            width:44px;
+            height:8px;
+            border-radius:8px;
+            background:linear-gradient(90deg,#10b981 0%,#06b6d4 100%);
+            box-shadow:0 6px 18px rgba(6,182,150,0.12);
+            flex-shrink:0;
+        }
+        .reports-subtitle .label-small {
+            font-size:0.85rem;
+            font-weight:600;
+            color:#374151;
+        }
+        .reports-subtitle .hint {
+            font-size:0.85rem;
+            color:#6b7280;
+            font-weight:500;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -258,6 +332,49 @@
                 <!-- Las publicaciones se renderizarán aquí -->
             </div>
         </section>
+
+        <!-- Reporte de Ahorros (solo emprendedores) -->
+        <div id="reportSection" style="display:none;">
+            <h3 class="reports-subtitle">
+                <span class="decor" aria-hidden="true"></span>
+                <span class="label-small">Reportes</span>
+                <span class="hint">Resumen de ahorros del vendedor</span>
+            </h3>
+            <div class="report-grid">
+                <div class="report-card report-co2" title="CO2 ahorrado">
+                    <div class="icon"><i class="fas fa-seedling"></i></div>
+                    <div class="content">
+                        <div class="label">CO2 ahorrado</div>
+                        <div>
+                            <span class="value" id="reportCo2">0</span>
+                            <span class="unit">kg</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card report-agua" title="Agua ahorrada">
+                    <div class="icon"><i class="fas fa-tint"></i></div>
+                    <div class="content">
+                        <div class="label">Agua ahorrada</div>
+                        <div>
+                            <span class="value" id="reportAgua">0</span>
+                            <span class="unit">L</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card report-energia" title="Energía ahorrada">
+                    <div class="icon"><i class="fas fa-bolt"></i></div>
+                    <div class="content">
+                        <div class="label">Energía ahorrada</div>
+                        <div>
+                            <span class="value" id="reportEnergia">0</span>
+                            <span class="unit">kWh</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL PARA SOLICITUD DE EMPRENDEDOR -->
@@ -306,6 +423,183 @@
         </div>
     </div>
 
+    <script type="module">
+        import { supabase } from './config/db.js';
+
+        async function fetchUsuarioByIdOrAuth(id) {
+            if (!id) return null;
+            let { data, error } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('id_usuario', id)
+                .maybeSingle();
+            if (data) return data;
+
+            const res = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('auth_id', id)
+                .maybeSingle();
+            return res.data || null;
+        }
+
+        async function fetchReviewsForUser(targetId) {
+            const candidates = ['Resena','Resenas','reseña','reseñas','Review','reviews','Valoracion','valoraciones','calificacion'];
+            for (const tbl of candidates) {
+                try {
+                    const { data, error } = await supabase
+                        .from(tbl)
+                        .select('*')
+                        .eq('usuario_id', targetId)
+                        .order('fecha', { ascending: false });
+                    if (!error && Array.isArray(data)) return data;
+                } catch (e) {
+                    console.warn(`Tabla ${tbl} no disponible o error al consultarla.`);
+                }
+            }
+            return [];
+        }
+
+        function renderReviewsList(reviews, authorsMap) {
+            const container = document.getElementById('userReviews');
+            if (!container) return;
+            if (!reviews || reviews.length === 0) {
+                container.innerHTML = '<div class="no-reviews">Este usuario no tiene reseñas.</div>';
+                return;
+            }
+
+            container.innerHTML = reviews.map(r => {
+                const rating = r.calificacion ?? r.rating ?? r.puntuacion ?? '';
+                const comment = r.comentario ?? r.contenido ?? r.mensaje ?? '';
+                const date = r.fecha ? new Date(r.fecha).toLocaleString() : (r.created_at ? new Date(r.created_at).toLocaleString() : '');
+                const autorId = r.emisor_id ?? r.revisor_id ?? r.usuario_emisor ?? r.autor_id;
+                const autorNombre = authorsMap[autorId] || 'Anónimo';
+
+                return `
+                    <div class="review-card" style="background:white;padding:12px;border-radius:8px;border:1px solid #eee;">
+                        <div class="review-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <div style="font-weight:700;">${autorNombre}</div>
+                            <div style="color:#ffb400;font-weight:700;">${rating ? '★ '.repeat(Math.round(rating)) + (rating ? ` (${rating})` : '') : ''}</div>
+                        </div>
+                        <div class="review-comment" style="color:#444;">${comment ? comment : '<i>Sin comentario</i>'}</div>
+                        <div style="font-size:0.8rem;color:#888;margin-top:8px;">${date}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function fetchAuthorsMap(emisorIds) {
+            if (!emisorIds || emisorIds.length === 0) return {};
+            const uniq = [...new Set(emisorIds)];
+            const { data } = await supabase
+                .from('usuario')
+                .select('id_usuario,nombre_completo,auth_id')
+                .in('id_usuario', uniq);
+            const map = {};
+            (data || []).forEach(u => {
+                map[u.id_usuario || u.auth_id] = u.nombre_completo || 'Usuario';
+            });
+            return map;
+        }
+
+        async function fetchAndRenderSavings(targetIdForQuery, showIfNotEmprendedor = false) {
+            const reportCo2El = document.getElementById('reportCo2');
+            const reportAguaEl = document.getElementById('reportAgua');
+            const reportEnergiaEl = document.getElementById('reportEnergia');
+            const reportSection = document.getElementById('reportSection');
+            if (!reportCo2El || !reportAguaEl || !reportEnergiaEl || !reportSection) return;
+
+            // Obtener publicaciones y sumar en cliente (más fiable que agregados postgrest si no se configuran)
+            const { data: pubs, error } = await supabase
+                .from('Publicacion')
+                .select('ahorro_co2,ahorro_agua,ahorro_energia,estado')
+                .eq('usuario_id', targetIdForQuery);
+
+            if (error) {
+                console.warn('Error al cargar publicaciones para calcular ahorros:', error);
+                reportSection.style.display = 'none';
+                return;
+            }
+
+            const items = pubs || [];
+            const totals = items.reduce((acc, p) => {
+                acc.co2 += Number(p.ahorro_co2) || 0;
+                acc.agua += Number(p.ahorro_agua) || 0;
+                acc.energia += Number(p.ahorro_energia) || 0;
+                return acc;
+            }, { co2: 0, agua: 0, energia: 0 });
+
+            reportCo2El.textContent = totals.co2.toFixed(2);
+            reportAguaEl.textContent = totals.agua.toFixed(2);
+            reportEnergiaEl.textContent = totals.energia.toFixed(2);
+
+            // Mostrar solo si el usuario es emprendedor (o si forced show)
+            if (showIfNotEmprendedor) reportSection.style.display = 'flex';
+        }
+
+        (async function() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const usuarioIdParam = params.get('usuario_id') || params.get('user_id');
+
+                let targetUsuario = null;
+                if (usuarioIdParam) {
+                    targetUsuario = await fetchUsuarioByIdOrAuth(usuarioIdParam);
+                }
+
+                if (!targetUsuario) {
+                    const { data: authRes } = await supabase.auth.getUser();
+                    const currentAuth = authRes?.user;
+                    if (!currentAuth) {
+                        document.getElementById('profileName').textContent = 'Usuario no encontrado';
+                        document.getElementById('profileEmail').textContent = '';
+                        document.getElementById('userReviews').innerHTML = '<div class="no-reviews">No se encontró usuario.</div>';
+                        return;
+                    }
+                    targetUsuario = await fetchUsuarioByIdOrAuth(currentAuth.id);
+                }
+
+                if (!targetUsuario) {
+                    document.getElementById('profileName').textContent = 'Usuario no encontrado';
+                    document.getElementById('profileEmail').textContent = '';
+                    document.getElementById('userReviews').innerHTML = '<div class="no-reviews">No se encontró usuario.</div>';
+                    return;
+                }
+
+                // Mostrar sólo nombre y correo
+                document.getElementById('profileName').textContent = targetUsuario.nombre_completo || targetUsuario.nombre || 'Sin nombre';
+                document.getElementById('profileEmail').textContent = targetUsuario.correo_electronico || targetUsuario.email || '';
+
+                if (targetUsuario.avatar_url) {
+                    const avatar = document.getElementById('profileAvatar');
+                    if (avatar) avatar.src = targetUsuario.avatar_url;
+                }
+
+                // Calcular y mostrar ahorros solo si el usuario es emprendedor
+                const targetIdForQuery = targetUsuario.auth_id ?? targetUsuario.id_usuario ?? targetUsuario.id;
+                const isEmprendedor = (String(targetUsuario.rol || '').toLowerCase().includes('emprendedor'));
+                if (isEmprendedor) {
+                    await fetchAndRenderSavings(targetIdForQuery, true);
+                    document.getElementById('reportSection').style.display = 'flex';
+                } else {
+                    // ocultar sección si no es emprendedor
+                    document.getElementById('reportSection').style.display = 'none';
+                }
+
+                // Cargar reseñas
+                const reviews = await fetchReviewsForUser(targetIdForQuery);
+                const emisorIds = (reviews || []).map(r => r.emisor_id ?? r.revisor_id ?? r.autor_id).filter(Boolean);
+                const authorsMap = await fetchAuthorsMap(emisorIds);
+                renderReviewsList(reviews, authorsMap);
+
+            } catch (err) {
+                console.error('Error cargando perfil (solo nombre/email/reseñas):', err);
+                document.getElementById('profileName').textContent = 'Error cargando perfil';
+                document.getElementById('profileEmail').textContent = '';
+                document.getElementById('userReviews').innerHTML = '<div class="no-reviews">Error al cargar reseñas.</div>';
+            }
+        })();
+    </script>
     <script type="module">
         import { supabase } from './config/db.js';
 

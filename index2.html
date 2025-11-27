@@ -637,69 +637,86 @@
 
         // ========== RENDERIZADO MEJORADO DE PRODUCTOS ==========
 
-        function renderProducts(products) {
-            const productGrid = document.getElementById('productGrid');
+        // función helper para navegar al perfil (segura)
+window.irAlPerfil = function(usuarioId) {
+    console.log('irAlPerfil llamado con id:', usuarioId);
+    if (!usuarioId) {
+        alert('ID de usuario no disponible');
+        return;
+    }
+    window.location.href = `perfil.html?usuario_id=${encodeURIComponent(usuarioId)}`;
+};
 
-            if (!products || products.length === 0) {
-                productGrid.innerHTML = `
-                    <div class="no-products">
-                        <p style="font-size: 1.1rem; color: #666; margin-bottom: 10px;">
-                            No hay publicaciones disponibles de otros usuarios en este momento
-                        </p>
-                        <p style="color: #888; margin-bottom: 20px;">
-                            ¡Sé el primero en crear una publicación!
-                        </p>
-                        <button onclick="window.location.href='publicar.html'" 
-                                class="btn-intercambiar" 
-                                style="background: #4CAF50; color: white; border: none; 
-                                       padding: 12px 24px; border-radius: 6px; cursor: pointer; 
-                                       font-size: 1rem; font-weight: bold;">
-                            ➕ Crear Mi Primera Publicación
-                        </button>
-                    </div>
-                `;
-                return;
-            }
+function renderProducts(products) {
+    const productGrid = document.getElementById('productGrid');
+    if (!productGrid) return;
+    if (!products || products.length === 0) {
+        productGrid.innerHTML = '<p>No hay publicaciones</p>';
+        return;
+    }
 
-            productGrid.innerHTML = products.map(producto => {
-                const titulo = producto.titulo || 'Sin título';
-                const descripcion = producto.descripcion || 'Sin descripción';
-                const precio = producto.precio || 0;
-                const categoria = producto.nombre_categoria || 'General';
-                const imagen = producto.imagen_url || null;
+    productGrid.innerHTML = products.map(producto => {
+        console.log('Producto (render):', producto);
 
-                return `
-                    <div class="product-card" data-producto-id="${producto.id_publicacion}">
-                        ${imagen ? `
-                            <img src="${imagen}" alt="${titulo}" 
-                                 style="width: 100%; height: 150px; object-fit: cover;"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                        ` : ''}
-                        ${!imagen ? `
-                            <div style="width: 100%; height: 150px; background: #f0f0f0; 
-                                       display: flex; align-items: center; justify-content: center;">
-                                <span style="color: #999;">Sin imagen</span>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="credits">${precio} ♻️</div>
-                        <p style="font-weight: bold; margin: 10px 0 5px 0; padding: 0 10px;">${titulo}</p>
-                        <p style="font-size: 0.8rem; color: #666; padding: 0 10px; margin: 0 0 10px 0; 
-                                 display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
-                                 overflow: hidden;">
-                           ${descripcion}
-                        </p>
-                        <p style="font-size: 0.7rem; color: #888; padding: 0 10px; margin: 0 0 5px 0;">
-                            Categoría: ${categoria}
-                        </p>
-                        
-                        <button class="btn-intercambiar" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">
-                            Comprar
-                        </button>
-                    </div>
-                `;
-            }).join('');
+        const titulo = producto.titulo || producto.nombre || 'Sin título';
+        const descripcion = producto.descripcion || 'Sin descripción';
+        const precio = producto.precio ?? 0;
+
+        let categoria = producto.nombre_categoria || producto.categoria || 'General';
+        const catId = producto.categoria_id ?? producto.id_categoria ?? producto.categoriaId;
+        if ((categoria === 'General' || !categoria) && window.categoriasData && catId) {
+            const catObj = window.categoriasData.find(c => String(c.id_categoria) === String(catId) || String(c.id) === String(catId));
+            if (catObj) categoria = catObj.nombre || categoria;
         }
+
+        const ahorroCo2 = (typeof producto.ahorro_co2 !== 'undefined' && producto.ahorro_co2 !== null)
+            ? producto.ahorro_co2
+            : (producto.ahorros?.co2 ?? calcularAhorrosPorCategoria(categoria).ahorro_co2);
+
+        const ahorroAgua = (typeof producto.ahorro_agua !== 'undefined' && producto.ahorro_agua !== null)
+            ? producto.ahorro_agua
+            : (producto.ahorros?.agua ?? calcularAhorrosPorCategoria(categoria).ahorro_agua);
+
+        const ahorroEnergia = (typeof producto.ahorro_energia !== 'undefined' && producto.ahorro_energia !== null)
+            ? producto.ahorro_energia
+            : (producto.ahorros?.energia ?? calcularAhorrosPorCategoria(categoria).ahorro_energia);
+
+        const imagen = producto.imagen_url || null;
+
+        // ID vendedor según tu tabla (usuario_id)
+        const sellerId = producto.usuario_id || producto.usuario || '';
+
+        console.log('sellerId detectado:', sellerId);
+
+        const perfilOnclick = sellerId ? `onclick="window.irAlPerfil('${sellerId}')" ` : '';
+
+        return `
+            <div class="product-card" data-producto-id="${producto.id_publicacion || producto.id || ''}">
+                ${imagen ? `<img src="${imagen}" alt="${titulo}" style="width:100%;height:150px;object-fit:cover;">`
+                         : `<div style="width:100%;height:150px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;"><span style="color:#999">Sin imagen</span></div>`}
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px 0 10px;">
+                    <div style="font-weight:bold;">${titulo}</div>
+                    <button type="button" ${perfilOnclick} title="Ver perfil del autor" style="font-size:0.8rem;padding:6px 8px;border-radius:6px;background:#eef9f0;color:#036d19;border:1px solid rgba(47,154,52,0.12);cursor:pointer;">
+                        Ver perfil
+                    </button>
+                </div>
+                <p style="font-size:0.8rem;color:#666;padding:0 10px;margin:6px 0 10px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                   ${descripcion}
+                </p>
+                <p style="font-size:0.7rem;color:#888;padding:0 10px;margin:0 0 6px 0;">Categoría: ${categoria}</p>
+                <div style="display:flex;gap:8px;padding:0 10px 10px 10px;align-items:center;flex-wrap:wrap;">
+                    <span style="background:#e6f9ec;color:#0b6b2a;padding:6px 8px;border-radius:8px;font-size:0.8rem;">CO2: ${ahorroCo2} kg</span>
+                    <span style="background:#eaf5ff;color:#0b477a;padding:6px 8px;border-radius:8px;font-size:0.8rem;">Agua: ${ahorroAgua} L</span>
+                    <span style="background:#fff7e6;color:#8a5a00;padding:6px 8px;border-radius:8px;font-size:0.8rem;">Energía: ${ahorroEnergia} kWh</span>
+                </div>
+                <div style="display:flex;gap:8px;padding:0 10px 16px 10px;">
+                    <div class="credits" style="flex:1;display:flex;align-items:center;justify-content:center;">${precio} ♻️</div>
+                    <button class="btn-intercambiar" style="flex:1;" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">Comprar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
         // ========== FUNCIÓN REALIZAR COMPRA MEJORADA ==========
 

@@ -639,21 +639,36 @@
                     console.log('Imagen subida:', imageUrl);
                 }
 
-                // Insertar publicación en la base de datos CORREGIDO
-                console.log('📝 Insertando publicación...');
+                // Antes de insertar la publicación: determinar nombre de categoría para cálculo
+                let nombreCategoriaParaCalculo = null;
+                if (categoriaSelectValue === 'OTROS') {
+                    nombreCategoriaParaCalculo = categoriaOtros || 'Otros';
+                } else {
+                    const catObj = window.categoriasData.find(c => String(c.id_categoria) === String(categoriaSelectValue));
+                    nombreCategoriaParaCalculo = catObj ? (catObj.nombre || categoriaSelectValue) : categoriaSelectValue;
+                }
+
+                // Calcular ahorros (cantidad = 1 por defecto; puedes añadir campo cantidad si quieres)
+                const ahorros = calcularAhorrosPorCategoria(nombreCategoriaParaCalculo, 1);
+
+                // Insertar publicación en la base de datos CORREGIDO (agregar campos de ahorro)
+                console.log('📝 Insertando publicación con ahorros...', ahorros);
                 const { data: inserted, error: insertError } = await supabase
                     .from('Publicacion')
                     .insert([{
                         titulo: title,
                         descripcion: description,
                         precio: price,
-                        categoria_id: categoriaId,  // USAR categoria_id (puede ser null)
-                        nombre_categoria: nombreCategoriaPersonalizada, // Guardar nombre si es "Otros"
+                        categoria_id: categoriaId,
+                        nombre_categoria: nombreCategoriaPersonalizada || nombreCategoriaParaCalculo,
                         imagen_url: imageUrl,
                         usuario_id: user.id,
                         estado: 'activo',
-                        fecha_publicacion: new Date(),
-                        fecha_actualizacion: new Date()
+                        fecha_publicacion: new Date().toISOString(),
+                        fecha_actualizacion: new Date().toISOString(),
+                        ahorro_co2: ahorros.co2,
+                        ahorro_agua: ahorros.agua,
+                        ahorro_energia: ahorros.energia
                     }])
                     .select();
 
@@ -799,6 +814,41 @@
             }
         });
     });
+
+    // --- MAPA / FUNCIÓN PARA CALCULAR AHORROS POR CATEGORÍA ---
+    // función para calcular ahorros (mis mismos valores de ejemplo)
+    function calcularAhorrosPorCategoria(nombreCategoria, cantidad = 1) {
+        if (!nombreCategoria) nombreCategoria = 'otros';
+        const key = nombreCategoria.toString().toLowerCase();
+
+        const MAP = {
+            deportes:    { co2: 0.05,  agua: 0.2,  energia: 0.02 },  // actividades deportivas: bajo impacto
+            electronicos:{ co2: 2.5,   agua: 1.0,  energia: 3.5 },   // productos electrónicos: alto impacto
+            herramientas:{ co2: 0.9,   agua: 0.5,  energia: 0.6 },   // herramientas: medio
+            hogar:       { co2: 0.7,   agua: 3.0,  energia: 0.8 },   // artículos del hogar
+            juguetes:    { co2: 0.25,  agua: 1.0,  energia: 0.15 },  // juguetes
+            libros:      { co2: 0.1,   agua: 0.2,  energia: 0.05 },  // libros: muy bajo
+            otros:       { co2: 0.15,  agua: 0.5,  energia: 0.1 }    // fallback para otras categorías
+        };
+
+        // buscar coincidencia exacta/contiene
+        for (const k in MAP) {
+            if (key.includes(k)) {
+                return {
+                    co2: +(MAP[k].co2 * cantidad).toFixed(2),
+                    agua: +(MAP[k].agua * cantidad).toFixed(2),
+                    energia: +(MAP[k].energia * cantidad).toFixed(2)
+                };
+            }
+        }
+
+        const d = MAP.otros;
+        return {
+            co2: +(d.co2 * cantidad).toFixed(2),
+            agua: +(d.agua * cantidad).toFixed(2),
+            energia: +(d.energia * cantidad).toFixed(2)
+        };
+    }
 </script>
 </body>
 </html>
