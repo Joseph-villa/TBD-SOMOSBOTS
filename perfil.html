@@ -849,50 +849,64 @@
         }
 
         async function loadUserData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                
-                if (!user) {
-                    console.log('Debes iniciar sesión para ver tu perfil');
-                    window.location.href = 'index.html';
-                    return;
-                }
-
-                currentUserId = user.id;
-
-                const { data: usuario, error } = await supabase
-                    .from('usuario')
-                    .select('*')
-                    .eq('auth_id', user.id)
-                    .single();
-
-                if (error) throw error;
-
-                if (usuario) {
-                    profileName.textContent = usuario.nombre_completo || 'Usuario';
-                    profileEmail.textContent = usuario.correo_electronico || user.email;
-                    
-                    const saldo = usuario.saldo_creditos || 0;
-                    saldoBadge.textContent = `${saldo} ♻️`;
-                    localStorage.setItem('user_saldo', saldo);
-                    
-                    currentUserRol = usuario.rol || 'Usuario'; 
-                    localStorage.setItem('user_rol', currentUserRol); 
-                    
-                    verificarEstadoEmprendedor(currentUserId);
-                } 
-
-            } catch (error) {
-                console.error('Error al cargar datos del usuario:', error);
-                const userName = localStorage.getItem('user_name') || 'Usuario';
-                const userEmail = localStorage.getItem('user_email') || '';
-                const userSaldo = localStorage.getItem('user_saldo') || '0';
-                
-                profileName.textContent = userName;
-                profileEmail.textContent = userEmail;
-                saldoBadge.textContent = `${userSaldo} ♻️`;
-            }
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            console.log('Debes iniciar sesión para ver tu perfil');
+            window.location.href = 'index.html';
+            return;
         }
+
+        currentUserId = user.id;
+
+        const { data: usuario, error } = await supabase
+            .from('usuario')
+            .select('*')
+            .eq('auth_id', user.id)
+            .single();
+
+        if (error) throw error;
+
+        if (usuario) {
+            profileName.textContent = usuario.nombre_completo || 'Usuario';
+            profileEmail.textContent = usuario.correo_electronico || user.email;
+            
+            // Cargar saldo desde la billetera
+            const { data: billetera, error: billeteraError } = await supabase
+                .from('billetera')
+                .select('credito_actual')
+                .eq('usuario_id', currentUserId)
+                .single();
+
+            let saldo = 0;
+            if (!billeteraError && billetera) {
+                saldo = billetera.credito_actual || 0;
+            } else {
+                // Fallback al saldo del usuario si no hay billetera
+                saldo = usuario.saldo_creditos || 0;
+            }
+            
+            saldoBadge.textContent = `${saldo} ♻️`;
+            localStorage.setItem('user_saldo', saldo);
+            
+            currentUserRol = usuario.rol || 'Usuario'; 
+            localStorage.setItem('user_rol', currentUserRol); 
+            
+            verificarEstadoEmprendedor(currentUserId);
+        } 
+
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        const userName = localStorage.getItem('user_name') || 'Usuario';
+        const userEmail = localStorage.getItem('user_email') || '';
+        const userSaldo = localStorage.getItem('user_saldo') || '0';
+        
+        profileName.textContent = userName;
+        profileEmail.textContent = userEmail;
+        saldoBadge.textContent = `${userSaldo} ♻️`;
+    }
+}
 
         async function fetchUserPosts() {
             if (!currentUserId) {

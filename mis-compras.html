@@ -600,38 +600,55 @@
     }
 
     // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
-    async function actualizarCreditosUI(nuevoSaldo = null) {
-        try {
-            let saldoParaMostrar = nuevoSaldo;
-            
-            if (saldoParaMostrar === null && currentUserId) {
-                const { data: usuario, error } = await supabase
-                    .from('usuario')
-                    .select('saldo_creditos')
-                    .eq('auth_id', currentUserId)
-                    .single();
-                
-                if (!error && usuario) {
-                    saldoParaMostrar = usuario.saldo_creditos;
-                }
-            }
-
-            console.log('🔄 Actualizando UI de créditos:', saldoParaMostrar);
-            
-            const topCreditsElement = document.getElementById('topCredits');
-            if (topCreditsElement && saldoParaMostrar !== null) {
-                topCreditsElement.textContent = saldoParaMostrar;
-            }
-            
-            if (saldoParaMostrar !== null) {
-                localStorage.setItem('user_saldo', saldoParaMostrar);
-            }
-            
-        } catch (error) {
-            console.error('❌ Error actualizando UI de créditos:', error);
+    async function actualizarCreditosUI() {
+    try {
+        if (!currentUserId) {
+            console.warn('⚠️ No hay usuario autenticado para cargar créditos');
+            return;
         }
-    }
 
+        console.log('💰 Cargando créditos desde BILLETERA para usuario:', currentUserId);
+
+        // Obtener créditos directamente desde billetera
+        const { data: billetera, error } = await supabase
+            .from('billetera')
+            .select('credito_actual')
+            .eq('usuario_id', currentUserId)
+            .single();
+
+        if (error) {
+            console.error('❌ Error cargando billetera:', error);
+            throw error;
+        }
+
+        const saldo = parseFloat(billetera.credito_actual) || 0;
+        
+        console.log('✅ Saldo cargado desde billetera:', saldo);
+
+        // Actualizar UI
+        const topCreditsElement = document.getElementById('topCredits');
+        if (topCreditsElement) {
+            topCreditsElement.textContent = saldo;
+        }
+
+        // Guardar en localStorage para acceso rápido
+        localStorage.setItem('user_saldo', saldo);
+        
+        return saldo;
+
+    } catch (error) {
+        console.error('❌ Error actualizando UI de créditos desde billetera:', error);
+        
+        // Fallback: intentar desde localStorage
+        const saldoLocal = localStorage.getItem('user_saldo');
+        const topCreditsElement = document.getElementById('topCredits');
+        if (topCreditsElement && saldoLocal !== null) {
+            topCreditsElement.textContent = saldoLocal;
+        }
+        
+        throw error;
+    }
+}
     // ========== FUNCIÓN DE SINCRONIZACIÓN MANUAL ==========
     async function sincronizarSaldoUsuarioManual(usuarioId, nuevoSaldo = null) {
         try {
@@ -816,35 +833,42 @@
     }
 
     // ========== CARGA DE DATOS DEL USUARIO ==========
-    async function loadUserData() {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
+    // ========== CARGA DE DATOS DEL USUARIO ==========
+async function loadUserData() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-            if (user) {
-                const { data: usuario, error } = await supabase
-                    .from('usuario')
-                    .select('*')
-                    .eq('auth_id', user.id)
-                    .single();
+        if (user) {
+            currentUserId = user.id;
+            
+            const { data: usuario, error } = await supabase
+                .from('usuario')
+                .select('nombre_completo, correo_electronico')
+                .eq('auth_id', user.id)
+                .single();
 
-                if (!error && usuario) {
-                    document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
-                    document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
-                    document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
-                    
-                    actualizarCreditosUI(usuario.saldo_creditos || 0);
+            if (!error && usuario) {
+                // Actualizar información de usuario
+                document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
+                
+                // 🎯 CARGAR CRÉDITOS DESDE BILLETERA
+                await actualizarCreditosDesdeBilletera();
 
-                    localStorage.setItem('user_id', user.id);
-                    localStorage.setItem('user_email', usuario.correo_electronico || user.email);
-                    localStorage.setItem('user_name', usuario.nombre_completo);
-                    localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
-                }
+                localStorage.setItem('user_id', user.id);
+                localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                localStorage.setItem('user_name', usuario.nombre_completo);
+            } else {
+                // Si hay error con usuario, al menos cargar créditos desde billetera
+                await actualizarCreditosDesdeBilletera();
             }
-
-        } catch (error) {
-            console.error('Error al cargar datos del usuario:', error);
         }
+
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
     }
+}
 
     // ========== CARGA DE MIS COMPRAS ==========
     async function loadMisCompras() {
@@ -888,8 +912,53 @@
                 return;
             }
 
-            todasLasCompras = misCompras;
-            allPurchases = misCompras;
+            // Cargar datos adicionales
+            const comprasCompletas = await Promise.all(
+                misCompras.map(async (compra) => {
+                    let mensajes = [];
+                    let custodia = null;
+                    let calificaciones = [];
+
+                    try {
+                        // Cargar mensajes
+                        const { data: msgsData, error: msgsError } = await supabase
+                            .from('Mensaje')
+                            .select('*')
+                            .eq('intercambio_id', compra.id_intercambio)
+                            .order('fecha_envio', { ascending: true });
+                        if (!msgsError) mensajes = msgsData || [];
+
+                        // Cargar custodia
+                        const { data: custodiaData, error: custodiaError } = await supabase
+                            .from('custodia_creditos')
+                            .select('*')
+                            .eq('intercambio_id', compra.id_intercambio)
+                            .maybeSingle();
+                        if (!custodiaError) custodia = custodiaData;
+
+                        // Cargar calificaciones
+                        const { data: calData, error: calError } = await supabase
+                            .from('calificacion')
+                            .select('*')
+                            .eq('intercambio_id', compra.id_intercambio)
+                            .eq('calificador_id', user.id);
+                        if (!calError) calificaciones = calData || [];
+
+                    } catch (error) {
+                        console.error(`Error cargando datos para compra ${compra.id_intercambio}:`, error);
+                    }
+
+                    return {
+                        ...compra,
+                        mensajes: mensajes,
+                        custodia: custodia,
+                        calificaciones: calificaciones
+                    };
+                })
+            );
+
+            todasLasCompras = comprasCompletas;
+            allPurchases = comprasCompletas;
             renderMisCompras(todasLasCompras);
 
         } catch (error) {
@@ -949,6 +1018,18 @@
         productGrid.innerHTML = compras.map(compra => {
             const publicacion = compra.Publicacion;
             const precio = compra.creditos_verdes || 0;
+            const tieneMensajes = compra.mensajes && compra.mensajes.length > 0;
+            const creditosRetenidos = compra.custodia && compra.custodia.estado === 'retenido';
+            const tieneCalificacion = compra.calificaciones && compra.calificaciones.length > 0;
+            
+            // Contar mensajes no leídos
+            let mensajesNoLeidos = 0;
+            if (tieneMensajes) {
+                mensajesNoLeidos = compra.mensajes.filter(m => 
+                    m.receptor_id === currentUserId && !m.leido
+                ).length;
+            }
+
             const estado = compra.estado || 'en_proceso';
             const nombreVendedor = compra.usuario_vendedor_id?.nombre_completo || 'Vendedor';
             const tituloProducto = publicacion?.titulo || 'Producto';
@@ -970,19 +1051,23 @@
                         </button>
                         <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id || compra.Publicacion?.usuario_id}')"
                                 style="background: #17a2b8;">
-                            💬 Contactar Vendedor
+                            💬 ${tieneMensajes ? 'Ver Chat' : 'Contactar Vendedor'}
+                            ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
                         </button>
                     `;
                     break;
                 case 'completado':
                     botones = `
-                        <button class="btn-intercambiar" onclick="abrirModalCalificacion(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}')"
-                                style="background: #ffc107; color: #000; margin-bottom: 5px;">
-                            ⭐ Calificar Vendedor
-                        </button>
+                        ${!tieneCalificacion ? `
+                            <button class="btn-intercambiar" onclick="abrirModalCalificacion(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}')"
+                                    style="background: #ffc107; color: #000; margin-bottom: 5px;">
+                                ⭐ Calificar Vendedor
+                            </button>
+                        ` : ''}
                         <button class="btn-intercambiar" onclick="abrirChatCompra(${idIntercambio}, '${tituloProducto.replace(/'/g, "\\'")}', '${compra.usuario_vendedor_id}')"
                                 style="background: #17a2b8;">
                             💬 Ver Chat
+                            ${mensajesNoLeidos > 0 ? `<span style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8rem; margin-left: 5px;">${mensajesNoLeidos}</span>` : ''}
                         </button>
                     `;
                     break;
@@ -1030,6 +1115,29 @@
                             <strong>ID:</strong> #${idIntercambio}
                         </p>
                     </div>
+                    
+                    ${creditosRetenidos ? `
+                        <div class="info-creditos">
+                            <strong>${precio} créditos en custodia</strong>
+                            <br>
+                            <small>Esperando confirmación de recepción</small>
+                        </div>
+                    ` : ''}
+                    
+                    ${compra.custodia && compra.custodia.estado === 'liberado' ? `
+                        <div class="info-completado">
+                            <strong>✅ Créditos liberados</strong>
+                            <br>
+                            <small>Recepción confirmada</small>
+                        </div>
+                    ` : ''}
+                    
+                    ${tieneCalificacion ? `
+                        <div class="info-calificacion">
+                            <strong>⭐ Calificado: ${compra.calificaciones[0].puntuacion}/5</strong>
+                            ${compra.calificaciones[0].comentario ? `<br><em>"${compra.calificaciones[0].comentario}"</em>` : ''}
+                        </div>
+                    ` : ''}
                     
                     ${botones}
                 </div>
@@ -1091,70 +1199,87 @@
 
     // ========== FUNCIONES PRINCIPALES ==========
     window.confirmarRecepcion = async function(intercambioId) {
-        try {
-            console.log('✅ CONFIRMACIÓN - Intercambio:', intercambioId);
-            mostrarLoadingCompra("Confirmando recepción...");
+    try {
+        console.log('✅ CONFIRMACIÓN - Intercambio:', intercambioId);
+        mostrarLoadingCompra("Confirmando recepción...");
 
-            const { data: intercambio, error: intercambioError } = await supabase
-                .from('Intercambio')
-                .select('*, Publicacion(*)')
-                .eq('id_intercambio', intercambioId)
-                .single();
+        // 1. Obtener datos del intercambio
+        const { data: intercambio, error: intercambioError } = await supabase
+            .from('Intercambio')
+            .select('*, Publicacion(*)')
+            .eq('id_intercambio', intercambioId)
+            .single();
 
-            if (intercambioError) throw intercambioError;
+        if (intercambioError) throw intercambioError;
 
-            const { data: custodia, error: custodiaError } = await supabase
-                .from('custodia_creditos')
-                .select('*')
-                .eq('intercambio_id', intercambioId)
-                .single();
+        // 2. Obtener datos de custodia
+        const { data: custodia, error: custodiaError } = await supabase
+            .from('custodia_creditos')
+            .select('*')
+            .eq('intercambio_id', intercambioId)
+            .single();
 
-            if (custodiaError) throw custodiaError;
+        if (custodiaError) throw custodiaError;
 
-            const monto = parseFloat(custodia.monto) || 0;
-            const vendedorId = custodia.oferente_id;
+        const monto = parseFloat(custodia.monto) || 0;
+        const vendedorId = custodia.oferente_id;
 
-            await actualizarSaldoConTrigger(vendedorId, monto);
+        console.log('💰 Transferencia de créditos:', {
+            monto,
+            vendedorId,
+            compradorId: currentUserId
+        });
 
-            const { error: updateIntercambioError } = await supabase
-                .from('Intercambio')
-                .update({
-                    estado: 'completado',
-                    fecha_cierre: new Date().toISOString()
-                })
-                .eq('id_intercambio', intercambioId);
+        // 3. ACTUALIZAR SALDO DEL VENDEDOR (liberar créditos)
+        await actualizarSaldoConTrigger(vendedorId, monto);
 
-            if (updateIntercambioError) throw updateIntercambioError;
+        // 4. ACTUALIZAR SALDO DEL COMPRADOR (mostrar saldo actual)
+        await actualizarCreditosUI();
 
-            await supabase
-                .from('Publicacion')
-                .update({
-                    estado: 'vendido',
-                    fecha_actualizacion: new Date().toISOString()
-                })
-                .eq('id_publicacion', intercambio.publicacion_id);
+        // 5. Actualizar estado del intercambio
+        const { error: updateIntercambioError } = await supabase
+            .from('Intercambio')
+            .update({
+                estado: 'completado',
+                fecha_cierre: new Date().toISOString()
+            })
+            .eq('id_intercambio', intercambioId);
 
-            await supabase
-                .from('custodia_creditos')
-                .update({
-                    estado: 'liberado',
-                    fecha_liberacion: new Date().toISOString()
-                })
-                .eq('intercambio_id', intercambioId);
+        if (updateIntercambioError) throw updateIntercambioError;
 
-            ocultarLoadingCompra();
-            mostrarNotificacion('✅ Recepción confirmada. Créditos transferidos correctamente.', 'success');
+        // 6. Actualizar estado de la publicación
+        await supabase
+            .from('Publicacion')
+            .update({
+                estado: 'vendido',
+                fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id_publicacion', intercambio.publicacion_id);
 
-            setTimeout(async () => {
-                await loadMisCompras();
-            }, 2000);
+        // 7. Actualizar custodia
+        await supabase
+            .from('custodia_creditos')
+            .update({
+                estado: 'liberado',
+                fecha_liberacion: new Date().toISOString()
+            })
+            .eq('intercambio_id', intercambioId);
 
-        } catch (error) {
-            console.error('❌ ERROR en confirmación:', error);
-            ocultarLoadingCompra();
-            mostrarNotificacion('❌ Error al confirmar recepción: ' + error.message, 'error');
-        }
-    };
+        ocultarLoadingCompra();
+        mostrarNotificacion('✅ Recepción confirmada. Créditos transferidos correctamente.', 'success');
+
+        // 8. Forzar actualización de la UI con el saldo del usuario actual
+        setTimeout(async () => {
+            await loadMisCompras();
+            await actualizarCreditosUI(); // 🔄 ESTA LÍNEA ES CLAVE
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ ERROR en confirmación:', error);
+        ocultarLoadingCompra();
+        mostrarNotificacion('❌ Error al confirmar recepción: ' + error.message, 'error');
+    }
+};
 
     window.cancelarIntercambio = async function(intercambioId) {
         try {
@@ -1223,13 +1348,290 @@
         }
     }
 
-    // ========== FUNCIONES DE CHAT Y CALIFICACIÓN (SIMPLIFICADAS) ==========
+    // ========== FUNCIONES DE CHAT ==========
     window.abrirChatCompra = async function(intercambioId, tituloProducto, vendedorId) {
-        mostrarNotificacion('Función de chat en desarrollo', 'success');
+        try {
+            console.log('💬 Abriendo chat para compra:', { 
+                intercambioId, 
+                tituloProducto, 
+                vendedorId
+            });
+
+            let vendedorIdCorregido = vendedorId;
+            
+            if (vendedorId === "[object Object]" || typeof vendedorId !== 'string') {
+                console.warn('⚠️ vendedorId problemático, buscando en datos...');
+                
+                const compra = todasLasCompras.find(c => c.id_intercambio === intercambioId);
+                if (compra) {
+                    if (compra.usuario_vendedor_id && typeof compra.usuario_vendedor_id === 'string') {
+                        vendedorIdCorregido = compra.usuario_vendedor_id;
+                    } else if (compra.Publicacion?.usuario_id) {
+                        vendedorIdCorregido = compra.Publicacion.usuario_id;
+                    } else {
+                        const { data: intercambio, error } = await supabase
+                            .from('Intercambio')
+                            .select('usuario_vendedor_id')
+                            .eq('id_intercambio', intercambioId)
+                            .single();
+                        
+                        if (!error && intercambio && intercambio.usuario_vendedor_id) {
+                            vendedorIdCorregido = intercambio.usuario_vendedor_id;
+                        } else {
+                            throw new Error('No se pudo obtener el ID del vendedor');
+                        }
+                    }
+                } else {
+                    throw new Error('No se encontró la compra en los datos cargados');
+                }
+            }
+
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(vendedorIdCorregido)) {
+                throw new Error(`ID del vendedor no es un UUID válido: ${vendedorIdCorregido}`);
+            }
+
+            console.log('✅ Vendedor ID corregido y validado:', vendedorIdCorregido);
+
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                           background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                           align-items: center; z-index: 9999;">
+                    <div style="background: white; width: 90%; max-width: 600px; max-height: 80vh; 
+                               border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+                        <div style="background: #4CAF50; color: white; padding: 20px; 
+                                   display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0;">💬 Chat: ${tituloProducto}</h3>
+                            <button id="cerrar-chat-compra" 
+                                    style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+                        </div>
+                        <div id="cuerpo-chat-compra" style="padding: 20px; flex: 1; overflow-y: auto; max-height: 400px;">
+                            Cargando mensajes...
+                        </div>
+                        <div style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #e0e0e0;">
+                            <input type="text" id="input-mensaje-compra" placeholder="Escribe tu mensaje..." 
+                                   style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+                            <button id="enviar-mensaje-compra" 
+                                    style="background: #4CAF50; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer;">
+                                Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            await cargarMensajesChat(intercambioId, 'cuerpo-chat-compra');
+
+            modal.querySelector('#cerrar-chat-compra').onclick = () => {
+                modal.remove();
+            };
+
+            modal.querySelector('#enviar-mensaje-compra').onclick = () => {
+                enviarMensajeChat(intercambioId, vendedorIdCorregido, 'input-mensaje-compra', 'cuerpo-chat-compra');
+            };
+
+            modal.querySelector('#input-mensaje-compra').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    enviarMensajeChat(intercambioId, vendedorIdCorregido, 'input-mensaje-compra', 'cuerpo-chat-compra');
+                }
+            });
+
+            setTimeout(() => {
+                modal.querySelector('#input-mensaje-compra').focus();
+            }, 100);
+
+        } catch (error) {
+            console.error('❌ Error abriendo chat:', error);
+            mostrarNotificacion('❌ Error al abrir el chat: ' + error.message, 'error');
+        }
     };
 
+    async function cargarMensajesChat(intercambioId, contenedorId) {
+        try {
+            const { data: mensajes, error } = await supabase
+                .from('Mensaje')
+                .select('*')
+                .eq('intercambio_id', intercambioId)
+                .order('fecha_envio', { ascending: true });
+
+            if (error) throw error;
+
+            const cuerpoChat = document.getElementById(contenedorId);
+            cuerpoChat.innerHTML = '';
+
+            if (mensajes && mensajes.length > 0) {
+                mensajes.forEach(mensaje => {
+                    const esPropio = mensaje.emisor_id === currentUserId;
+                    const mensajeDiv = document.createElement('div');
+                    mensajeDiv.className = esPropio ? 'mensaje-propio' : 'mensaje-otro';
+                    mensajeDiv.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 5px;">
+                            ${esPropio ? 'Tú' : 'Vendedor'}
+                        </div>
+                        <div>${mensaje.contenido}</div>
+                        <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                            ${new Date(mensaje.fecha_envio).toLocaleString()}
+                        </div>
+                    `;
+                    cuerpoChat.appendChild(mensajeDiv);
+                });
+            } else {
+                cuerpoChat.innerHTML = '<p style="text-align: center; color: #666;">No hay mensajes aún. Sé el primero en escribir.</p>';
+            }
+
+            cuerpoChat.scrollTop = cuerpoChat.scrollHeight;
+
+        } catch (error) {
+            console.error('Error cargando mensajes:', error);
+            document.getElementById(contenedorId).innerHTML = '<p style="color: red;">Error cargando mensajes</p>';
+        }
+    }
+
+    async function enviarMensajeChat(intercambioId, vendedorId, inputId, contenedorId) {
+        const input = document.getElementById(inputId);
+        const mensaje = input.value.trim();
+
+        if (!mensaje) return;
+
+        try {
+            console.log('💬 Enviando mensaje con:', {
+                intercambioId,
+                vendedorId,
+                mensaje,
+                currentUserId
+            });
+
+            const { data, error } = await supabase
+                .from('Mensaje')
+                .insert([{
+                    contenido: mensaje,
+                    fecha_envio: new Date().toISOString(),
+                    intercambio_id: intercambioId,
+                    emisor_id: currentUserId,
+                    receptor_id: vendedorId
+                }])
+                .select();
+
+            if (error) throw error;
+
+            console.log('✅ Mensaje enviado:', data);
+            input.value = '';
+            await cargarMensajesChat(intercambioId, contenedorId);
+
+        } catch (error) {
+            console.error('❌ Error enviando mensaje:', error);
+            mostrarNotificacion('❌ Error al enviar mensaje: ' + error.message, 'error');
+        }
+    }
+
+    // ========== FUNCIONES DE CALIFICACIÓN ==========
     window.abrirModalCalificacion = function(intercambioId, tituloProducto) {
-        mostrarNotificacion('Función de calificación en desarrollo', 'success');
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                       background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
+                       align-items: center; z-index: 9999;">
+                <div style="background: white; padding: 25px; border-radius: 15px; 
+                           text-align: center; max-width: 400px; width: 90%;">
+                    <h3 style="margin-top: 0; color: #333;">⭐ Calificar Vendedor</h3>
+                    <p style="color: #666; margin-bottom: 15px;">
+                        Producto: <strong>"${tituloProducto}"</strong>
+                    </p>
+                    
+                    <div style="display: flex; justify-content: center; gap: 10px; margin: 20px 0; font-size: 2rem; cursor: pointer;">
+                        <span class="estrella-cal" data-puntuacion="1">★</span>
+                        <span class="estrella-cal" data-puntuacion="2">★</span>
+                        <span class="estrella-cal" data-puntuacion="3">★</span>
+                        <span class="estrella-cal" data-puntuacion="4">★</span>
+                        <span class="estrella-cal" data-puntuacion="5">★</span>
+                    </div>
+                    
+                    <textarea id="comentarioCalificacion" 
+                             placeholder="Escribe un comentario opcional..." 
+                             style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px;"></textarea>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="cancelar-calificacion" 
+                                style="background: #f44336; color: white; border: none; 
+                                       padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            ❌ Cancelar
+                        </button>
+                        <button id="enviar-calificacion" 
+                                style="background: #4CAF50; color: white; border: none; 
+                                       padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            ✅ Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        let puntuacionSeleccionada = 0;
+        const estrellas = modal.querySelectorAll('.estrella-cal');
+
+        estrellas.forEach(estrella => {
+            estrella.style.color = '#ddd';
+            estrella.addEventListener('click', function() {
+                const puntuacion = parseInt(this.dataset.puntuacion);
+                puntuacionSeleccionada = puntuacion;
+                
+                estrellas.forEach((est, index) => {
+                    est.style.color = index < puntuacion ? '#ffc107' : '#ddd';
+                });
+            });
+        });
+
+        modal.querySelector('#enviar-calificacion').onclick = async () => {
+            if (puntuacionSeleccionada === 0) {
+                alert('Por favor selecciona una puntuación');
+                return;
+            }
+
+            try {
+                mostrarLoadingCompra('Enviando calificación...');
+
+                const { data: intercambio, error: intercambioError } = await supabase
+                    .from('Intercambio')
+                    .select('usuario_vendedor_id')
+                    .eq('id_intercambio', intercambioId)
+                    .single();
+
+                if (intercambioError) throw intercambioError;
+
+                const comentario = modal.querySelector('#comentarioCalificacion').value.trim();
+
+                const { error: calificacionError } = await supabase
+                    .from('calificacion')
+                    .insert([{
+                        puntuacion: puntuacionSeleccionada,
+                        comentario: comentario || null,
+                        fecha_calificacion: new Date(),
+                        intercambio_id: intercambioId,
+                        calificador_id: currentUserId,
+                        calificado_id: intercambio.usuario_vendedor_id
+                    }]);
+
+                if (calificacionError) throw calificacionError;
+
+                modal.remove();
+                ocultarLoadingCompra();
+                mostrarNotificacion('✅ Calificación enviada correctamente', 'success');
+                
+                await loadMisCompras();
+
+            } catch (error) {
+                console.error('Error enviando calificación:', error);
+                ocultarLoadingCompra();
+                alert('Error al enviar la calificación: ' + error.message);
+            }
+        };
+
+        modal.querySelector('#cancelar-calificacion').onclick = () => {
+            modal.remove();
+        };
     };
 
     // ========== CERRAR SESIÓN ==========

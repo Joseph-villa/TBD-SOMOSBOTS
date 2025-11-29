@@ -562,33 +562,54 @@ window.ocultarLoadingCompra = function() {
         // ========== CARGA DE DATOS DEL USUARIO ==========
 
         async function loadUserData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-                if (user) {
-                    const { data: usuario, error } = await supabase
-                        .from('usuario')
-                        .select('*')
-                        .eq('auth_id', user.id)
-                        .single();
+        if (user) {
+            // Obtener datos del usuario
+            const { data: usuario, error: usuarioError } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('auth_id', user.id)
+                .single();
 
-                    if (!error && usuario) {
-                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
-                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
-                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
-                        document.getElementById('topCredits').textContent = usuario.saldo_creditos || 0;
+            if (!usuarioError && usuario) {
+                document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
 
-                        localStorage.setItem('user_id', user.id);
-                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
-                        localStorage.setItem('user_name', usuario.nombre_completo);
-                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
-                    }
+                // 🚨 CAMBIO PRINCIPAL: Obtener créditos desde la billetera
+                const { data: billetera, error: billeteraError } = await supabase
+                    .from('billetera')
+                    .select('credito_actual')
+                    .eq('usuario_id', user.id)
+                    .single();
+
+                let creditosDisponibles = 0;
+                
+                if (!billeteraError && billetera) {
+                    creditosDisponibles = billetera.credito_actual || 0;
+                    console.log('✅ Créditos cargados desde billetera:', creditosDisponibles);
+                } else {
+                    console.warn('⚠️ No se encontró billetera, usando saldo de usuario como fallback');
+                    creditosDisponibles = usuario.saldo_creditos || 0;
                 }
 
-            } catch (error) {
-                console.error('Error al cargar datos del usuario:', error);
+                // Actualizar UI
+                document.getElementById('topCredits').textContent = creditosDisponibles;
+
+                // Guardar en localStorage
+                localStorage.setItem('user_id', user.id);
+                localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                localStorage.setItem('user_name', usuario.nombre_completo);
+                localStorage.setItem('user_saldo', creditosDisponibles);
             }
         }
+
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+    }
+}
 
         // ========== CARGA DE PUBLICACIONES ==========
 
@@ -1697,8 +1718,8 @@ async function actualizarSaldoUsuario(usuarioId, monto) {
 
         // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
 function actualizarCreditosUI(nuevoSaldo) {
-    try {
-        console.log('🔄 Actualizando UI de créditos:', nuevoSaldo);
+    t try {
+        console.log('🔄 Actualizando UI de créditos desde billetera:', nuevoSaldo);
         
         // Actualizar en la topbar
         const topCreditsElement = document.getElementById('topCredits');
@@ -1709,7 +1730,20 @@ function actualizarCreditosUI(nuevoSaldo) {
         // Actualizar en localStorage
         localStorage.setItem('user_saldo', nuevoSaldo);
         
-        console.log('✅ UI de créditos actualizada');
+        // 🚨 SINCRONIZAR CON BILLETERA
+        const { error } = await supabase
+            .from('billetera')
+            .update({
+                credito_actual: nuevoSaldo,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', currentUserId);
+
+        if (error) {
+            console.error('❌ Error actualizando billetera:', error);
+        } else {
+            console.log('✅ Billetera actualizada con nuevo saldo:', nuevoSaldo);
+        }
         
     } catch (error) {
         console.error('❌ Error actualizando UI de créditos:', error);
