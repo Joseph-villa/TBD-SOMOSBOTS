@@ -218,6 +218,31 @@
             color:#6b7280;
             font-weight:500;
         }
+
+        /* --- Nuevos estilos para el banner "Vendido" --- */
+        .vendido-banner {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.875rem;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .pub-card.vendido {
+            opacity: 0.85;
+            filter: grayscale(0.3);
+        }
+        .pub-card.vendido .pub-credit {
+            background-color: #6b7280;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -289,25 +314,28 @@
         </section>
 
         <!-- Sección de Estadísticas -->
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-xl shadow p-4 text-center">
-                <p class="text-3xl font-extrabold text-green-600" id="pubCount">0</p>
-                <p class="text-gray-500 text-sm">Publicaciones Activas</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 text-center">
-                <p class="text-3xl font-extrabold text-green-600" id="vendidosCount">0</p>
-                <p class="text-gray-500 text-sm">Créditos Generados</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 text-center">
-                <p class="text-3xl font-extrabold text-green-600" id="totalReviews">0</p>
-                <p class="text-gray-500 text-sm">Reseñas Recibidas</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 text-center">
-                <p class="text-3xl font-extrabold text-green-600" id="avgRating">0.0</p>
-                <p class="text-gray-500 text-sm">Calificación Promedio</p>
-            </div>
-        </section>
-
+      <section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-3xl font-extrabold text-green-600" id="pubCount">0</p>
+        <p class="text-gray-500 text-sm">Publicaciones Activas</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-3xl font-extrabold text-green-600" id="vendidasCount">0</p>
+        <p class="text-gray-500 text-sm">Publicaciones Vendidas</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-3xl font-extrabold text-green-600" id="creditosGenerados">0</p>
+        <p class="text-gray-500 text-sm">Créditos Generados</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-3xl font-extrabold text-green-600" id="totalReviews">0</p>
+        <p class="text-gray-500 text-sm">Reseñas Recibidas</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-3xl font-extrabold text-green-600" id="avgRating">0.0</p>
+        <p class="text-gray-500 text-sm">Calificación Promedio</p>
+    </div>
+</section>
         <!-- Sección de Reseñas y Calificaciones -->
         <section class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
@@ -601,278 +629,87 @@
         })();
     </script>
     <script type="module">
-        import { supabase } from './config/db.js';
+    import { supabase } from './config/db.js';
 
-        // --- Elementos del DOM ---
-        const backBtn = document.getElementById('backBtn');
-        const openFormBtn = document.getElementById('openFormBtn');
-        const userPostsGrid = document.getElementById('userPostsGrid');
-        const profileName = document.getElementById('profileName');
-        const profileEmail = document.getElementById('profileEmail');
-        const saldoBadge = document.getElementById('saldoBadge');
-        const pubCount = document.getElementById('pubCount');
-        const vendidosCount = document.getElementById('vendidosCount');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const recargarBtn = document.getElementById('recargarBtn');
-        const emprendedorStatusDiv = document.getElementById('emprendedorSection');
-        const btnSolicitarEmprendedor = document.getElementById('btnSolicitarEmprendedor');
-        const modalEmprendedor = document.getElementById('modalEmprendedor');
-        const modalContent = document.getElementById('modalContent');
-        const btnCerrarModal = document.getElementById('btnCerrarModal');
-        const formSolicitudEmprendedor = document.getElementById('formSolicitudEmprendedor');
-        
-        // Nuevos elementos para calificaciones
-        const ratingAverage = document.getElementById('ratingAverage');
-        const starRating = document.getElementById('starRating');
-        const reviewCount = document.getElementById('reviewCount');
-        const reviewsContainer = document.getElementById('reviewsContainer');
-        const totalReviews = document.getElementById('totalReviews');
-        const avgRating = document.getElementById('avgRating');
+    // --- Elementos del DOM ---
+    const backBtn = document.getElementById('backBtn');
+    const openFormBtn = document.getElementById('openFormBtn');
+    const userPostsGrid = document.getElementById('userPostsGrid');
+    const profileName = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+    const saldoBadge = document.getElementById('saldoBadge');
+    const pubCount = document.getElementById('pubCount');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const recargarBtn = document.getElementById('recargarBtn');
+    const emprendedorStatusDiv = document.getElementById('emprendedorSection');
+    const btnSolicitarEmprendedor = document.getElementById('btnSolicitarEmprendedor');
+    const modalEmprendedor = document.getElementById('modalEmprendedor');
+    const modalContent = document.getElementById('modalContent');
+    const btnCerrarModal = document.getElementById('btnCerrarModal');
+    const formSolicitudEmprendedor = document.getElementById('formSolicitudEmprendedor');
+    
+    // Elementos para calificaciones
+    const ratingAverage = document.getElementById('ratingAverage');
+    const starRating = document.getElementById('starRating');
+    const reviewCount = document.getElementById('reviewCount');
+    const reviewsContainer = document.getElementById('reviewsContainer');
+    const totalReviews = document.getElementById('totalReviews');
+    const avgRating = document.getElementById('avgRating');
+    const vendidasCount = document.getElementById('vendidasCount');
+    const creditosGenerados = document.getElementById('creditosGenerados');
 
-        let currentUserId = null;
-        let currentUserRol = 'Usuario';
+    let currentUserId = null;
+    let currentUserRol = 'Usuario';
 
-        // ---------------------------------------------------
-        // --- FUNCIONES PARA CALIFICACIONES Y RESEÑAS ---
-        // ---------------------------------------------------
+    // Función para debug
+    function debug(message, data = null) {
+        console.log(`[DEBUG] ${message}`, data || '');
+    }
 
-        function renderStars(rating, container) {
-            const stars = container.querySelectorAll('.star');
-            stars.forEach((star, index) => {
-                if (index < Math.floor(rating)) {
-                    star.classList.add('filled');
-                } else if (index < rating) {
-                    star.classList.add('filled');
-                } else {
-                    star.classList.remove('filled');
-                }
-            });
-        }
+    // ---------------------------------------------------
+    // --- FUNCIONES PRINCIPALES CORREGIDAS ---
+    // ---------------------------------------------------
 
-        async function loadUserRatings() {
-            if (!currentUserId) return;
-
-            try {
-                const { data: ratings, error } = await supabase
-                    .from('calificacion')
-                    .select(`
-                        puntuacion,
-                        comentario,
-                        fecha_calificacion,
-                        calificador_id,
-                        usuario:calificador_id(nombre_completo)
-                    `)
-                    .eq('calificado_id', currentUserId)
-                    .order('fecha_calificacion', { ascending: false });
-
-                if (error) throw error;
-
-                const reviews = ratings || [];
-                const total = reviews.length;
-                
-                const average = total > 0 
-                    ? (reviews.reduce((sum, review) => sum + review.puntuacion, 0) / total).toFixed(1)
-                    : 0;
-
-                reviewCount.textContent = total;
-                totalReviews.textContent = total;
-                ratingAverage.textContent = average;
-                avgRating.textContent = average;
-
-                renderStars(average, starRating);
-                renderReviews(reviews);
-
-            } catch (error) {
-                console.error('Error al cargar calificaciones:', error);
-                reviewsContainer.innerHTML = `
-                    <div class="no-reviews">
-                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                        <p>Error al cargar las reseñas</p>
-                    </div>
-                `;
-            }
-        }
-
-        function renderReviews(reviews) {
-            if (reviews.length === 0) {
-                reviewsContainer.innerHTML = `
-                    <div class="no-reviews">
-                        <i class="fas fa-star text-2xl mb-2"></i>
-                        <h3 class="text-lg font-semibold mb-2">Aún no tienes reseñas</h3>
-                        <p class="text-gray-600">Las reseñas aparecerán aquí cuando otros usuarios te califiquen después de realizar intercambios.</p>
-                    </div>
-                `;
+    async function loadUserData() {
+        try {
+            debug('Iniciando carga de datos del usuario...');
+            
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                console.error('Error de autenticación:', authError);
+                window.location.href = 'index.html';
                 return;
             }
 
-            reviewsContainer.innerHTML = reviews.map(review => `
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="star-rating">
-                            ${Array.from({length: 5}, (_, i) => 
-                                `<span class="star ${i < review.puntuacion ? 'filled' : ''}">★</span>`
-                            ).join('')}
-                        </div>
-                        <span class="text-sm text-gray-500">
-                            ${new Date(review.fecha_calificacion).toLocaleDateString('es-ES')}
-                        </span>
-                    </div>
-                    <div class="review-comment">
-                        "${review.comentario || 'Sin comentario'}"
-                    </div>
-                    <div class="text-sm text-gray-600 mt-2">
-                        - ${review.usuario?.nombre_completo || 'Usuario'}
-                    </div>
-                </div>
-            `).join('');
-        }
+            currentUserId = user.id;
+            debug('Usuario autenticado:', user.id);
 
-        // ---------------------------------------------------
-        // --- FUNCIONES EXISTENTES DEL PERFIL ---
-        // ---------------------------------------------------
-
-        function mostrarFormularioEmprendedor() {
-            modalEmprendedor.classList.add('modal-visible');
-            setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-            }, 10);
-        }
-
-        function cerrarFormularioEmprendedor() {
-            modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modalEmprendedor.classList.remove('modal-visible');
-                formSolicitudEmprendedor.reset();
-            }, 300); 
-        }
-
-        async function verificarEstadoEmprendedor(userId) {
-            if (currentUserRol === 'Emprendedor') {
-                emprendedorStatusDiv.innerHTML = `
-                    <h3 class="text-lg font-semibold text-green-700 mb-2 flex items-center">
-                        <i class="fas fa-award mr-2"></i> Rol: Emprendedor Certificado
-                    </h3>
-                    <p class="text-gray-700">¡Felicidades! Tienes permiso para crear ofertas de monetización.</p>
-                `;
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from('perfil_emprendedor')
-                .select('estado_solicitud')
-                .eq('usuario_id', userId)
-                .order('fecha_solicitud', { ascending: false })
-                .limit(1)
+            // Buscar usuario en la tabla 'usuario' usando auth_id
+            const { data: usuario, error: usuarioError } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('auth_id', currentUserId)
                 .single();
 
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error al verificar solicitud:', error.message);
+            if (usuarioError) {
+                debug('Error al buscar usuario por auth_id:', usuarioError);
+                throw usuarioError;
             }
 
-            if (data && data.estado_solicitud === 'pendiente') {
-                btnSolicitarEmprendedor.disabled = true;
-                btnSolicitarEmprendedor.classList.remove('bg-green-600', 'hover:bg-green-700');
-                btnSolicitarEmprendedor.classList.add('bg-gray-400', 'cursor-not-allowed');
-                btnSolicitarEmprendedor.innerHTML = '<i class="fas fa-clock mr-1"></i> Solicitud Pendiente';
-                document.getElementById('emprendedorStatus').textContent = 'Tu solicitud de emprendedor está siendo revisada por el administrador.';
-            }
-        }
-
-        async function enviarSolicitudEmprendedor(event) {
-            event.preventDefault();
-
-            if (!currentUserId) {
-                alert("Debes iniciar sesión para enviar una solicitud.");
+            if (!usuario) {
+                console.error('Usuario no encontrado en la base de datos');
                 return;
             }
 
-            const nombreNegocio = document.getElementById('nombreNegocio').value.trim();
-            const descripcion = document.getElementById('descripcionNegocio').value.trim();
-            const productos = document.getElementById('productosServicios').value.trim();
-            const urlContacto = document.getElementById('urlContacto').value.trim();
+            debug('Usuario encontrado:', usuario);
 
-            if (!nombreNegocio || !descripcion || !productos) {
-                alert("Por favor, completa todos los campos obligatorios.");
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('perfil_emprendedor')
-                    .insert({
-                        usuario_id: currentUserId,
-                        nombre_negocio: nombreNegocio,
-                        descripcion_negocio: descripcion,
-                        productos_servicios: productos,
-                        url_contacto: urlContacto,
-                        estado_solicitud: 'pendiente'
-                    });
-
-                if (error) throw error;
-
-                alert('✅ Solicitud enviada con éxito. Recibirás una notificación cuando sea aprobada.');
-                
-                cerrarFormularioEmprendedor();
-                currentUserRol = 'Usuario'; 
-                verificarEstadoEmprendedor(currentUserId);
-
-            } catch (error) {
-                console.error('Error al enviar solicitud de emprendedor:', error);
-                alert('❌ Error al enviar la solicitud: ' + error.message);
-            }
-        }
-
-        async function loadCreditosGenerados() {
-            if (!currentUserId) {
-                vendidosCount.textContent = '0';
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase.rpc('get_creditos_generados', {
-                    p_usuario_id: currentUserId
-                });
-
-                if (error) {
-                    console.error('Error al cargar créditos generados:', error);
-                    vendidosCount.textContent = 'Error';
-                    return;
-                }
-
-                const totalGenerado = data !== null ? data : 0;
-                vendidosCount.textContent = totalGenerado.toLocaleString('es-BO', { maximumFractionDigits: 0 }); 
-
-            } catch (error) {
-                console.error('Error en loadCreditosGenerados:', error);
-                vendidosCount.textContent = 'Error';
-            }
-        }
-
-        async function loadUserData() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-            console.log('Debes iniciar sesión para ver tu perfil');
-            window.location.href = 'index.html';
-            return;
-        }
-
-        currentUserId = user.id;
-
-        const { data: usuario, error } = await supabase
-            .from('usuario')
-            .select('*')
-            .eq('auth_id', user.id)
-            .single();
-
-        if (error) throw error;
-
-        if (usuario) {
+            // Actualizar UI con datos del usuario
             profileName.textContent = usuario.nombre_completo || 'Usuario';
             profileEmail.textContent = usuario.correo_electronico || user.email;
-            
-            // Cargar saldo desde la billetera
+            currentUserRol = usuario.rol || 'Usuario';
+
+            // Cargar saldo desde billetera
             const { data: billetera, error: billeteraError } = await supabase
                 .from('billetera')
                 .select('credito_actual')
@@ -883,250 +720,554 @@
             if (!billeteraError && billetera) {
                 saldo = billetera.credito_actual || 0;
             } else {
-                // Fallback al saldo del usuario si no hay billetera
+                // Fallback al saldo en usuario
                 saldo = usuario.saldo_creditos || 0;
             }
             
             saldoBadge.textContent = `${saldo} ♻️`;
-            localStorage.setItem('user_saldo', saldo);
-            
-            currentUserRol = usuario.rol || 'Usuario'; 
-            localStorage.setItem('user_rol', currentUserRol); 
-            
-            verificarEstadoEmprendedor(currentUserId);
-        } 
 
-    } catch (error) {
-        console.error('Error al cargar datos del usuario:', error);
-        const userName = localStorage.getItem('user_name') || 'Usuario';
-        const userEmail = localStorage.getItem('user_email') || '';
-        const userSaldo = localStorage.getItem('user_saldo') || '0';
-        
-        profileName.textContent = userName;
-        profileEmail.textContent = userEmail;
-        saldoBadge.textContent = `${userSaldo} ♻️`;
+            // Verificar estado de emprendedor
+            await verificarEstadoEmprendedor(currentUserId);
+
+        } catch (error) {
+            console.error('Error al cargar datos del usuario:', error);
+            profileName.textContent = 'Error al cargar usuario';
+            profileEmail.textContent = 'Por favor recarga la página';
+        }
     }
-}
 
-        async function fetchUserPosts() {
-            if (!currentUserId) {
-                console.log('No hay currentUserId, no se pueden cargar publicaciones');
-                return;
-            }
-
-            userPostsGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando publicaciones...</div>';
-            
-            try {
-                const { data: posts, error } = await supabase
-                    .from('Publicacion')
-                    .select('*')
-                    .eq('usuario_id', currentUserId)
-                    .order('id_publicacion', { ascending: false });
-
-                if (error) throw error;
-                
-                renderPostsGrid(posts || []);
-                updateStats(posts || []);
-
-            } catch (err) {
-                console.error('Error completo al cargar publicaciones:', err);
-                userPostsGrid.innerHTML = `
-                    <div class="no-posts">
-                        <h3>❌ Error al cargar las publicaciones</h3>
-                        <p>${err.message}</p>
-                        <button onclick="window.location.href='publicar.html'" 
-                                class="btn-publicar" style="margin-top: 15px;">
-                            <i class="fas fa-plus"></i>
-                            Intentar Crear Publicación
-                        </button>
-                    </div>
-                `;
-            }
+    async function fetchUserPosts() {
+        if (!currentUserId) {
+            debug('No hay currentUserId');
+            return;
         }
 
-        function renderPostsGrid(posts) {
-            userPostsGrid.innerHTML = '';
+        userPostsGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando publicaciones...</div>';
+        
+        try {
+            debug('Buscando publicaciones para usuario:', currentUserId);
             
-            if (posts.length === 0) {
+            // Usar el nombre exacto de tu tabla: Publicacion
+            const { data: posts, error: postsError } = await supabase
+                .from('Publicacion')
+                .select('*')
+                .eq('usuario_id', currentUserId)
+                .order('fecha_publicacion', { ascending: false });
+
+            if (postsError) {
+                debug('Error al cargar publicaciones:', postsError);
+                throw postsError;
+            }
+
+            debug(`Publicaciones encontradas:`, posts?.length || 0);
+
+            if (!posts || posts.length === 0) {
                 userPostsGrid.innerHTML = `
                     <div class="no-posts">
                         <h3>📭 Aún no tienes publicaciones</h3>
-                        <p>Comienza tu journey en el trueque digital creando tu primera publicación</p>
+                        <p>Comienza creando tu primera publicación</p>
                         <button onclick="window.location.href='publicar.html'" 
-                                class="btn-publicar" style="margin-top: 20px;">
-                            <i class="fas fa-plus"></i>
-                            Crear Mi Primera Publicación
+                                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-150">
+                            <i class="fas fa-plus"></i> Crear Publicación
                         </button>
                     </div>
                 `;
-            } else {
-                posts.forEach(p => {
-                    const card = document.createElement('div');
-                    card.className = 'pub-card';
-                    card.dataset.id = p.id_publicacion;
-                    
-                    const titulo = p.titulo || p.description || 'Sin título';
-                    const descripcion = p.descripcion || p.meaning_of_text || 'Sin descripción';
-                    const precio = p.precio || p.private || 0;
-                    const categoria = p.nombre_categoria || p.mention_anticipator || 'General';
-                    const imagen = p.imagen_url || p.images_url || null;
-                    
-                    card.innerHTML = `
-                        ${imagen ? `
-                            <img src="${imagen}" alt="${titulo}" 
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                        ` : `
-                            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f0f3f0 0%, #e6f4ea 100%); 
-                                        display: flex; align-items: center; justify-content: center; color: #999;">
-                                <i class="fas fa-image" style="font-size: 3rem;"></i>
-                            </div>
-                        `}
-                        
-                        <div class="pub-credit">${precio} ♻️</div>
-                        
-                        <div class="menu-dots" data-id="${p.id_publicacion}">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </div>
-                        
-                        <ul class="menu-opciones" id="menu-${p.id_publicacion}">
-                            <li data-action="edit" data-id="${p.id_publicacion}">
-                                <i class="fas fa-edit"></i> Editar
-                            </li>
-                            <li data-action="delete" data-id="${p.id_publicacion}" style="color: #f44336;">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </li>
-                        </ul>
-
-                        <div class="pub-content">
-                            <strong>${titulo}</strong>
-                            <p>${descripcion}</p>
-                            <small>
-                                <i class="fas fa-tag"></i> Categoría: ${categoria}
-                            </small>
-                        </div>
-                    `;
-                    userPostsGrid.appendChild(card);
-                });
-            }
-        }
-
-        function updateStats(posts) {
-            pubCount.textContent = posts.length;
-        }
-
-        async function handleDeletePost(postId) {
-            if (!window.confirm('¿Estás seguro de que quieres eliminar esta publicación? Esta acción es irreversible.')) {
+                updateStats([], []);
                 return;
             }
 
-            try {
-                const { error } = await supabase
-                    .from('Publicacion')
-                    .delete()
-                    .eq('id_publicacion', postId)
-                    .eq('usuario_id', currentUserId);
-
-                if (error) throw error;
-
-                alert('✅ Publicación eliminada con éxito.');
-                fetchUserPosts();
-
-            } catch (err) {
-                console.error('Error al eliminar publicación:', err);
-                alert('❌ Error al eliminar la publicación.');
-            }
-        }
-
-        async function handleLogout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
-
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user_name');
-                localStorage.removeItem('user_saldo');
-                localStorage.removeItem('user_rol');
-
-                alert('Sesión cerrada correctamente');
-                window.location.href = 'index.html?logout=true';
-
-            } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-                alert('Error al cerrar sesión');
-            }
-        }
-
-        // --- Event Listeners ---
-        backBtn.addEventListener('click', () => {
-            window.location.href = 'index2.html';
-        });
-
-        openFormBtn.addEventListener('click', () => {
-            window.location.href = 'publicar.html';
-        });
-
-        logoutBtn.addEventListener('click', handleLogout);
-
-        recargarBtn.addEventListener('click', () => {
-            window.location.href = 'compra.html';
-        });
-
-        btnSolicitarEmprendedor.addEventListener('click', mostrarFormularioEmprendedor);
-        btnCerrarModal.addEventListener('click', cerrarFormularioEmprendedor);
-        formSolicitudEmprendedor.addEventListener('submit', enviarSolicitudEmprendedor);
-
-        userPostsGrid.addEventListener('click', function(event) {
-            const target = event.target;
-            const menuDots = target.closest('.menu-dots');
-            const menuItem = target.closest('li[data-action]');
+            debug('Publicaciones cargadas:', posts);
             
-            if (menuDots) {
-                const postId = menuDots.dataset.id;
-                const menu = document.getElementById(`menu-${postId}`);
+            // Buscar publicaciones vendidas
+            const soldPosts = await findSoldPosts(posts);
+            debug('Publicaciones vendidas:', soldPosts);
+            
+            renderPostsGrid(posts, soldPosts);
+            updateStats(posts, soldPosts);
+
+        } catch (err) {
+            console.error('Error al cargar publicaciones:', err);
+            userPostsGrid.innerHTML = `
+                <div class="no-posts">
+                    <h3>❌ Error al cargar las publicaciones</h3>
+                    <p>${err.message}</p>
+                    <button onclick="location.reload()" 
+                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-150 mt-2">
+                        <i class="fas fa-refresh"></i> Reintentar
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async function findSoldPosts(posts) {
+        if (!posts || posts.length === 0) return [];
+        
+        const postIds = posts.map(p => p.id_publicacion);
+        let soldPosts = [];
+
+        // Buscar en la tabla Intercambio con estado 'completado'
+        try {
+            const { data: transactions, error } = await supabase
+                .from('Intercambio')
+                .select('publicacion_id, estado')
+                .in('publicacion_id', postIds)
+                .eq('estado', 'completado');
+
+            if (!error && transactions && transactions.length > 0) {
+                soldPosts = transactions.map(t => t.publicacion_id);
+                debug(`Transacciones completadas encontradas:`, soldPosts.length);
+            }
+        } catch (e) {
+            debug('Error al buscar transacciones:', e);
+        }
+
+        // Si no hay transacciones, buscar en campos directos de las publicaciones
+        if (soldPosts.length === 0) {
+            soldPosts = posts
+                .filter(p => p.estado === 'vendido' || p.estado === 'completado')
+                .map(p => p.id_publicacion);
+            debug('Publicaciones vendidas por campos directos:', soldPosts.length);
+        }
+
+        return soldPosts;
+    }
+
+    function renderPostsGrid(posts, soldPosts = []) {
+        userPostsGrid.innerHTML = '';
+        
+        if (posts.length === 0) {
+            userPostsGrid.innerHTML = `
+                <div class="no-posts">
+                    <h3>📭 Aún no tienes publicaciones</h3>
+                    <p>Comienza creando tu primera publicación</p>
+                    <button onclick="window.location.href='publicar.html'" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-150">
+                        <i class="fas fa-plus"></i> Crear Publicación
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        posts.forEach(p => {
+            const isSold = soldPosts.includes(p.id_publicacion);
+            const card = document.createElement('div');
+            card.className = `pub-card ${isSold ? 'vendido' : ''}`;
+            card.dataset.id = p.id_publicacion;
+            
+            const titulo = p.titulo || 'Sin título';
+            const descripcion = p.descripcion || 'Sin descripción';
+            const precio = p.precio || 0;
+            const categoria = p.nombre_categoria || 'General';
+            const imagen = p.imagen_url;
+            
+            card.innerHTML = `
+                ${isSold ? `
+                    <div class="vendido-banner">
+                        <i class="fas fa-check-circle"></i>
+                        Vendido
+                    </div>
+                ` : ''}
                 
-                document.querySelectorAll('.menu-opciones.show').forEach(m => {
-                    if (m.id !== `menu-${postId}`) m.classList.remove('show');
-                });
+                ${imagen ? `
+                    <img src="${imagen}" alt="${titulo}" 
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                ` : ''}
+                
+                ${!imagen ? `
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #f0f3f0 0%, #e6f4ea 100%); 
+                                display: flex; align-items: center; justify-content: center; color: #999;">
+                        <i class="fas fa-image" style="font-size: 3rem;"></i>
+                    </div>
+                ` : ''}
+                
+                <div class="pub-credit">${precio} ♻️</div>
+                
+                ${!isSold ? `
+                    <div class="menu-dots" data-id="${p.id_publicacion}">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    
+                    <ul class="menu-opciones" id="menu-${p.id_publicacion}">
+                        <li data-action="edit" data-id="${p.id_publicacion}">
+                            <i class="fas fa-edit"></i> Editar
+                        </li>
+                        <li data-action="delete" data-id="${p.id_publicacion}" style="color: #f44336;">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </li>
+                    </ul>
+                ` : ''}
 
-                menu.classList.toggle('show');
+                <div class="pub-content">
+                    <strong>${titulo}</strong>
+                    <p>${descripcion.substring(0, 100)}${descripcion.length > 100 ? '...' : ''}</p>
+                    <small>
+                        <i class="fas fa-tag"></i> ${categoria}
+                    </small>
+                    <br>
+                    <small>
+                        <i class="fas fa-calendar"></i> ${new Date(p.fecha_publicacion).toLocaleDateString('es-ES')}
+                    </small>
+                </div>
+            `;
+            userPostsGrid.appendChild(card);
+        });
+    }
+
+    function updateStats(posts, soldPosts = []) {
+        const totalPosts = posts.length;
+        const soldCount = soldPosts.length;
+        const activeCount = totalPosts - soldCount;
+        
+        debug(`Estadísticas: ${activeCount} activas, ${soldCount} vendidas, total: ${totalPosts}`);
+        
+        // Actualizar contadores
+        if (pubCount) pubCount.textContent = activeCount;
+        if (vendidasCount) vendidasCount.textContent = soldCount;
+        
+        // Calcular créditos generados (suma de precios de publicaciones vendidas)
+        const creditos = posts
+            .filter(p => soldPosts.includes(p.id_publicacion))
+            .reduce((total, p) => total + (Number(p.precio) || 0), 0);
+        
+        if (creditosGenerados) {
+            creditosGenerados.textContent = creditos;
+        }
+    }
+
+    async function loadUserRatings() {
+        if (!currentUserId) return;
+
+        try {
+            // Usar la tabla calificacion de tu esquema
+            const { data: reviews, error } = await supabase
+                .from('calificacion')
+                .select('*')
+                .eq('calificado_id', currentUserId)
+                .order('fecha_calificacion', { ascending: false });
+
+            if (error) {
+                debug('Error al cargar calificaciones:', error);
+                throw error;
             }
 
-            if (menuItem) {
-                const action = menuItem.dataset.action;
-                const postId = menuItem.dataset.id;
+            const total = reviews?.length || 0;
+            const average = total > 0 
+                ? (reviews.reduce((sum, review) => sum + (review.puntuacion || 0), 0) / total).toFixed(1)
+                : 0;
 
-                menuItem.closest('.menu-opciones').classList.remove('show');
+            // Actualizar UI
+            if (reviewCount) reviewCount.textContent = total;
+            if (totalReviews) totalReviews.textContent = total;
+            if (ratingAverage) ratingAverage.textContent = average;
+            if (avgRating) avgRating.textContent = average;
 
-                if (action === 'delete') {
-                    handleDeletePost(postId);
-                } else if (action === 'edit') {
-                    window.location.href = `editar.html?id=${postId}`;
+            // Actualizar estrellas
+            if (starRating) {
+                const stars = starRating.querySelectorAll('.star');
+                const rating = Math.round(average);
+                stars.forEach((star, index) => {
+                    star.classList.toggle('filled', index < rating);
+                });
+            }
+
+            // Renderizar reseñas
+            renderReviews(reviews || []);
+
+        } catch (error) {
+            console.error('Error al cargar calificaciones:', error);
+            if (reviewsContainer) {
+                reviewsContainer.innerHTML = `
+                    <div class="no-reviews">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error al cargar las reseñas</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function renderReviews(reviews) {
+        if (!reviewsContainer) return;
+        
+        if (reviews.length === 0) {
+            reviewsContainer.innerHTML = `
+                <div class="no-reviews">
+                    <i class="fas fa-star text-2xl mb-2"></i>
+                    <h3 class="text-lg font-semibold mb-2">Aún no tienes reseñas</h3>
+                    <p class="text-gray-600">Las reseñas aparecerán aquí cuando otros usuarios te califiquen.</p>
+                </div>
+            `;
+            return;
+        }
+
+        reviewsContainer.innerHTML = reviews.map(review => `
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="star-rating">
+                        ${Array.from({length: 5}, (_, i) => 
+                            `<span class="star ${i < (review.puntuacion || 0) ? 'filled' : ''}">★</span>`
+                        ).join('')}
+                    </div>
+                    <span class="text-sm text-gray-500">
+                        ${review.fecha_calificacion ? new Date(review.fecha_calificacion).toLocaleDateString('es-ES') : 'Fecha no disponible'}
+                    </span>
+                </div>
+                <div class="review-comment">
+                    "${review.comentario || 'Sin comentario'}"
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function verificarEstadoEmprendedor(userId) {
+        try {
+            const { data: perfil, error } = await supabase
+                .from('perfil_emprendedor')
+                .select('*')
+                .eq('usuario_id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 = no encontrado
+                debug('Error al verificar perfil emprendedor:', error);
+                return;
+            }
+
+            if (perfil) {
+                // Usuario ya tiene perfil de emprendedor
+                const estado = perfil.estado_solicitud;
+                const emprendedorStatus = document.getElementById('emprendedorStatus');
+                const btnSolicitar = document.getElementById('btnSolicitarEmprendedor');
+
+                if (estado === 'aprobado') {
+                    emprendedorStatus.innerHTML = `
+                        <span class="text-green-600 font-semibold">✅ ¡Eres un Emprendedor Verificado!</span>
+                        <p class="text-gray-700 mt-1">Tu negocio: <strong>${perfil.nombre_negocio}</strong></p>
+                    `;
+                    btnSolicitar.innerHTML = '<i class="fas fa-check"></i> Solicitud Aprobada';
+                    btnSolicitar.disabled = true;
+                    btnSolicitar.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btnSolicitar.classList.add('bg-gray-400', 'cursor-not-allowed');
+
+                    // Mostrar reportes de ahorros para emprendedores
+                    document.getElementById('reportSection').style.display = 'block';
+                    await cargarReportesAhorros();
+
+                } else if (estado === 'pendiente') {
+                    emprendedorStatus.innerHTML = `
+                        <span class="text-yellow-600 font-semibold">⏳ Solicitud en revisión</span>
+                        <p class="text-gray-700 mt-1">Tu solicitud como "${perfil.nombre_negocio}" está siendo revisada.</p>
+                    `;
+                    btnSolicitar.innerHTML = '<i class="fas fa-clock"></i> En Revisión';
+                    btnSolicitar.disabled = true;
+                    btnSolicitar.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btnSolicitar.classList.add('bg-yellow-500', 'cursor-not-allowed');
+
+                } else if (estado === 'rechazado') {
+                    emprendedorStatus.innerHTML = `
+                        <span class="text-red-600 font-semibold">❌ Solicitud rechazada</span>
+                        <p class="text-gray-700 mt-1">Puedes volver a enviar tu solicitud con información mejorada.</p>
+                    `;
+                    btnSolicitar.innerHTML = '<i class="fas fa-redo"></i> Volver a Solicitar';
                 }
+            } else {
+                // No tiene perfil de emprendedor, mostrar botón normal
+                document.getElementById('emprendedorStatus').textContent = 
+                    'Puedes postularte para obtener el rol de "Emprendedor" y empezar a monetizar.';
             }
-        });
 
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.menu-dots') && !event.target.closest('.menu-opciones')) {
-                document.querySelectorAll('.menu-opciones.show').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-            }
-            
-            if (modalEmprendedor.classList.contains('modal-visible') && !modalContent.contains(event.target) && !btnSolicitarEmprendedor.contains(event.target)) {
-                cerrarFormularioEmprendedor();
-            }
-        });
+        } catch (error) {
+            console.error('Error al verificar estado emprendedor:', error);
+        }
+    }
 
-        // Inicializar al cargar la página
-        document.addEventListener('DOMContentLoaded', async () => {
+    async function cargarReportesAhorros() {
+        try {
+            // Calcular ahorros sumando las publicaciones del usuario
+            const { data: publicaciones, error } = await supabase
+                .from('Publicacion')
+                .select('ahorro_co2, ahorro_agua, ahorro_energia')
+                .eq('usuario_id', currentUserId);
+
+            if (error) throw error;
+
+            const totals = publicaciones.reduce((acc, pub) => ({
+                co2: acc.co2 + (pub.ahorro_co2 || 0),
+                agua: acc.agua + (pub.ahorro_agua || 0),
+                energia: acc.energia + (pub.ahorro_energia || 0)
+            }), { co2: 0, agua: 0, energia: 0 });
+
+            // Actualizar UI
+            document.getElementById('reportCo2').textContent = totals.co2.toFixed(2);
+            document.getElementById('reportAgua').textContent = totals.agua.toFixed(2);
+            document.getElementById('reportEnergia').textContent = totals.energia.toFixed(2);
+
+        } catch (error) {
+            console.error('Error al cargar reportes:', error);
+        }
+    }
+
+    function mostrarFormularioEmprendedor() {
+        modalEmprendedor.classList.add('modal-visible');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+    }
+
+    function cerrarFormularioEmprendedor() {
+        modalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
             modalEmprendedor.classList.remove('modal-visible');
+            formSolicitudEmprendedor.reset();
+        }, 300);
+    }
 
-            await loadUserData(); 
-            await fetchUserPosts();
-            await loadCreditosGenerados();
-            await loadUserRatings();
-        });
-    </script>
+    async function enviarSolicitudEmprendedor(event) {
+        event.preventDefault();
+        
+        const nombreNegocio = document.getElementById('nombreNegocio').value;
+        const descripcionNegocio = document.getElementById('descripcionNegocio').value;
+        const productosServicios = document.getElementById('productosServicios').value;
+        const urlContacto = document.getElementById('urlContacto').value;
+
+        try {
+            const { data, error } = await supabase
+                .from('perfil_emprendedor')
+                .insert([
+                    {
+                        usuario_id: currentUserId,
+                        nombre_negocio: nombreNegocio,
+                        descripcion_negocio: descripcionNegocio,
+                        productos_servicios: productosServicios,
+                        url_contacto: urlContacto,
+                        estado_solicitud: 'pendiente'
+                    }
+                ]);
+
+            if (error) throw error;
+
+            alert('✅ Solicitud enviada correctamente. Será revisada por nuestro equipo.');
+            cerrarFormularioEmprendedor();
+            await verificarEstadoEmprendedor(currentUserId);
+
+        } catch (error) {
+            console.error('Error al enviar solicitud:', error);
+            alert('❌ Error al enviar la solicitud. Por favor, intenta nuevamente.');
+        }
+    }
+
+    async function handleDeletePost(postId) {
+        if (!confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('Publicacion')
+                .delete()
+                .eq('id_publicacion', postId)
+                .eq('usuario_id', currentUserId);
+
+            if (error) throw error;
+
+            alert('✅ Publicación eliminada correctamente');
+            await fetchUserPosts(); // Recargar publicaciones
+
+        } catch (error) {
+            console.error('Error al eliminar publicación:', error);
+            alert('❌ Error al eliminar la publicación');
+        }
+    }
+
+    async function handleLogout() {
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+        }
+    }
+
+    // --- Event Listeners ---
+    backBtn.addEventListener('click', () => {
+        window.location.href = 'index2.html';
+    });
+
+    openFormBtn.addEventListener('click', () => {
+        window.location.href = 'publicar.html';
+    });
+
+    logoutBtn.addEventListener('click', handleLogout);
+
+    recargarBtn.addEventListener('click', () => {
+        window.location.href = 'compra.html';
+    });
+
+    btnSolicitarEmprendedor.addEventListener('click', mostrarFormularioEmprendedor);
+    btnCerrarModal.addEventListener('click', cerrarFormularioEmprendedor);
+    formSolicitudEmprendedor.addEventListener('submit', enviarSolicitudEmprendedor);
+
+    // Event listeners para menús de publicaciones
+    userPostsGrid.addEventListener('click', function(event) {
+        const target = event.target;
+        const menuDots = target.closest('.menu-dots');
+        const menuItem = target.closest('li[data-action]');
+        
+        if (menuDots) {
+            const postId = menuDots.dataset.id;
+            const menu = document.getElementById(`menu-${postId}`);
+            
+            // Cerrar otros menús abiertos
+            document.querySelectorAll('.menu-opciones.show').forEach(m => {
+                if (m.id !== `menu-${postId}`) m.classList.remove('show');
+            });
+
+            menu.classList.toggle('show');
+        }
+
+        if (menuItem) {
+            const action = menuItem.dataset.action;
+            const postId = menuItem.dataset.id;
+
+            menuItem.closest('.menu-opciones').classList.remove('show');
+
+            if (action === 'delete') {
+                handleDeletePost(postId);
+            } else if (action === 'edit') {
+                window.location.href = `editar.html?id=${postId}`;
+            }
+        }
+    });
+
+    // Cerrar menús al hacer click fuera
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.menu-dots') && !event.target.closest('.menu-opciones')) {
+            document.querySelectorAll('.menu-opciones.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+        
+        // Cerrar modal al hacer click fuera
+        if (modalEmprendedor.classList.contains('modal-visible') && 
+            !modalContent.contains(event.target) && 
+            !btnSolicitarEmprendedor.contains(event.target)) {
+            cerrarFormularioEmprendedor();
+        }
+    });
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', async () => {
+        modalEmprendedor.classList.remove('modal-visible');
+
+        await loadUserData(); 
+        await fetchUserPosts();
+        await loadUserRatings();
+        
+        debug('Página cargada completamente');
+    });
+</script>
 </body>
 </html>
