@@ -1717,8 +1717,8 @@ async function actualizarSaldoUsuario(usuarioId, monto) {
         }
 
         // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
-function actualizarCreditosUI(nuevoSaldo) {
-    t try {
+async function actualizarCreditosUI(nuevoSaldo) {
+     try {
         console.log('🔄 Actualizando UI de créditos desde billetera:', nuevoSaldo);
         
         // Actualizar en la topbar
