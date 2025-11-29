@@ -722,30 +722,72 @@ function renderProducts(products) {
 }
 
 
+// Función para sincronizar saldos entre usuario y billetera
+async function sincronizarSaldos(usuarioId) {
+    try {
+        console.log('🔄 Sincronizando saldos para usuario:', usuarioId);
+        
+        // Obtener saldo actual de usuario
+        const { data: usuario, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', usuarioId)
+            .single();
+
+        if (usuarioError) throw usuarioError;
+
+        const saldo = usuario.saldo_creditos || 0;
+
+        // Actualizar billetera con el mismo saldo
+        const { error: billeteraError } = await supabase
+            .from('billetera')
+            .update({ 
+                credito_actual: saldo,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', usuarioId);
+
+        if (billeteraError) throw billeteraError;
+
+        console.log('✅ Saldos sincronizados:', saldo);
+        return saldo;
+
+    } catch (error) {
+        console.error('❌ Error sincronizando saldos:', error);
+        throw error;
+    }
+}
+
 // --- helpers nuevos / actualizados para vendedor, reseñas y totales ---
+// FUNCIÓN CORREGIDA PARA BUSCAR VENDEDORES
 async function fetchSellerById(sellerId) {
     if (!sellerId) return null;
     try {
         console.log('fetchSellerById -> sellerId:', sellerId);
-        // intentar traer todo el registro (varios intentos por si el id es auth_id o id_usuario)
-        let res = await supabase.from('usuario').select('*').eq('id_usuario', sellerId).maybeSingle();
-        if (!res.error && res.data) {
-            console.log('fetchSellerById -> encontrado por id_usuario:', res.data);
-            return res.data;
+        
+        // PRIMERO: Buscar por auth_id (que es el UUID)
+        let { data: vendedor, error } = await supabase
+            .from('usuario')
+            .select('*')
+            .eq('auth_id', sellerId)
+            .maybeSingle();
+
+        if (!error && vendedor) {
+            console.log('fetchSellerById -> encontrado por auth_id:', vendedor);
+            return vendedor;
         }
 
-        res = await supabase.from('usuario').select('*').eq('auth_id', sellerId).maybeSingle();
-        if (!res.error && res.data) {
-            console.log('fetchSellerById -> encontrado por auth_id:', res.data);
-            return res.data;
-        }
-
-        // intento adicional: si sellerId es numérico, buscar por id sin tipos estrictos
+        // SEGUNDO: Si sellerId es numérico, buscar por id_usuario
         if (!isNaN(Number(sellerId))) {
-            res = await supabase.from('usuario').select('*').eq('id_usuario', Number(sellerId)).maybeSingle();
-            if (!res.error && res.data) {
-                console.log('fetchSellerById -> encontrado por id_usuario (num):', res.data);
-                return res.data;
+            const { data: vendedorNum, error: errorNum } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('id_usuario', Number(sellerId))
+                .maybeSingle();
+
+            if (!errorNum && vendedorNum) {
+                console.log('fetchSellerById -> encontrado por id_usuario:', vendedorNum);
+                return vendedorNum;
             }
         }
 
@@ -757,42 +799,58 @@ async function fetchSellerById(sellerId) {
     }
 }
 
+// FUNCIÓN CORREGIDA PARA BUSCAR RESEÑAS
 async function fetchReviewsForSellerId(sellerId, limit = 50) {
     if (!sellerId) return [];
-    const tableCandidates = ['calificacion','Calificacion','resena','Resena','resenas','Resenas','review','reviews','valoracion','valoraciones','reseña','reseñas'];
-    const colCandidates = ['calificado_id','vendedor_id','receptor_id','usuario_id','id_usuario','auth_id','publicacion_id'];
-    for (const tbl of tableCandidates) {
-        for (const col of colCandidates) {
-            try {
-                const q = await supabase.from(tbl).select('*').eq(col, sellerId).order('fecha_calificacion', { ascending: false }).limit(limit);
-                if (!q.error && Array.isArray(q.data) && q.data.length > 0) {
-                    return q.data;
-                }
-            } catch (e) {
-                // tabla/col no existe -> continuar
-            }
+    
+    // Solo buscar en la tabla calificacion (que sí existe según los logs)
+    try {
+        const { data, error } = await supabase
+            .from('calificacion')
+            .select('*')
+            .eq('calificado_id', sellerId)
+            .order('fecha_calificacion', { ascending: false })
+            .limit(limit);
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+            console.log(`✅ Reseñas encontradas en tabla calificacion:`, data.length);
+            return data;
         }
+        
+        console.log('ℹ️ No se encontraron reseñas para el vendedor');
+        return [];
+    } catch (e) {
+        console.warn('Error buscando reseñas:', e);
+        return [];
     }
-    return [];
 }
 
+// FUNCIÓN CORREGIDA PARA CALCULAR TOTALES
 async function computeSellerTotals(sellerId) {
-    // suma ahorro_co2, ahorro_agua, ahorro_energia de publicaciones activas del vendedor
     try {
         if (!sellerId) return { co2: 0, agua: 0, energia: 0 };
+        
         const { data, error } = await supabase
             .from('Publicacion')
-            .select('ahorro_co2,ahorro_agua,ahorro_energia')
+            .select('ahorro_co2, ahorro_agua, ahorro_energia')
             .eq('usuario_id', sellerId)
-            .eq('estado', 'activo')
-            .limit(1000); // reasonable upper
-        if (error || !Array.isArray(data)) return { co2: 0, agua: 0, energia: 0 };
+            .eq('estado', 'activo');
+
+        if (error) {
+            console.warn('Error calculando totales:', error);
+            return { co2: 0, agua: 0, energia: 0 };
+        }
+
+        if (!Array.isArray(data)) return { co2: 0, agua: 0, energia: 0 };
+
         const totals = data.reduce((acc, r) => {
             acc.co2 += Number(r.ahorro_co2) || 0;
             acc.agua += Number(r.ahorro_agua) || 0;
             acc.energia += Number(r.ahorro_energia) || 0;
             return acc;
         }, { co2: 0, agua: 0, energia: 0 });
+
+        console.log('✅ Totales calculados:', totals);
         return totals;
     } catch (e) {
         console.warn('computeSellerTotals error', e);
@@ -800,17 +858,32 @@ async function computeSellerTotals(sellerId) {
     }
 }
 
+// FUNCIÓN MEJORADA PARA RENDERIZAR ESTRELLAS
 function renderStarsHtmlFromReviews(reviews) {
-    if (!reviews || reviews.length === 0) return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
-    const vals = reviews.map(r => Number(r.puntuacion ?? r.rating ?? r.calificacion ?? r.score ?? 0)).filter(v => !isNaN(v));
-    if (vals.length === 0) return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
-    const avg = vals.reduce((a,b) => a+b,0)/vals.length;
+    if (!reviews || reviews.length === 0) {
+        return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
+    }
+    
+    // Extraer puntuaciones de diferentes campos posibles
+    const vals = reviews.map(r => {
+        return Number(r.puntuacion ?? r.rating ?? r.calificacion ?? r.score ?? 0);
+    }).filter(v => !isNaN(v) && v > 0);
+    
+    if (vals.length === 0) {
+        return '<span style="color:#9ca3af;font-size:0.9rem;">Sin reseñas</span>';
+    }
+    
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     const filled = Math.round(avg);
     const maxStars = 5;
+    
     let stars = '';
-    for (let i=1;i<=maxStars;i++){
-        stars += i<=filled ? '<span style="color:#f59e0b;font-weight:700;margin-right:2px;">★</span>' : '<span style="color:#e5e7eb;margin-right:2px;">★</span>';
+    for (let i = 1; i <= maxStars; i++) {
+        stars += i <= filled ? 
+            '<span style="color:#f59e0b;font-weight:700;margin-right:2px;">★</span>' : 
+            '<span style="color:#e5e7eb;margin-right:2px;">★</span>';
     }
+    
     return `<div style="display:flex;align-items:center;gap:8px;">
                 <div style="display:flex;align-items:center">${stars}</div>
                 <div style="font-size:0.85rem;color:#6b7280;">${avg.toFixed(1)} (${vals.length})</div>
@@ -892,11 +965,11 @@ async function populateSellerInfoForProduct(producto, containerId) {
 
         window.realizarCompra = async function(producto) {
     try {
-        console.log('🛒 Iniciando proceso de compra...', producto);
+        console.log('🛒 Iniciando proceso de compra DIRECTO...', producto);
         
         mostrarLoadingCompra("Verificando disponibilidad...");
 
-        // 1. Obtener saldo REAL desde base de datos
+        // 1. Obtener saldo REAL desde base de datos (de ambas tablas)
         const { data: usuario, error: usuarioError } = await supabase
             .from('usuario')
             .select('saldo_creditos')
@@ -905,7 +978,17 @@ async function populateSellerInfoForProduct(producto, containerId) {
 
         if (usuarioError) throw new Error('Error al verificar saldo: ' + usuarioError.message);
 
-        const saldoReal = usuario.saldo_creditos || 0;
+        // También obtener datos de la billetera
+        const { data: billetera, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('id_billetera, credito_actual')
+            .eq('usuario_id', currentUserId)
+            .single();
+
+        if (billeteraError) throw new Error('Error al verificar billetera: ' + billeteraError.message);
+
+        const saldoUsuario = usuario.saldo_creditos || 0;
+        const saldoBilletera = billetera.credito_actual || 0;
         const precio = producto.precio || 0;
         
         // 2. Validaciones
@@ -915,7 +998,7 @@ async function populateSellerInfoForProduct(producto, containerId) {
             return;
         }
 
-        if (saldoReal < precio) {
+        if (saldoUsuario < precio || saldoBilletera < precio) {
             ocultarLoadingCompra();
             mostrarNotificacion(`❌ Saldo insuficiente. Necesitas ${precio} créditos`, 'error');
             setTimeout(() => {
@@ -933,14 +1016,122 @@ async function populateSellerInfoForProduct(producto, containerId) {
             return;
         }
 
-        // 4. Proceder con compra (USANDO NUEVA FUNCIÓN)
+        // 4. PROCEDER CON COMPRA - ACTUALIZAR AMBAS TABLAS
         mostrarLoadingCompra("Procesando tu compra...");
-        await crearIntercambio(producto, precio);
+
+        // CREAR INTERCAMBIO DIRECTAMENTE en la tabla
+        const { data: nuevoIntercambio, error: intercambioError } = await supabase
+            .from('Intercambio')
+            .insert([{
+                creditos_verdes: Number(precio),
+                cantidad: 1,  
+                estado: 'en_proceso',
+                publicacion_id: producto.id_publicacion,
+                usuario_id: currentUserId,
+                usuario_vendedor_id: producto.usuario_id,
+                fecha_creacion: new Date().toISOString(),
+                fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // +30 días
+            }])
+            .select()
+            .single();
+
+        if (intercambioError) {
+            throw new Error('Error al crear intercambio: ' + intercambioError.message);
+        }
+
+        console.log('✅ Intercambio creado:', nuevoIntercambio);
+
+        // 5. ACTUALIZAR AMBAS TABLAS SIMULTÁNEAMENTE
+        const nuevoSaldo = saldoUsuario - precio;
         
+        // Actualizar tabla USUARIO
+        const { error: updateUsuarioError } = await supabase
+            .from('usuario')
+            .update({ saldo_creditos: nuevoSaldo })
+            .eq('auth_id', currentUserId);
+
+        if (updateUsuarioError) {
+            throw new Error('Error actualizando saldo en usuario: ' + updateUsuarioError.message);
+        }
+
+        // Actualizar tabla BILLETERA
+        const { error: updateBilleteraError } = await supabase
+    .from('billetera')
+    .update({ 
+        credito_retenido: credito_retenido + precio,  // ✅ Aumentar retenidos
+        credito_actual: credito_actual - precio       // ✅ Disminuir disponibles
+    })
+    .eq('usuario_id', currentUserId);
+
+        if (updateBilleteraError) {
+            throw new Error('Error actualizando saldo en billetera: ' + updateBilleteraError.message);
+        }
+
+        console.log('✅ Saldos actualizados en ambas tablas:', nuevoSaldo);
+
+        // 6. ACTUALIZAR ESTADO DE LA PUBLICACIÓN
+        const { error: pubError } = await supabase
+            .from('Publicacion')
+            .update({ estado: 'en_proceso' })
+            .eq('id_publicacion', producto.id_publicacion);
+
+        if (pubError) {
+            console.warn('⚠️ Error actualizando publicación:', pubError);
+        }
+
+        // 7. CREAR CUSTODIA DE CRÉDITOS
+        try {
+            // Obtener billetera del VENDEDOR
+            const { data: billeteraVendedor } = await supabase
+                .from('billetera')
+                .select('id_billetera')
+                .eq('usuario_id', producto.usuario_id)
+                .single();
+
+            if (billeteraVendedor) {
+                await supabase
+                    .from('custodia_creditos')
+                    .insert([{
+                        monto: precio,
+                        estado: 'retenido',
+                        fecha_retenido: new Date().toISOString(),
+                        fecha_liberacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        billetera_comprador: billetera.id_billetera, // ID billetera comprador
+                        billetera_vendedor: billeteraVendedor.id_billetera,
+                        intercambio_id: nuevoIntercambio.id_intercambio,
+                        comprador_id: currentUserId,
+                        oferente_id: producto.usuario_id
+                    }]);
+                
+                console.log('✅ Custodia de créditos creada');
+            }
+        } catch (custodiaError) {
+            console.warn('⚠️ Error creando custodia:', custodiaError);
+        }
+
+        // 8. CREAR MENSAJE AUTOMÁTICO (opcional)
+        try {
+            await supabase
+                .from('Mensaje')
+                .insert([{
+                    contenido: `¡Hola! He comprado tu producto "${producto.titulo}". Por favor, contáctame para coordinar la entrega.`,
+                    fecha_envio: new Date().toISOString(),
+                    intercambio_id: nuevoIntercambio.id_intercambio,
+                    emisor_id: currentUserId,
+                    receptor_id: producto.usuario_id
+                }]);
+            console.log('✅ Mensaje automático creado');
+        } catch (msgError) {
+            console.warn('⚠️ Error creando mensaje:', msgError);
+        }
+
         ocultarLoadingCompra();
         mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos descontados.`, 'success');
 
-        // 5. Recargar publicaciones
+        // 9. ACTUALIZAR UI
+        actualizarCreditosUI(nuevoSaldo);
+
+        // 10. Recargar publicaciones después de 2 segundos
         setTimeout(async () => {
             await loadAllProducts();
         }, 2000);
@@ -953,53 +1144,41 @@ async function populateSellerInfoForProduct(producto, containerId) {
 }
 
         // ========== FUNCIÓN CREAR INTERCAMBIO SIMPLIFICADA ==========
+// ========== FUNCIÓN CREAR INTERCAMBIO USANDO TU FUNCIÓN EXISTENTE ==========
 window.crearIntercambio = async function(producto, precio) {
     try {
-        console.log('🔄 Creando intercambio simplificado para producto:', producto.id_publicacion);
-        
-        // VERIFICAR que la publicación sigue activa
-        const { data: publicacion, error: pubError } = await supabase
-            .from('Publicacion')
-            .select('*')
-            .eq('id_publicacion', producto.id_publicacion)
-            .eq('estado', 'activo')
-            .single();
+        console.log('🔄 Usando función PostgreSQL para crear intercambio...');
 
-        if (pubError || !publicacion) {
-            throw new Error('La publicación ya no está disponible o fue vendida');
+        // USAR LA FUNCIÓN crear_intercambio_completo que ya existe en tu BD
+        const { data, error } = await supabase.rpc('crear_intercambio_completo', {
+            p_publicacion_id: producto.id_publicacion,
+            p_usuario_comprador: currentUserId,
+            p_precio: Number(precio)
+        });
+
+        if (error) {
+            console.error('❌ Error al llamar función crear_intercambio_completo:', error);
+            throw error;
         }
 
-        // USAR LA FUNCIÓN DE POSTGRESQL PARA TRANSACCIÓN SEGURA
-        const { data: resultado, error: transaccionError } = await supabase
-            .rpc('realizar_compra_transaccion', {
-                p_comprador_id: currentUserId,
-                p_vendedor_id: producto.usuario_id,
-                p_publicacion_id: producto.id_publicacion,
-                p_precio: Number(precio)
-            });
+        console.log('✅ Respuesta de crear_intercambio_completo:', data);
 
-        if (transaccionError) {
-            console.error('❌ Error en transacción:', transaccionError);
-            throw new Error(transaccionError.message);
+        if (data.error) {
+            throw new Error(data.error);
         }
 
-        console.log('✅ Transacción completada:', resultado);
-        
-        // ACTUALIZAR CUSTODIA (opcional - si decides mantenerla)
-        await retenerCreditosEnCustodia(
-            resultado.intercambio_id, 
-            currentUserId,
-            precio, 
-            producto.usuario_id
-        );
+        if (!data.success) {
+            throw new Error('No se pudo crear el intercambio');
+        }
 
-        return resultado.intercambio_id;
+        return data.intercambio_id;
 
     } catch (error) {
         console.error('❌ Error en crearIntercambio:', error);
         throw error;
     }
 }
+
 
 // ========== FUNCIÓN PARA ACTUALIZAR SALDO EN TABLA USUARIO ==========
 async function actualizarSaldoUsuario(usuarioId, monto) {

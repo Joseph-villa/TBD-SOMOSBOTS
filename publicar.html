@@ -439,71 +439,70 @@
     }
 
     async function obtenerOcrearBilletera(userId) {
-        try {
-            console.log('💰 Buscando billetera para usuario:', userId);
+    try {
+        console.log('💰 Buscando billetera para usuario:', userId);
+        
+        // Primero, verificar si el usuario YA TIENE una billetera
+        const { data: billeteraExistente, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('id_billetera, credito_actual, credito_retenido') // 🗑️ QUITAR credito_total
+            .eq('usuario_id', userId)
+            .maybeSingle();
+
+        if (billeteraError) {
+            console.error('❌ Error al buscar billetera:', billeteraError);
+        }
+
+        // Si encontramos una billetera existente, la retornamos
+        if (billeteraExistente) {
+            console.log('✅ Billetera encontrada:', billeteraExistente);
+            return billeteraExistente;
+        }
+
+        // Si no existe, crear una nueva
+        console.log('🆕 Creando nueva billetera para usuario...');
+        const { data: nuevaBilletera, error: crearError } = await supabase
+            .from('billetera')
+            .insert([{
+                usuario_id: userId,
+                credito_actual: 0,        // 🗑️ QUITAR credito_total
+                credito_retenido: 0,
+                ultima_actualizacion: new Date()
+            }])
+            .select()
+            .single();
+
+        if (crearError) {
+            console.error('❌ Error al crear billetera:', crearError);
             
-            // Primero, verificar si el usuario YA TIENE una billetera
-            const { data: billeteraExistente, error: billeteraError } = await supabase
-                .from('billetera')
-                .select('id_billetera, credito_total, credito_actual, credito_retenido')
-                .eq('usuario_id', userId)
-                .maybeSingle();
-
-            if (billeteraError) {
-                console.error('❌ Error al buscar billetera:', billeteraError);
-            }
-
-            // Si encontramos una billetera existente, la retornamos
-            if (billeteraExistente) {
-                console.log('✅ Billetera encontrada:', billeteraExistente);
-                return billeteraExistente;
-            }
-
-            // Si no existe, crear una nueva
-            console.log('🆕 Creando nueva billetera para usuario...');
-            const { data: nuevaBilletera, error: crearError } = await supabase
-                .from('billetera')
-                .insert([{
-                    usuario_id: userId,
-                    credito_total: 0,
-                    credito_actual: 0,
-                    credito_retenido: 0,
-                    ultima_actualizacion: new Date()
-                }])
-                .select()
-                .single();
-
-            if (crearError) {
-                console.error('❌ Error al crear billetera:', crearError);
+            // Si es error de duplicado, intentar buscar nuevamente
+            if (crearError.code === '23505') {
+                console.log('🔄 Intentando recuperar billetera existente después de error de duplicado...');
+                const { data: billeteraRecuperada, error: errorRecuperar } = await supabase
+                    .from('billetera')
+                    .select('id_billetera, credito_actual, credito_retenido') // 🗑️ QUITAR credito_total
+                    .eq('usuario_id', userId)
+                    .single();
                 
-                // Si es error de duplicado, intentar buscar nuevamente
-                if (crearError.code === '23505') {
-                    console.log('🔄 Intentando recuperar billetera existente después de error de duplicado...');
-                    const { data: billeteraRecuperada, error: errorRecuperar } = await supabase
-                        .from('billetera')
-                        .select('id_billetera, credito_total, credito_actual, credito_retenido')
-                        .eq('usuario_id', userId)
-                        .single();
-                    
-                    if (errorRecuperar) {
-                        throw crearError; // Lanzar el error original
-                    }
-                    
-                    console.log('✅ Billetera recuperada después de error:', billeteraRecuperada);
-                    return billeteraRecuperada;
+                if (errorRecuperar) {
+                    throw crearError; // Lanzar el error original
                 }
                 
-                throw crearError;
+                console.log('✅ Billetera recuperada después de error:', billeteraRecuperada);
+                return billeteraRecuperada;
             }
-
-            console.log('✅ Billetera creada:', nuevaBilletera);
-            return nuevaBilletera;
-
-        } catch (error) {
-            console.error('❌ Error en obtenerOcrearBilletera:', error);
-            throw error;
+            
+            throw crearError;
         }
+
+        console.log('✅ Billetera creada:', nuevaBilletera);
+        return nuevaBilletera;
+
+    } catch (error) {
+        console.error('❌ Error en obtenerOcrearBilletera:', error);
+        throw error;
     }
+}
 
     // --- INICIALIZACIÓN ---
     document.addEventListener('DOMContentLoaded', async () => {
@@ -714,18 +713,16 @@
                         // 3. Actualizar billetera - SEGÚN TU SCHEMA
                         const { data: billeteraActual, error: billeteraError } = await supabase
                             .from('billetera')
-                            .select('id_billetera, credito_total, credito_actual')
+                            .select('id_billetera, credito_actual')
                             .eq('usuario_id', user.id)
                             .single();
 
-                        if (!billeteraError && billeteraActual) {
-                            const nuevoCreditoTotal = (billeteraActual.credito_total || 0) + 10;
+                        if (!billeteraError && billeteraActual) {                           
                             const nuevoCreditoActual = (billeteraActual.credito_actual || 0) + 10;
 
                             const { error: billeteraUpdateError } = await supabase
                                 .from('billetera')
                                 .update({
-                                    credito_total: nuevoCreditoTotal,
                                     credito_actual: nuevoCreditoActual,
                                     ultima_actualizacion: new Date()
                                 })

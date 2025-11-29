@@ -861,59 +861,40 @@
 // ========== PROCESAR RECARGA (Versión Corregida) ==========
 async function processRecharge() {
     try {
-        // Validar datos de la tarjeta
         if (!validateCardData()) {
             showStatus('Por favor, completa correctamente los datos de la tarjeta', 'error');
             return;
         }
 
-        // Mostrar estado de procesamiento
         confirmRecharge.disabled = true;
         confirmButtonText.innerHTML = '<div class="loading"></div> Procesando...';
 
         console.log('🔄 Procesando recarga de créditos...');
         
-        // **********************************************
-        // ********* PASO CRUCIAL: LLAMADA RPC  ********
-        // **********************************************
-        
-        console.log('💰 Llamando a la función RPC comprar_creditos...');
-
+        // Para la versión con NOTICE, necesitamos capturar el NOTICE
         const { data, error: rpcError } = await supabase.rpc('comprar_creditos', {
-            p_usuario_id: currentUserId, // UUID del usuario
-            p_monto_bs: selectedPrice,   // Precio (dinero real)
-            p_creditos: selectedCredits  // Créditos entregados
+            p_usuario_id: currentUserId,
+            p_monto_bs: selectedPrice,
+            p_creditos: selectedCredits
         });
 
-        if (rpcError) {
-            console.error('❌ Error en RPC comprar_creditos:', rpcError);
-            throw rpcError;
-        }
+        if (rpcError) throw rpcError;
+
+        // En esta versión, data será null pero la operación se ejecutó
+        // Los créditos ya se actualizaron en la base de datos
         
-        // NOTA: La función RPC se encarga de:
-        // 1. INSERTAR en ingreso_monetario (Dinero real, ¡solucionado!)
-        // 2. ACTUALIZAR saldo_creditos en la tabla 'usuario' (o billetera)
-        // 3. (Opcional) Registrar en historial
+        // Recargar los datos del usuario para obtener el nuevo saldo
+        await loadUserData();
+        
+        // Mensaje de éxito genérico
+        showStatus(`✅ ¡Recarga exitosa! Se han añadido créditos a tu cuenta.`, 'success');
 
-        console.log('✅ Recarga procesada exitosamente por RPC');
-
-        // Actualizar estado local
-        const nuevoSaldo = currentBalance + selectedCredits;
-        currentBalance = nuevoSaldo;
-        currentBalanceEl.textContent = nuevoSaldo;
-        topCredits.textContent = nuevoSaldo;
-
-        // Mostrar éxito
-        closeConfirmationModal();
-        showStatus(`✅ ¡Recarga exitosa! Se han añadido ${selectedCredits} créditos a tu cuenta.`, 'success');
-
-        // Resetear selección
+        // Resetear y redirigir
         creditOptions.forEach(o => o.classList.remove('selected'));
         rechargeButton.disabled = true;
         buttonText.textContent = 'Selecciona un paquete';
         totalAmount.textContent = 'Bs 0';
 
-        // Redirigir después de 3 segundos
         setTimeout(() => {
             window.location.href = 'perfil.html';
         }, 3000);

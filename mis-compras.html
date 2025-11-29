@@ -602,18 +602,35 @@
         }
 
        // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
-function actualizarCreditosUI(nuevoSaldo) {
+async function actualizarCreditosUI(nuevoSaldo = null) {
     try {
-        console.log('🔄 Actualizando UI de créditos:', nuevoSaldo);
+        let saldoParaMostrar = nuevoSaldo;
+        
+        // Si no se proporciona saldo, obtenerlo de la base de datos
+        if (saldoParaMostrar === null && currentUserId) {
+            const { data: usuario, error } = await supabase
+                .from('usuario')
+                .select('saldo_creditos')
+                .eq('auth_id', currentUserId)
+                .single();
+            
+            if (!error && usuario) {
+                saldoParaMostrar = usuario.saldo_creditos;
+            }
+        }
+
+        console.log('🔄 Actualizando UI de créditos:', saldoParaMostrar);
         
         // Actualizar en la topbar
         const topCreditsElement = document.getElementById('topCredits');
-        if (topCreditsElement) {
-            topCreditsElement.textContent = nuevoSaldo;
+        if (topCreditsElement && saldoParaMostrar !== null) {
+            topCreditsElement.textContent = saldoParaMostrar;
         }
         
         // Actualizar en localStorage
-        localStorage.setItem('user_saldo', nuevoSaldo);
+        if (saldoParaMostrar !== null) {
+            localStorage.setItem('user_saldo', saldoParaMostrar);
+        }
         
         console.log('✅ UI de créditos actualizada');
         
@@ -622,59 +639,142 @@ function actualizarCreditosUI(nuevoSaldo) {
     }
 }
         // Función para actualizar saldo en tabla usuario
-        async function actualizarSaldoUsuario(usuarioId, monto) {
-            try {
-                console.log('💰 Actualizando saldo en tabla usuario:', { usuarioId, monto });
-                
-                // 1. Obtener saldo actual desde usuario
-                const { data: usuario, error: usuarioError } = await supabase
+        // ========== FUNCIÓN MEJORADA PARA ACTUALIZAR SALDO EN USUARIO Y BILLETERA ==========
+async function actualizarSaldoUsuario(usuarioId, monto) {
+    try {
+        console.log('💰 Iniciando actualización de saldo:', { usuarioId, monto });
+        
+        // 1. Obtener estado ANTES de la actualización
+        const { data: estadoAntes, error: errorAntes } = await supabase
+            .from('usuario')
+            .select('saldo_creditos, billetera!inner(credito_actual)')
+            .eq('auth_id', usuarioId)
+            .single();
+
+        if (errorAntes) throw errorAntes;
+
+        console.log('📊 Estado ANTES:', {
+            usuario_saldo: estadoAntes.saldo_creditos,
+            billetera_saldo: estadoAntes.billetera[0].credito_actual
+        });
+
+        // 2. Obtener billetera para el cálculo
+        const { data: billetera, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('id_billetera, credito_actual, credito_total')
+            .eq('usuario_id', usuarioId)
+            .single();
+
+        if (billeteraError) throw billeteraError;
+
+        const saldoActual = parseFloat(billetera.credito_actual) || 0;
+        const montoNum = parseFloat(monto);
+        let nuevoSaldo = saldoActual + montoNum;
+
+        if (nuevoSaldo < 0) {
+            console.warn('⚠️ Saldo negativo, ajustando a 0');
+            nuevoSaldo = 0;
+        }
+
+        console.log('💰 Cálculo:', {
+            actual: saldoActual,
+            cambio: montoNum,
+            nuevo: nuevoSaldo
+        });
+
+        // 3. ACTUALIZAR SOLO BILLETERA (el trigger debe actualizar usuario)
+        console.log('🔄 Actualizando billetera...');
+        const { error: updateBilleteraError } = await supabase
+            .from('billetera')
+            .update({
+                credito_actual: nuevoSaldo,
+                credito_total: billetera.credito_total + Math.max(0, montoNum),
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', usuarioId);
+
+        if (updateBilleteraError) throw updateBilleteraError;
+        console.log('✅ Billetera actualizada');
+
+        // 4. VERIFICAR si el trigger funcionó
+        console.log('⏳ Esperando trigger...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const { data: estadoDespues, error: errorDespues } = await supabase
+            .from('usuario')
+            .select('saldo_creditos, billetera!inner(credito_actual)')
+            .eq('auth_id', usuarioId)
+            .single();
+
+        if (!errorDespues) {
+            console.log('📊 Estado DESPUÉS:', {
+                usuario_saldo: estadoDespues.saldo_creditos,
+                billetera_saldo: estadoDespues.billetera[0].credito_actual
+            });
+
+            const triggerFunciono = estadoDespues.saldo_creditos === nuevoSaldo;
+            console.log(`🎯 Trigger funcionó: ${triggerFunciono ? '✅ SÍ' : '❌ NO'}`);
+
+            if (!triggerFunciono) {
+                console.warn('⚠️ Trigger falló, actualizando usuario manualmente...');
+                const { error: updateManualError } = await supabase
                     .from('usuario')
-                    .select('saldo_creditos')
-                    .eq('auth_id', usuarioId)
-                    .single();
-
-                if (usuarioError) {
-                    console.error('❌ Error obteniendo saldo del usuario:', usuarioError);
-                    throw usuarioError;
-                }
-
-                const saldoActual = parseFloat(usuario.saldo_creditos) || 0;
-                const montoNum = parseFloat(monto);
-                let nuevoSaldo = saldoActual + montoNum;
-
-                // Validar que no quede saldo negativo
-                if (nuevoSaldo < 0) {
-                    console.warn('⚠️ Intento de dejar saldo negativo, ajustando a 0');
-                    nuevoSaldo = 0;
-                }
-
-                console.log('💰 Saldo usuario - Actual:', saldoActual, 'Cambio:', montoNum, 'Nuevo saldo:', nuevoSaldo);
-
-                // 2. Actualizar tabla usuario
-                const { error: updateError } = await supabase
-                    .from('usuario')
-                    .update({
-                        saldo_creditos: nuevoSaldo
-                    })
+                    .update({ saldo_creditos: nuevoSaldo })
                     .eq('auth_id', usuarioId);
-
-                if (updateError) {
-                    console.error('❌ Error actualizando saldo en usuario:', updateError);
-                    throw updateError;
-                }
-
-                // 3. Actualizar UI si es el usuario actual
-                if (usuarioId === currentUserId) {
-                    actualizarCreditosUI(nuevoSaldo);
-                }
-
-                console.log('✅ Saldo actualizado en tabla usuario:', nuevoSaldo);
-
-            } catch (error) {
-                console.error('❌ Error actualizando saldo usuario:', error);
-                throw error;
+                
+                if (updateManualError) throw updateManualError;
+                console.log('✅ Usuario actualizado manualmente');
             }
         }
+
+        // 5. Actualizar UI
+        if (usuarioId === currentUserId) {
+            actualizarCreditosUI(nuevoSaldo);
+        }
+
+        console.log('🎉 Actualización completada');
+
+    } catch (error) {
+        console.error('❌ Error en actualizarSaldoUsuario:', error);
+        throw error;
+    }
+}
+
+// ========== FUNCIÓN PARA SINCRONIZAR MANUALMENTE SI ES NECESARIO ==========
+async function forzarSincronizacionSaldo(usuarioId) {
+    try {
+        console.log('🔄 Forzando sincronización de saldo para usuario:', usuarioId);
+        
+        // Obtener saldo actual de billetera
+        const { data: billetera, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('credito_actual')
+            .eq('usuario_id', usuarioId)
+            .single();
+
+        if (billeteraError) throw billeteraError;
+
+        // Actualizar usuario manualmente (solo si el trigger falla)
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: billetera.credito_actual
+            })
+            .eq('auth_id', usuarioId);
+
+        if (updateError) throw updateError;
+
+        console.log('✅ Sincronización forzada completada');
+        
+        // Actualizar UI
+        if (usuarioId === currentUserId) {
+            actualizarCreditosUI(billetera.credito_actual);
+        }
+
+    } catch (error) {
+        console.error('❌ Error en sincronización forzada:', error);
+    }
+}
 
         // ========== INICIALIZACIÓN ==========
 
@@ -1301,6 +1401,37 @@ function actualizarCreditosUI(nuevoSaldo) {
             }
         });
 
+// ========== FUNCIÓN PARA SINCRONIZAR SALDOS ENTRE USUARIO Y BILLETERA ==========
+async function sincronizarSaldos(usuarioId) {
+    try {
+        console.log('🔄 Sincronizando saldos para usuario:', usuarioId);
+        
+        // Obtener saldo actual de billetera
+        const { data: billetera, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('credito_actual')
+            .eq('usuario_id', usuarioId)
+            .single();
+
+        if (billeteraError) throw billeteraError;
+
+        // Actualizar usuario con el mismo saldo
+        const { error: updateError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: billetera.credito_actual
+            })
+            .eq('auth_id', usuarioId);
+
+        if (updateError) throw updateError;
+
+        console.log('✅ Sincronización completada para usuario:', usuarioId);
+
+    } catch (error) {
+        console.error('❌ Error en sincronización:', error);
+        throw error;
+    }
+}
         // ========== FUNCIONES DE COMPRA (MARKETPLACE) ==========
 
         window.realizarCompra = async function(producto) {
@@ -1641,12 +1772,167 @@ function obtenerVendedorId(compra) {
     return null;
 }
 
+// ========== FUNCIÓN PARA TRANSFERIR CRÉDITOS AL VENDEDOR ==========
+window.transferirCreditosAlVendedor = async function(intercambioId, intercambio) {
+    try {
+        console.log('💰 TRANSFERENCIA: Iniciando para intercambio:', intercambioId);
+        
+        // 1. Obtener datos de la custodia
+        const { data: custodia, error: custodiaError } = await supabase
+            .from('custodia_creditos')
+            .select('*')
+            .eq('intercambio_id', intercambioId)
+            .single();
 
-        // ========== FUNCIONES DE CONFIRMACIÓN Y CANCELACIÓN ==========
+        if (custodiaError) {
+            console.error('❌ Error en custodia:', custodiaError);
+            throw custodiaError;
+        }
 
-        // Función para confirmar recepción (ejecutar desde botón en interfaz)
-        // ========== FUNCIÓN DEFINITIVA QUE USA LOS TRIGGERS CORRECTOS ==========
+        console.log('📊 Custodia encontrada:', custodia);
 
+        const monto = parseFloat(custodia.monto) || 0;
+        const vendedorId = custodia.oferente_id;
+
+        console.log('💰 Monto:', monto, 'Vendedor ID:', vendedorId);
+
+        // 2. Obtener billetera del VENDEDOR por usuario_id (NO por id_billetera)
+        const { data: billeteraVendedor, error: billeteraError } = await supabase
+            .from('billetera')
+            .select('*')
+            .eq('usuario_id', vendedorId)  // 🚨 CAMBIADO: buscar por usuario_id
+            .single();
+
+        if (billeteraError) {
+            console.error('❌ Error obteniendo billetera:', billeteraError);
+            throw billeteraError;
+        }
+
+        console.log('📊 Billetera encontrada:', billeteraVendedor);
+
+        // 3. Obtener datos ACTUALES del USUARIO
+        const { data: usuarioVendedor, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos, auth_id')
+            .eq('auth_id', vendedorId)
+            .single();
+
+        if (usuarioError) {
+            console.error('❌ Error obteniendo usuario:', usuarioError);
+            throw usuarioError;
+        }
+
+        console.log('📊 Usuario encontrado:', usuarioVendedor);
+
+        // 4. Calcular NUEVOS VALORES
+        const creditoActualBilletera = parseFloat(billeteraVendedor.credito_actual) || 0;
+        const creditoRetenidoBilletera = parseFloat(billeteraVendedor.credito_retenido) || 0;
+        const saldoActualUsuario = parseFloat(usuarioVendedor.saldo_creditos) || 0;
+        
+        const nuevoActualBilletera = creditoActualBilletera + monto;
+        const nuevoRetenidoBilletera = Math.max(0, creditoRetenidoBilletera - monto);
+        const nuevoSaldoUsuario = saldoActualUsuario + monto;
+
+        console.log('📊 CÁLCULOS:', {
+            'Billetera Antes': { actual: creditoActualBilletera, retenido: creditoRetenidoBilletera },
+            'Usuario Antes': saldoActualUsuario,
+            'Billetera Después': { actual: nuevoActualBilletera, retenido: nuevoRetenidoBilletera },
+            'Usuario Después': nuevoSaldoUsuario,
+            'Monto Transferido': monto
+        });
+
+        // 5. ACTUALIZAR BILLETERA (por usuario_id)
+        console.log('🔄 Actualizando billetera...');
+        const { error: updateBilleteraError } = await supabase
+            .from('billetera')
+            .update({
+                credito_actual: nuevoActualBilletera,
+                credito_retenido: nuevoRetenidoBilletera,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', vendedorId);  // 🚨 CAMBIADO: por usuario_id
+
+        if (updateBilleteraError) {
+            console.error('❌ Error actualizando billetera:', updateBilleteraError);
+            throw updateBilleteraError;
+        }
+        console.log('✅ Billetera actualizada');
+
+        // 6. ACTUALIZAR USUARIO
+        console.log('🔄 Actualizando usuario...');
+        const { error: updateUsuarioError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: nuevoSaldoUsuario
+            })
+            .eq('auth_id', vendedorId);
+
+        if (updateUsuarioError) {
+            console.error('❌ Error actualizando usuario:', updateUsuarioError);
+            throw updateUsuarioError;
+        }
+        console.log('✅ Usuario actualizado');
+
+        // 7. ACTUALIZAR CUSTODIA
+        console.log('🔄 Actualizando custodia...');
+        const { error: updateCustodiaError } = await supabase
+            .from('custodia_creditos')
+            .update({
+                estado: 'liberado',
+                fecha_liberacion: new Date().toISOString()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (updateCustodiaError) {
+            console.error('❌ Error actualizando custodia:', updateCustodiaError);
+            throw updateCustodiaError;
+        }
+        console.log('✅ Custodia actualizada');
+
+        // 8. VERIFICAR LOS CAMBIOS
+        console.log('🔍 Verificando cambios...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Esperar medio segundo
+        
+        const { data: usuarioVerificado } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', vendedorId)
+            .single();
+
+        const { data: billeteraVerificada } = await supabase
+            .from('billetera')
+            .select('credito_actual')
+            .eq('usuario_id', vendedorId)
+            .single();
+
+        console.log('✅ VERIFICACIÓN:', {
+            'Usuario saldo final': usuarioVerificado?.saldo_creditos,
+            'Billetera saldo final': billeteraVerificada?.credito_actual,
+            'Coinciden': usuarioVerificado?.saldo_creditos === billeteraVerificada?.credito_actual
+        });
+
+        // 9. ACTUALIZAR UI si es el usuario actual
+        if (vendedorId === currentUserId) {
+            console.log('🔄 Actualizando UI...');
+            await actualizarCreditosUI(nuevoSaldoUsuario);
+        }
+
+        console.log('🎉 TRANSFERENCIA COMPLETADA EXITOSAMENTE');
+
+        return { 
+            success: true, 
+            montoTransferido: monto,
+            nuevoSaldoVendedor: nuevoSaldoUsuario 
+        };
+
+    } catch (error) {
+        console.error('❌ ERROR en transferencia:', error);
+        throw error;
+    }
+}
+
+      
+// ========== FUNCIÓN DEFINITIVA QUE USA LOS TRIGGERS CORRECTOS ==========
 window.confirmarRecepcion = async function(intercambioId) {
     try {
         console.log('✅ Confirmando recepción para intercambio:', intercambioId);
@@ -1655,10 +1941,7 @@ window.confirmarRecepcion = async function(intercambioId) {
         // 1. Obtener datos del intercambio
         const { data: intercambio, error: intercambioError } = await supabase
             .from('Intercambio')
-            .select(`
-                *,
-                Publicacion (*)
-            `)
+            .select(`*, Publicacion (*)`)
             .eq('id_intercambio', intercambioId)
             .single();
 
@@ -1666,21 +1949,27 @@ window.confirmarRecepcion = async function(intercambioId) {
 
         console.log('📋 Datos del intercambio:', intercambio);
 
-        // 2. TRANSFERIR CRÉDITOS AL VENDEDOR
-        await transferirCreditosAlVendedor(intercambioId, intercambio);
+        // 2. 🎯 TRANSFERIR CRÉDITOS AL VENDEDOR (FUNCION CORREGIDA)
+        console.log('💰 TRANSFERENCIA: Liberando créditos al vendedor...');
+        const resultadoTransferencia = await transferirCreditosAlVendedor(intercambioId, intercambio);
 
-        // 3. USAR FUNCIÓN SEGURA DE LA BD
-        const { data: resultado, error: updateError } = await supabase
-            .rpc('actualizar_intercambio_seguro', {
-                p_intercambio_id: intercambioId
-            });
+        console.log('✅ Resultado transferencia:', resultadoTransferencia);
+
+        // 3. Actualizar intercambio a COMPLETADO
+        const { error: updateError } = await supabase
+            .from('Intercambio')
+            .update({
+                estado: 'completado',
+                fecha_cierre: new Date().toISOString()
+            })
+            .eq('id_intercambio', intercambioId);
 
         if (updateError) {
             console.error('❌ Error actualizando intercambio:', updateError);
             throw updateError;
         }
 
-        console.log('✅ Intercambio actualizado via función segura:', resultado);
+        console.log('✅ Intercambio marcado como completado');
 
         // 4. MARCAR PUBLICACIÓN COMO VENDIDA
         const { error: updatePubError } = await supabase
@@ -1693,27 +1982,21 @@ window.confirmarRecepcion = async function(intercambioId) {
 
         if (updatePubError) {
             console.warn('⚠️ Error actualizando publicación:', updatePubError);
+            // No throw, continuamos porque lo importante son los créditos
         }
 
-        // 5. ACTUALIZAR CUSTODIA
-        const { error: updateCustodiaError } = await supabase
-            .from('custodia_creditos')
-            .update({
-                estado: 'liberado',
-                fecha_liberacion: new Date().toISOString()
-            })
-            .eq('intercambio_id', intercambioId);
-
-        if (updateCustodiaError) {
-            console.warn('⚠️ Error en custodia:', updateCustodiaError);
-        }
+        console.log('✅ Publicación marcada como vendida');
 
         ocultarLoadingCompra();
-        mostrarNotificacion('✅ Recepción confirmada. Intercambio completado.', 'success');
+        mostrarNotificacion('✅ Recepción confirmada. Intercambio completado y créditos transferidos.', 'success');
 
-        // Recargar las compras
+        // 5. ACTUALIZAR UI
         setTimeout(async () => {
             await loadMisCompras();
+            // Actualizar créditos si el vendedor es el usuario actual
+            if (resultadoTransferencia.vendedorId === currentUserId) {
+                await actualizarCreditosUI(resultadoTransferencia.nuevoSaldoVendedor);
+            }
         }, 2000);
 
     } catch (error) {
@@ -1884,31 +2167,50 @@ window.confirmarRecepcionSimple = async function(intercambioId) {
         // 1. Obtener información del intercambio
         const { data: intercambio, error: intercambioError } = await supabase
             .from('Intercambio')
-            .select('publicacion_id, creditos_verdes')
+            .select('publicacion_id, creditos_verdes, usuario_id')
             .eq('id_intercambio', intercambioId)
             .single();
 
         if (intercambioError) throw intercambioError;
 
-        // 2. Devolver créditos al COMPRADOR (usando transacción)
-        const { data: resultado, error: devolucionError } = await supabase
-            .rpc('devolver_creditos_compra', {
-                p_intercambio_id: intercambioId,
-                p_comprador_id: currentUserId,
-                p_creditos: intercambio.creditos_verdes
-            });
+        console.log('📋 Datos del intercambio:', intercambio);
 
-        if (devolucionError) throw devolucionError;
+        // 2. 🎯 DEVOLVER CRÉDITOS AL COMPRADOR (CORREGIDO)
+        await devolverCreditosAlComprador(intercambioId);
 
-        // 3. Reactivar publicación
-        await reactivarPublicacion(intercambio.publicacion_id);
+        // 3. 🎯 MARCAR INTERCAMBIO COMO CANCELADO
+        const { error: updateIntercambioError } = await supabase
+            .from('Intercambio')
+            .update({
+                estado: 'cancelado',
+                fecha_cierre: new Date().toISOString()
+            })
+            .eq('id_intercambio', intercambioId);
+
+        if (updateIntercambioError) throw updateIntercambioError;
+
+        console.log('✅ Intercambio marcado como cancelado');
+
+        // 4. 🎯 REACTIVAR PUBLICACIÓN
+        const { error: updatePubError } = await supabase
+            .from('Publicacion')
+            .update({
+                estado: 'activo',
+                fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id_publicacion', intercambio.publicacion_id);
+
+        if (updatePubError) throw updatePubError;
+
+        console.log('✅ Publicación reactivada');
 
         ocultarLoadingCompra();
-        mostrarNotificacion('✅ Intercambio cancelado. Créditos devueltos a tu cuenta.', 'success');
+        mostrarNotificacion('✅ Intercambio cancelado. Créditos devueltos correctamente.', 'success');
 
-        // Recargar compras
+        // 5. ACTUALIZAR UI
         setTimeout(async () => {
             await loadMisCompras();
+            await actualizarCreditosUI(); // Actualizar créditos en topbar
         }, 2000);
 
     } catch (error) {
@@ -1941,7 +2243,7 @@ async function reactivarPublicacion(publicacionId) {
     }
 }
 
-        async function devolverCreditosAlComprador(intercambioId) {
+      async function devolverCreditosAlComprador(intercambioId) {
     try {
         console.log('💳 Devolviendo créditos al comprador para intercambio:', intercambioId);
         
@@ -1953,48 +2255,135 @@ async function reactivarPublicacion(publicacionId) {
             .single();
 
         if (custodiaError) {
-            console.warn('⚠️ No se encontró custodia, continuando sin ella:', custodiaError);
-            return; // Si no hay custodia, continuar sin error
+            console.error('❌ Error obteniendo custodia:', custodiaError);
+            throw new Error('No se pudo obtener la información de custodia');
         }
 
-        // 2. Actualizar custodia_creditos (marcar como devuelto)
-        const { error: updateCustodiaError } = await supabase
-            .from('custodia_creditos')
-            .update({
-                fecha_liberacion: new Date().toISOString(),
-                estado: 'devuelto'
-            })
-            .eq('intercambio_id', intercambioId);
+        console.log('📊 Datos de custodia:', custodia);
 
-        if (updateCustodiaError) throw updateCustodiaError;
+        const monto = parseFloat(custodia.monto) || 0;
+        const compradorId = custodia.comprador_id;
 
-        // 3. Devolver créditos al COMPRADOR
+        if (monto <= 0) {
+            throw new Error('Monto inválido para devolución');
+        }
+
+        console.log('💰 Devolviendo monto:', monto, 'al comprador:', compradorId);
+
+        // 2. Obtener billetera del COMPRADOR
         const { data: billeteraComprador, error: billeteraError } = await supabase
             .from('billetera')
             .select('*')
             .eq('id_billetera', custodia.billetera_comprador)
             .single();
 
-        if (billeteraError) throw billeteraError;
+        if (billeteraError) {
+            console.error('❌ Error obteniendo billetera comprador:', billeteraError);
+            throw new Error('No se pudo obtener la billetera del comprador');
+        }
 
-        const nuevoActualComprador = (parseFloat(billeteraComprador.credito_actual) || 0) + parseFloat(custodia.monto);
-        const nuevoRetenidoComprador = (parseFloat(billeteraComprador.credito_retenido) || 0) - parseFloat(custodia.monto);
+        console.log('📊 Billetera comprador antes:', {
+            actual: billeteraComprador.credito_actual,
+            retenido: billeteraComprador.credito_retenido
+        });
 
-        const { error: updateCompradorError } = await supabase
+        // 3. 🎯 CALCULAR NUEVOS VALORES PARA EL COMPRADOR
+        const creditoActual = parseFloat(billeteraComprador.credito_actual) || 0;
+        const creditoRetenido = parseFloat(billeteraComprador.credito_retenido) || 0;
+        
+        const nuevoActualComprador = creditoActual + monto;           // 🎯 AUMENTA disponible
+        const nuevoRetenidoComprador = Math.max(0, creditoRetenido - monto); // 🎯 DISMINUYE retenido
+
+        console.log('📊 Billetera comprador después:', {
+            nuevo_actual: nuevoActualComprador,
+            nuevo_retenido: nuevoRetenidoComprador
+        });
+
+        // 4. 🎯 ACTUALIZAR BILLETERA DEL COMPRADOR
+        const { error: updateBilleteraError } = await supabase
             .from('billetera')
             .update({
                 credito_actual: nuevoActualComprador,
-                credito_retenido: Math.max(0, nuevoRetenidoComprador),
+                credito_retenido: nuevoRetenidoComprador,
                 ultima_actualizacion: new Date().toISOString()
             })
             .eq('id_billetera', custodia.billetera_comprador);
 
-        if (updateCompradorError) throw updateCompradorError;
+        if (updateBilleteraError) {
+            console.error('❌ Error actualizando billetera comprador:', updateBilleteraError);
+            throw new Error('Error al actualizar la billetera del comprador');
+        }
 
-        console.log('✅ Créditos devueltos al comprador');
+        console.log('✅ Billetera del comprador actualizada');
+
+        // 5. 🎯 ACTUALIZAR TABLA USUARIO DEL COMPRADOR
+        console.log('🔄 Actualizando tabla usuario para comprador:', compradorId);
+        
+        const { data: usuarioComprador, error: usuarioError } = await supabase
+            .from('usuario')
+            .select('saldo_creditos')
+            .eq('auth_id', compradorId)
+            .single();
+
+        if (usuarioError) {
+            console.error('❌ Error obteniendo datos del usuario comprador:', usuarioError);
+            throw new Error('No se pudo obtener los datos del comprador');
+        }
+
+        const saldoActualUsuario = parseFloat(usuarioComprador.saldo_creditos) || 0;
+        const nuevoSaldoUsuario = saldoActualUsuario + monto;
+
+        console.log('📊 Usuario comprador saldo:', {
+            actual: saldoActualUsuario,
+            nuevo: nuevoSaldoUsuario,
+            monto: monto
+        });
+
+        const { error: updateUsuarioError } = await supabase
+            .from('usuario')
+            .update({
+                saldo_creditos: nuevoSaldoUsuario
+            })
+            .eq('auth_id', compradorId);
+
+        if (updateUsuarioError) {
+            console.error('❌ Error actualizando saldo en tabla usuario:', updateUsuarioError);
+            throw new Error('Error al actualizar el saldo del usuario');
+        }
+
+        console.log('✅ Tabla usuario del comprador actualizada');
+
+        // 6. 🎯 ACTUALIZAR CUSTODIA A 'devuelto'
+        const { error: updateCustodiaError } = await supabase
+            .from('custodia_creditos')
+            .update({
+                estado: 'devuelto',
+                fecha_liberacion: new Date().toISOString()
+            })
+            .eq('intercambio_id', intercambioId);
+
+        if (updateCustodiaError) {
+            console.error('❌ Error actualizando custodia:', updateCustodiaError);
+            throw new Error('Error al actualizar el estado de custodia');
+        }
+
+        console.log('✅ Custodia actualizada a "devuelto"');
+
+        // 7. 🎯 ACTUALIZAR UI SI ES EL USUARIO ACTUAL
+        if (compradorId === currentUserId) {
+            await actualizarCreditosUI(nuevoSaldoUsuario);
+        }
+
+        console.log('🎉 Devolución completada exitosamente para intercambio:', intercambioId);
+
+        return {
+            success: true,
+            montoDevuelto: monto,
+            nuevoSaldo: nuevoSaldoUsuario
+        };
 
     } catch (error) {
-        console.error('❌ Error devolviendo créditos al comprador:', error);
+        console.error('❌ Error en devolverCreditosAlComprador:', error);
         throw error;
     }
 }
