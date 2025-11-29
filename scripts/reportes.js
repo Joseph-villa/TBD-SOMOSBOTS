@@ -2,7 +2,7 @@
 let reportData = null;
 let chartInstance = null;
 let secondaryChartInstance = null;
-let selectedReportType = "users"; // users, eco, earnings, exchanges, publications, user-status
+let selectedReportType = "users"; // users, eco, earnings, engagement, growth
 let selectedReportTime = "weekly"; // weekly, monthly, yearly
 let selectedEcoType = "all"; // all, co2, water, energy
 let co2Saved = 0;
@@ -265,7 +265,8 @@ async function getAllSupabaseData() {
 async function getUnifiedUserData() {
   const { data, error } = await supabase
     .from('usuario')
-    .select('fecha_creacion')
+    .select('fecha_creacion, rol')
+    .neq('rol', 'Administrador')
     .order('fecha_creacion', { ascending: true });
 
   if (error) throw error;
@@ -312,6 +313,11 @@ function processUsersByPeriod(data, period) {
     yearly: 'Registros anuales'
   };
 
+  const sep = {
+    users: {},
+    emprs: {},
+  };
+
   filteredData.forEach(user => {
     const date = new Date(user.fecha_creacion);
     let key;
@@ -329,6 +335,13 @@ function processUsersByPeriod(data, period) {
     }
 
     grouped[key] = (grouped[key] || 0) + 1;
+
+    if( user.rol === "Usuario" ){
+      sep.users[key] = (sep.users[key] || 0) + 1;
+    }
+    if( user.rol === "Emprendedor" ){
+      sep.emprs[key] = (sep.emprs[key] || 0) + 1;
+    }
   });
 
   const labels = Object.keys(grouped);
@@ -337,7 +350,8 @@ function processUsersByPeriod(data, period) {
   return {
     labels: labels,
     data: values,
-    title: titles[period]
+    title: titles[period],
+    sep
   };
 }
 
@@ -536,6 +550,8 @@ async function getUnifiedImpactData() {
   };
 }
 
+// Datos para Dona de Impacto Ambiental
+
 function processImpactForDonut(data, period) {
   const cutoffDate = new Date();
 
@@ -571,8 +587,9 @@ function processImpactForDonut(data, period) {
   });
 
   // Filter categories with data
-  const categoriesWithData = Object.entries(impactByCategory)
-    .filter(([_, value]) => value > 0);
+  /* const categoriesWithData = Object.entries(impactByCategory)
+    .filter(([_, value]) => value > 0); */
+  const categoriesWithData = Object.entries(impactByCategory);
 
   const labels = categoriesWithData.map(([category]) => category);
   const values = categoriesWithData.map(([_, value]) => value);
@@ -967,9 +984,21 @@ function processRpcData(data, valueKey, title, period) {
 // NUEVA FUNCIÓN AUXILIAR: Genera un objeto con todas las etiquetas del rango y valor cero.
 function generateDateRange(period, today) {
     const range = {};
-    let count; 
-    
-    if (period === 'weekly') {
+    let count;
+
+    if( period === 'daily' ){
+      count = 7; // Últimos 6 dias
+        for (let i = count - 1; i >= 0; i--) {
+            const tempDate = new Date();
+            tempDate.setDate(today.getDate() - i); // Retroceder dias
+
+            const key = tempDate.getDate();
+            
+            if (!range.hasOwnProperty(key)) {
+              range[key] = 0;
+            }
+        }
+    } else if (period === 'weekly') {
         count = 6; // Últimas 6 semanas
         for (let i = count - 1; i >= 0; i--) {
             const tempDate = new Date();
@@ -1011,8 +1040,6 @@ function getWeekNumber(d) {
     const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     return weekNo.toString();
 }
-
-
 
 // NUEVA FUNCIÓN AUXILIAR: Estandariza el formato de la clave (key)
 function formatKey(rpcKey, period) {
@@ -1065,14 +1092,15 @@ function prepareGraphicsArea() {
   const graphicsArea = document.getElementById("graphics-area-container");
   if (!graphicsArea) return;
 
-  if (["users", "exchanges", "publications"].includes(selectedReportType) && graphicsArea.childElementCount !== 1) {
+  if (["users",].includes(selectedReportType) && 
+    graphicsArea.childElementCount !== 1) {
     graphicsArea.firstChild.style.flex = "1 1 100%";
     if (graphicsArea.lastChild !== graphicsArea.firstChild) {
       graphicsArea.removeChild(graphicsArea.lastChild);
     }
   }
 
-  if (["eco", "earnings"].includes(selectedReportType) &&
+  if (["eco", "earnings", "engagement", "growth"].includes(selectedReportType) &&
     graphicsArea.childElementCount !== 2) {
 
     graphicsArea.firstChild.style.flex = "1 1 48%";
@@ -1108,17 +1136,80 @@ function generateReport() {
     generateMoneyGains();
   }
 
-  if (selectedReportType === "exchanges") {
+  if( selectedReportType === "engagement"){
     generateExchangesChart();
-  }
-
-  if (selectedReportType === "publications") {
     generatePublicationsChart();
   }
 
-  if (selectedReportType === "user-status") {
+  if (selectedReportType === "growth") {
     generateUserStatusChart();
+    const data = prepareGrowthData(reportData.users[selectedReportTime].sep);
+    renderGrowthChart(data);
   }
+}
+
+function prepareGrowthData(data) {
+  const fixTime = selectedReportTime === "weekly" ? "daily" : selectedReportTime;
+
+  const staticData = {
+    users: generateDateRange(fixTime, new Date()),
+    emprs: generateDateRange(fixTime, new Date()),
+  }
+
+  const staticUKeys = Object.keys(staticData.users);
+  const staticEKeys = Object.keys(staticData.emprs);
+
+  const usrKeys = Object.keys(data.users);
+  const empKeys = Object.keys(data.emprs);
+
+  usrKeys.forEach(u => {
+    if(staticUKeys.includes(u))
+      staticData.users[u] = data.users[u] || 0;
+  });
+
+  empKeys.forEach(e =>{
+    if(staticEKeys.includes(e))
+      staticData.emprs[e] = data.emprs[e] || 0;
+  });
+
+  const renderData = {
+    usrs: calculateGrowth(staticData.users),
+    emprs: calculateGrowth(staticData.emprs)
+  };
+
+  return renderData;
+}
+
+// Auxiliar para calcular el crecimiento
+function calculateGrowth(data) {
+  const fechas = Object.keys(data);
+  const labels = [];
+  const valores = [];
+
+  for (let i = 1; i < fechas.length; i++) {
+    const fechaAnterior = fechas[i - 1];
+    const fechaActual = fechas[i];
+
+    const valorPrevio = data[fechaAnterior];
+    const valorActual = data[fechaActual];
+
+    const crecimientoAbsoluto = valorActual - valorPrevio;
+
+    /* const crecimientoPorcentual =
+      valorPrevio === 0
+        ? valorActual * 100
+        : ((crecimientoAbsoluto / valorPrevio) * 100); */
+    
+    const crecimientoPorcentual = valorActual;
+
+    labels.push(fechaActual);
+    valores.push(Number(crecimientoPorcentual.toFixed(2)));
+  }
+
+  return {
+    labels,
+    data: valores
+  };
 }
 
 // Reporte de registros de usuario
@@ -1224,6 +1315,8 @@ function generateEcoDonut() {
   }
 
   const data = reportData.eco[selectedReportTime];
+
+  console.log(data);
 
   chartInstance = new Chart(ctx, {
     type: 'doughnut',
@@ -1562,11 +1655,11 @@ function generateExchangesChart() {
 
 // Gráfico de Publicaciones
 function generatePublicationsChart() {
-  const ctx = document.getElementById('canvas-chart-display-one').getContext('2d');
+  const ctx = document.getElementById('canvas-chart-display-two').getContext('2d');
 
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
+  if (secondaryChartInstance) {
+    secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
   }
 
   if (!reportData || !reportData.publications) {
@@ -1659,7 +1752,7 @@ function generatePublicationsChart() {
     }
   };
 
-  chartInstance = new Chart(ctx, config);
+  secondaryChartInstance = new Chart(ctx, config);
 }
 
 // Gráfico de usuarios activos e inactivos
@@ -1744,6 +1837,77 @@ function generateUserStatusChart() {
   };
 
   chartInstance = new Chart(ctx, config);
+}
+
+// Gráfico para crecimiento
+function renderGrowthChart(data) {
+  const ctx = document.getElementById('canvas-chart-display-two').getContext('2d');
+  
+  // Destruir instancia anterior si existe
+  if (secondaryChartInstance) {
+    secondaryChartInstance.destroy();
+    secondaryChartInstance = null;
+  }
+
+  const title = {
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+  }
+  
+  secondaryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.usrs.labels,
+      datasets: [
+        {
+          label: 'Usuarios',
+          data: data.usrs.data,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(30, 38, 43, 0.1)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Emprendedores',
+          data: data.emprs.data,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `Crecimiento Usuarios vs Emprendedores (${title[selectedReportTime]})`
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Crecimiento (%)'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Periodo'
+          }
+        }
+      }
+    }
+  });
 }
 
 // ------------------ Auxiliares para grafico de Linea Chart -----------------
@@ -1972,15 +2136,15 @@ function generatePanel() {
   topControls.style.width = "100%";
   topControls.style.marginBottom = "20px";
   topControls.style.display = "flex";
+  topControls.style.flexWrap = "wrap";
   topControls.style.gap = "5px";
 
   const buttonConfigs = [
-    { type: "users", text: "Usuarios Registrados" },
+    { type: "users", text: "Usuarios" },
     { type: "eco", text: "Impacto Ambiental" },
     { type: "earnings", text: "Dinero generado" },
-    { type: "exchanges", text: "Intercambios" },
-    { type: "publications", text: "Publicaciones" },
-    { type: "user-status", text: "Usuarios Activos/Inactivos" }
+    { type: "engagement", text: "Interacción" },
+    { type: "growth", text: "Crecimiento" }
   ];
 
   buttonConfigs.forEach(config => {
