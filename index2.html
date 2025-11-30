@@ -69,6 +69,8 @@
         }
 
         .product-card {
+            position: relative;
+            overflow: hidden;
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
@@ -78,6 +80,47 @@
             transition: transform 0.2s, box-shadow 0.2s;
             background: white;
         }
+
+        .price-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 25px;
+    font-weight: 800;
+    font-size: 1.1em;
+    box-shadow: 0 4px 15px rgba(76,175,80,0.4);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 2px solid rgba(255,255,255,0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.price-badge::before {
+    content: '♻️';
+    font-size: 0.9em;
+}
+
+.price-badge-free {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1em;
+    box-shadow: 0 4px 12px rgba(255,152,0,0.4);
+    z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 2px solid rgba(255,255,255,0.3);
+}
 
         .product-card:hover {
             transform: translateY(-2px);
@@ -446,25 +489,33 @@
 
         // Mostrar loading durante compra
         window.mostrarLoadingCompra = function(mensaje = "🔄 Procesando compra...") {
-            const loading = document.createElement('div');
-            loading.id = 'loading-compra';
-            loading.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                           background: rgba(0,0,0,0.7); display: flex; justify-content: center; 
-                           align-items: center; z-index: 9999;">
-                    <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
-                        <p style="margin: 0; font-weight: bold; color: #333;">${mensaje}</p>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(loading);
-        }
+    // Primero remover cualquier loading existente
+    window.ocultarLoadingCompra();
+    
+    const loading = document.createElement('div');
+    loading.id = 'loading-compra';
+    loading.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                   background: rgba(0,0,0,0.8); display: flex; justify-content: center; 
+                   align-items: center; z-index: 9999;">
+            <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 300px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
+                <p style="margin: 0; font-weight: bold; color: #333;">${mensaje}</p>
+                <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">Por favor, espera...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loading);
+    console.log('✅ Loading mostrado:', mensaje);
+}
 
-        window.ocultarLoadingCompra = function() {
-            const loading = document.getElementById('loading-compra');
-            if (loading) loading.remove();
-        }
+window.ocultarLoadingCompra = function() {
+    const loading = document.getElementById('loading-compra');
+    if (loading) {
+        loading.remove();
+        console.log('✅ Loading ocultado');
+    }
+}
 
         // Mostrar notificación de éxito/error
         window.mostrarNotificacion = function(mensaje, tipo = 'success') {
@@ -554,33 +605,54 @@
         // ========== CARGA DE DATOS DEL USUARIO ==========
 
         async function loadUserData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-                if (user) {
-                    const { data: usuario, error } = await supabase
-                        .from('usuario')
-                        .select('*')
-                        .eq('auth_id', user.id)
-                        .single();
+        if (user) {
+            // Obtener datos del usuario
+            const { data: usuario, error: usuarioError } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('auth_id', user.id)
+                .single();
 
-                    if (!error && usuario) {
-                        document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
-                        document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
-                        document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
-                        document.getElementById('topCredits').textContent = usuario.saldo_creditos || 0;
+            if (!usuarioError && usuario) {
+                document.getElementById('userName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserName').textContent = usuario.nombre_completo || 'Usuario';
+                document.getElementById('menuUserEmail').textContent = usuario.correo_electronico || user.email;
 
-                        localStorage.setItem('user_id', user.id);
-                        localStorage.setItem('user_email', usuario.correo_electronico || user.email);
-                        localStorage.setItem('user_name', usuario.nombre_completo);
-                        localStorage.setItem('user_saldo', usuario.saldo_creditos || 0);
-                    }
+                // 🚨 CAMBIO PRINCIPAL: Obtener créditos desde la billetera
+                const { data: billetera, error: billeteraError } = await supabase
+                    .from('billetera')
+                    .select('credito_actual')
+                    .eq('usuario_id', user.id)
+                    .single();
+
+                let creditosDisponibles = 0;
+                
+                if (!billeteraError && billetera) {
+                    creditosDisponibles = billetera.credito_actual || 0;
+                    console.log('✅ Créditos cargados desde billetera:', creditosDisponibles);
+                } else {
+                    console.warn('⚠️ No se encontró billetera, usando saldo de usuario como fallback');
+                    creditosDisponibles = usuario.saldo_creditos || 0;
                 }
 
-            } catch (error) {
-                console.error('Error al cargar datos del usuario:', error);
+                // Actualizar UI
+                document.getElementById('topCredits').textContent = creditosDisponibles;
+
+                // Guardar en localStorage
+                localStorage.setItem('user_id', user.id);
+                localStorage.setItem('user_email', usuario.correo_electronico || user.email);
+                localStorage.setItem('user_name', usuario.nombre_completo);
+                localStorage.setItem('user_saldo', creditosDisponibles);
             }
         }
+
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+    }
+}
 
         // ========== CARGA DE PUBLICACIONES ==========
 
@@ -662,6 +734,11 @@ function renderProducts(products) {
         const descripcion = producto.descripcion || 'Sin descripción';
         const precio = producto.precio ?? 0;
 
+        // Determinar qué badge de precio usar
+        const precioElemento = precio === 0 ? 
+            '<div class="price-badge-free">Gratis</div>' :
+            `<div class="price-badge">${precio}</div>`;
+
         let categoria = producto.nombre_categoria || producto.categoria || 'General';
         const catId = producto.categoria_id ?? producto.id_categoria ?? producto.categoriaId;
         if ((categoria === 'General' || !categoria) && window.categoriasData && catId) {
@@ -691,8 +768,11 @@ function renderProducts(products) {
 
         return `
             <div class="product-card" data-producto-id="${producto.id_publicacion || producto.id || ''}">
+                ${precioElemento}
+                
                 ${imagen ? `<img src="${imagen}" alt="${titulo}" style="width:100%;height:150px;object-fit:cover;">`
-                         : `<div style="width:100%;height:150px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;"><span style="color:#999">Sin imagen</span></div>`}
+                         : `<div style="width:100%;height:150px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;position:relative;"><span style="color:#999">Sin imagen</span></div>`}
+                
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px 0 10px;">
                     <div style="font-weight:bold;">${titulo}</div>
                 </div>
@@ -706,9 +786,9 @@ function renderProducts(products) {
                     <div style="font-size:0.85rem;color:#9ca3af;">Cargando datos del vendedor…</div>
                 </div>
 
+                <!-- BOTÓN COMPRAR SOLO - SIN PRECIO ABAJO -->
                 <div style="display:flex;gap:8px;padding:0 10px 16px 10px;">
-                    <div class="credits" style="flex:1;display:flex;align-items:center;justify-content:center;">${precio} ♻️</div>
-                    <button class="btn-intercambiar" style="flex:1;" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">Comprar</button>
+                    <button class="btn-intercambiar" style="width:100%;" onclick="realizarCompra(${JSON.stringify(producto).replace(/"/g, '&quot;')})">Comprar</button>
                 </div>
             </div>
         `;
@@ -720,7 +800,6 @@ function renderProducts(products) {
         populateSellerInfoForProduct(p, `seller-info-${pid}`);
     });
 }
-
 
 // Función para sincronizar saldos entre usuario y billetera
 async function sincronizarSaldos(usuarioId) {
@@ -963,42 +1042,68 @@ async function populateSellerInfoForProduct(producto, containerId) {
 }
         // ========== FUNCIÓN REALIZAR COMPRA MEJORADA ==========
 
-        window.realizarCompra = async function(producto) {
+       window.realizarCompra = async function(producto) {
     try {
-        console.log('🛒 Iniciando proceso de compra DIRECTO...', producto);
-        
-        mostrarLoadingCompra("Verificando disponibilidad...");
+        console.log('🛒 === INICIANDO PROCESO DE COMPRA ===');
+        console.log('📦 Producto:', producto);
+        console.log('👤 Usuario actual:', currentUserId);
 
-        // 1. Obtener saldo REAL desde base de datos (de ambas tablas)
-        const { data: usuario, error: usuarioError } = await supabase
+        mostrarLoadingCompra("Verificando disponibilidad...");
+        console.log('✅ Loading mostrado');
+
+        // 1. Obtener datos del COMPRADOR
+        console.log('🔍 Paso 1: Obteniendo datos del comprador...');
+        const { data: usuarioComprador, error: usuarioError } = await supabase
             .from('usuario')
             .select('saldo_creditos')
             .eq('auth_id', currentUserId)
             .single();
 
-        if (usuarioError) throw new Error('Error al verificar saldo: ' + usuarioError.message);
+        console.log('📊 Datos comprador:', usuarioComprador);
+        console.log('❌ Error comprador:', usuarioError);
 
-        // También obtener datos de la billetera
-        const { data: billetera, error: billeteraError } = await supabase
+        if (usuarioError) {
+            console.error('💥 Error al verificar saldo:', usuarioError);
+            throw new Error('Error al verificar saldo: ' + usuarioError.message);
+        }
+
+        // Obtener billetera del COMPRADOR
+        console.log('🔍 Paso 1.1: Obteniendo billetera comprador...');
+        const { data: billeteraComprador, error: billeteraError } = await supabase
             .from('billetera')
-            .select('id_billetera, credito_actual')
+            .select('id_billetera, credito_actual, credito_retenido')
             .eq('usuario_id', currentUserId)
             .single();
 
-        if (billeteraError) throw new Error('Error al verificar billetera: ' + billeteraError.message);
+        console.log('📊 Billetera comprador:', billeteraComprador);
+        console.log('❌ Error billetera:', billeteraError);
 
-        const saldoUsuario = usuario.saldo_creditos || 0;
-        const saldoBilletera = billetera.credito_actual || 0;
+        if (billeteraError) {
+            console.error('💥 Error al verificar billetera:', billeteraError);
+            throw new Error('Error al verificar billetera: ' + billeteraError.message);
+        }
+
+        const saldoUsuario = usuarioComprador.saldo_creditos || 0;
+        const saldoBilleteraActual = billeteraComprador.credito_actual || 0;
         const precio = producto.precio || 0;
         
+        console.log('💰 Saldos obtenidos:', {
+            saldoUsuario,
+            saldoBilleteraActual,
+            precio
+        });
+
         // 2. Validaciones
+        console.log('🔍 Paso 2: Realizando validaciones...');
         if (producto.usuario_id === currentUserId) {
+            console.log('❌ Usuario intenta comprar su propia publicación');
             ocultarLoadingCompra();
             mostrarNotificacion('❌ No puedes comprar tu propia publicación', 'error');
             return;
         }
 
-        if (saldoUsuario < precio || saldoBilletera < precio) {
+        if (saldoUsuario < precio || saldoBilleteraActual < precio) {
+            console.log('❌ Saldo insuficiente');
             ocultarLoadingCompra();
             mostrarNotificacion(`❌ Saldo insuficiente. Necesitas ${precio} créditos`, 'error');
             setTimeout(() => {
@@ -1007,19 +1112,54 @@ async function populateSellerInfoForProduct(producto, containerId) {
             return;
         }
 
-        // 3. Confirmación de compra
+        console.log('✅ Validaciones pasadas');
+
+        // 3. Obtener billetera del VENDEDOR ANTES de confirmar
+        console.log('🔍 Paso 3: Obteniendo billetera vendedor...');
+        mostrarLoadingCompra("Verificando vendedor...");
+
+        const { data: billeteraVendedor, error: vendedorError } = await supabase
+            .from('billetera')
+            .select('id_billetera')
+            .eq('usuario_id', producto.usuario_id)
+            .single();
+
+        console.log('📊 Billetera vendedor:', billeteraVendedor);
+        console.log('❌ Error vendedor:', vendedorError);
+
+        if (vendedorError) {
+            console.error('💥 Error obteniendo billetera vendedor:', vendedorError);
+            throw new Error('No se pudo obtener la billetera del vendedor: ' + vendedorError.message);
+        }
+
+        if (!billeteraVendedor) {
+            console.error('💥 Vendedor no tiene billetera');
+            throw new Error('El vendedor no tiene billetera registrada');
+        }
+
+        console.log('📊 Billeteras encontradas:', {
+            comprador: billeteraComprador.id_billetera,
+            vendedor: billeteraVendedor.id_billetera
+        });
+
+        // 4. Confirmación de compra
+        console.log('🔍 Paso 4: Mostrando confirmación...');
         ocultarLoadingCompra();
         const confirmacion = await mostrarConfirmacionCompra(producto.titulo, precio);
         
         if (!confirmacion) {
-            console.log('Compra cancelada por el usuario');
+            console.log('❌ Compra cancelada por el usuario');
             return;
         }
 
-        // 4. PROCEDER CON COMPRA - ACTUALIZAR AMBAS TABLAS
+        console.log('✅ Usuario confirmó la compra');
+
+        // 5. PROCEDER CON COMPRA COMPLETA
+        console.log('🔍 Paso 5: Procesando compra completa...');
         mostrarLoadingCompra("Procesando tu compra...");
 
-        // CREAR INTERCAMBIO DIRECTAMENTE en la tabla
+        // CREAR INTERCAMBIO PRIMERO
+        console.log('🔍 Paso 5.1: Creando intercambio...');
         const { data: nuevoIntercambio, error: intercambioError } = await supabase
             .from('Intercambio')
             .insert([{
@@ -1030,86 +1170,110 @@ async function populateSellerInfoForProduct(producto, containerId) {
                 usuario_id: currentUserId,
                 usuario_vendedor_id: producto.usuario_id,
                 fecha_creacion: new Date().toISOString(),
-                fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // +30 días
+                fecha_cierre: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
             }])
             .select()
             .single();
 
+        console.log('📊 Nuevo intercambio:', nuevoIntercambio);
+        console.log('❌ Error intercambio:', intercambioError);
+
         if (intercambioError) {
+            console.error('💥 Error al crear intercambio:', intercambioError);
             throw new Error('Error al crear intercambio: ' + intercambioError.message);
         }
 
         console.log('✅ Intercambio creado:', nuevoIntercambio);
 
-        // 5. ACTUALIZAR AMBAS TABLAS SIMULTÁNEAMENTE
-        const nuevoSaldo = saldoUsuario - precio;
+        // 6. CREAR CUSTODIA DE CRÉDITOS
+        console.log('🔍 Paso 5.2: Creando custodia de créditos...');
+        const { data: nuevaCustodia, error: custodiaError } = await supabase
+            .from('custodia_creditos')
+            .insert([{
+                monto: Number(precio),
+                estado: 'retenido',
+                fecha_retenido: new Date().toISOString(),
+                fecha_liberacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                billetera_vendedor: billeteraVendedor.id_billetera,
+                billetera_comprador: billeteraComprador.id_billetera,
+                intercambio_id: nuevoIntercambio.id_intercambio,
+                comprador_id: currentUserId,
+                oferente_id: producto.usuario_id
+            }])
+            .select()
+            .single();
+
+        console.log('📊 Nueva custodia:', nuevaCustodia);
+        console.log('❌ Error custodia:', custodiaError);
+
+        if (custodiaError) {
+            console.error('💥 Error creando custodia:', custodiaError);
+            throw new Error('Error al crear custodia de créditos: ' + custodiaError.message);
+        }
         
+        console.log('✅ Custodia de créditos creada exitosamente:', nuevaCustodia);
+
+        // 7. ACTUALIZAR SALDOS DEL COMPRADOR
+        console.log('🔍 Paso 5.3: Actualizando saldos del comprador...');
+        const nuevoSaldoUsuario = saldoUsuario - precio;
+        const nuevoSaldoBilleteraActual = saldoBilleteraActual - precio;
+        const nuevoSaldoBilleteraRetenido = (billeteraComprador.credito_retenido || 0) + precio;
+        
+        console.log('💰 Nuevos saldos calculados:', {
+            nuevoSaldoUsuario,
+            nuevoSaldoBilleteraActual,
+            nuevoSaldoBilleteraRetenido
+        });
+
         // Actualizar tabla USUARIO
+        console.log('🔍 Actualizando tabla usuario...');
         const { error: updateUsuarioError } = await supabase
             .from('usuario')
-            .update({ saldo_creditos: nuevoSaldo })
+            .update({ 
+                saldo_creditos: nuevoSaldoUsuario
+            })
             .eq('auth_id', currentUserId);
+
+        console.log('❌ Error update usuario:', updateUsuarioError);
 
         if (updateUsuarioError) {
             throw new Error('Error actualizando saldo en usuario: ' + updateUsuarioError.message);
         }
 
-        // Actualizar tabla BILLETERA
+        // Actualizar tabla BILLETERA del COMPRADOR
+        console.log('🔍 Actualizando tabla billetera...');
         const { error: updateBilleteraError } = await supabase
-    .from('billetera')
-    .update({ 
-        credito_retenido: credito_retenido + precio,  // ✅ Aumentar retenidos
-        credito_actual: credito_actual - precio       // ✅ Disminuir disponibles
-    })
-    .eq('usuario_id', currentUserId);
+            .from('billetera')
+            .update({ 
+                credito_retenido: nuevoSaldoBilleteraRetenido,
+                credito_actual: nuevoSaldoBilleteraActual,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', currentUserId);
+
+        console.log('❌ Error update billetera:', updateBilleteraError);
 
         if (updateBilleteraError) {
             throw new Error('Error actualizando saldo en billetera: ' + updateBilleteraError.message);
         }
 
-        console.log('✅ Saldos actualizados en ambas tablas:', nuevoSaldo);
+        console.log('✅ Saldos actualizados exitosamente');
 
-        // 6. ACTUALIZAR ESTADO DE LA PUBLICACIÓN
+        // 8. ACTUALIZAR ESTADO DE LA PUBLICACIÓN
+        console.log('🔍 Paso 5.4: Actualizando estado de publicación...');
         const { error: pubError } = await supabase
             .from('Publicacion')
             .update({ estado: 'en_proceso' })
             .eq('id_publicacion', producto.id_publicacion);
 
+        console.log('❌ Error update publicación:', pubError);
+
         if (pubError) {
             console.warn('⚠️ Error actualizando publicación:', pubError);
         }
 
-        // 7. CREAR CUSTODIA DE CRÉDITOS
-        try {
-            // Obtener billetera del VENDEDOR
-            const { data: billeteraVendedor } = await supabase
-                .from('billetera')
-                .select('id_billetera')
-                .eq('usuario_id', producto.usuario_id)
-                .single();
-
-            if (billeteraVendedor) {
-                await supabase
-                    .from('custodia_creditos')
-                    .insert([{
-                        monto: precio,
-                        estado: 'retenido',
-                        fecha_retenido: new Date().toISOString(),
-                        fecha_liberacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                        billetera_comprador: billetera.id_billetera, // ID billetera comprador
-                        billetera_vendedor: billeteraVendedor.id_billetera,
-                        intercambio_id: nuevoIntercambio.id_intercambio,
-                        comprador_id: currentUserId,
-                        oferente_id: producto.usuario_id
-                    }]);
-                
-                console.log('✅ Custodia de créditos creada');
-            }
-        } catch (custodiaError) {
-            console.warn('⚠️ Error creando custodia:', custodiaError);
-        }
-
-        // 8. CREAR MENSAJE AUTOMÁTICO (opcional)
+        // 9. CREAR MENSAJE AUTOMÁTICO
+        console.log('🔍 Paso 5.5: Creando mensaje automático...');
         try {
             await supabase
                 .from('Mensaje')
@@ -1125,19 +1289,41 @@ async function populateSellerInfoForProduct(producto, containerId) {
             console.warn('⚠️ Error creando mensaje:', msgError);
         }
 
+        // 10. CREAR REGISTRO EN HISTORIAL
+        console.log('🔍 Paso 5.6: Creando registro en historial...');
+        try {
+            await supabase
+                .from('historial')
+                .insert([{
+                    fecha: new Date().toISOString(),
+                    tipo: 'compra',
+                    total: Number(precio),
+                    auth_id: currentUserId,
+                    intercambio_id: nuevoIntercambio.id_intercambio
+                }]);
+            console.log('✅ Historial creado');
+        } catch (historialError) {
+            console.warn('⚠️ Error creando historial:', historialError);
+        }
+
+        // 11. ÉXITO - MOSTRAR RESULTADO
+        console.log('🎉 COMPRA COMPLETADA EXITOSAMENTE');
         ocultarLoadingCompra();
-        mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos descontados.`, 'success');
+        mostrarNotificacion(`✅ ¡Compra realizada! ${precio} créditos retenidos en custodia.`, 'success');
 
-        // 9. ACTUALIZAR UI
-        actualizarCreditosUI(nuevoSaldo);
+        // 12. ACTUALIZAR UI
+        console.log('🔍 Actualizando UI...');
+        actualizarCreditosUI(nuevoSaldoUsuario);
 
-        // 10. Recargar publicaciones después de 2 segundos
+        // 13. Recargar publicaciones
+        console.log('🔍 Recargando publicaciones...');
         setTimeout(async () => {
             await loadAllProducts();
-        }, 2000);
+            console.log('✅ Publicaciones recargadas');
+        }, 3000);
 
     } catch (error) {
-        console.error('❌ Error en la compra:', error);
+        console.error('💥 ERROR CRÍTICO en la compra:', error);
         ocultarLoadingCompra();
         mostrarNotificacion('❌ Error al procesar la compra: ' + error.message, 'error');
     }
@@ -1581,9 +1767,9 @@ async function actualizarSaldoUsuario(usuarioId, monto) {
         }
 
         // ========== FUNCIÓN PARA ACTUALIZAR UI DE CRÉDITOS ==========
-function actualizarCreditosUI(nuevoSaldo) {
-    try {
-        console.log('🔄 Actualizando UI de créditos:', nuevoSaldo);
+async function actualizarCreditosUI(nuevoSaldo) {
+     try {
+        console.log('🔄 Actualizando UI de créditos desde billetera:', nuevoSaldo);
         
         // Actualizar en la topbar
         const topCreditsElement = document.getElementById('topCredits');
@@ -1594,7 +1780,20 @@ function actualizarCreditosUI(nuevoSaldo) {
         // Actualizar en localStorage
         localStorage.setItem('user_saldo', nuevoSaldo);
         
-        console.log('✅ UI de créditos actualizada');
+        // 🚨 SINCRONIZAR CON BILLETERA
+        const { error } = await supabase
+            .from('billetera')
+            .update({
+                credito_actual: nuevoSaldo,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('usuario_id', currentUserId);
+
+        if (error) {
+            console.error('❌ Error actualizando billetera:', error);
+        } else {
+            console.log('✅ Billetera actualizada con nuevo saldo:', nuevoSaldo);
+        }
         
     } catch (error) {
         console.error('❌ Error actualizando UI de créditos:', error);
